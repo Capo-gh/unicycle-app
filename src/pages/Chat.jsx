@@ -128,16 +128,22 @@ export default function Chat({ item, onBack }) {
                                     </div>
                                 </div>
                             ) : msg.sender === 'me' ? (
-                                // My Message
-                                <div className="flex justify-end">
+                                // My Message with Avatar
+                                <div className="flex justify-end gap-2 items-end">
                                     <div className="bg-unicycle-green text-white rounded-2xl rounded-tr-sm px-4 py-2 max-w-[75%]">
                                         <p className="text-sm">{msg.text}</p>
                                         <p className="text-xs text-white/70 mt-1">{msg.timestamp}</p>
                                     </div>
+                                    <div className="w-8 h-8 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                                        You
+                                    </div>
                                 </div>
                             ) : (
-                                // Their Message
-                                <div className="flex justify-start">
+                                // Their Message with Avatar
+                                <div className="flex justify-start gap-2 items-end">
+                                    <div className="w-8 h-8 bg-gradient-to-br from-unicycle-green to-unicycle-blue rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                                        {item.seller.name.charAt(0)}
+                                    </div>
                                     <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-2 max-w-[75%]">
                                         <p className="text-sm text-gray-900">{msg.text}</p>
                                         <p className="text-xs text-gray-500 mt-1">{msg.timestamp}</p>

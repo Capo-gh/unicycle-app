@@ -6,13 +6,24 @@ import Profile from './pages/Profile';
 import Messages from './pages/Messages';
 import Requests from './pages/Requests';
 import Chat from './pages/Chat';
+import Signup from './pages/Signup';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('listings');
+  const [currentPage, setCurrentPage] = useState('signup'); // Start with signup
   const [selectedItem, setSelectedItem] = useState(null);
+  const [user, setUser] = useState(null);
+
+  const handleSignup = (userData) => {
+    setUser(userData);
+    setCurrentPage('listings');
+  };
 
   return (
     <div key={currentPage} className="animate-fadeIn">
+      {currentPage === 'signup' && (
+        <Signup onSignup={handleSignup} />
+      )}
+
       {currentPage === 'listings' && (
         <Listings
           onItemClick={(item) => {
@@ -25,6 +36,7 @@ function App() {
           onMessagesClick={() => setCurrentPage('messages')}
         />
       )}
+
       {currentPage === 'detail' && (
         <ItemDetail
           item={selectedItem}
@@ -32,15 +44,18 @@ function App() {
           onContactSeller={() => setCurrentPage('chat')}
         />
       )}
+
       {currentPage === 'chat' && (
         <Chat
           item={selectedItem}
           onBack={() => setCurrentPage('detail')}
         />
       )}
+
       {currentPage === 'sell' && (
         <SellItem onBack={() => setCurrentPage('listings')} />
       )}
+
       {currentPage === 'profile' && (
         <Profile
           onBack={() => setCurrentPage('listings')}
@@ -49,9 +64,11 @@ function App() {
           onSellClick={() => setCurrentPage('sell')}
         />
       )}
+
       {currentPage === 'messages' && (
         <Messages onBack={() => setCurrentPage('listings')} />
       )}
+
       {currentPage === 'requests' && (
         <Requests
           onSellClick={() => setCurrentPage('sell')}

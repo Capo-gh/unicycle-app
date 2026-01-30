@@ -1,4 +1,5 @@
 import { Search, MapPin, ShieldCheck, MessageCircle } from 'lucide-react';
+import unicycleIcon from '../assets/unicycle-icon.png';
 
 export default function Listings({ onItemClick, onSellClick, onProfileClick, onRequestsClick, onMessagesClick }) {
     // Sample listings data
@@ -264,14 +265,29 @@ export default function Listings({ onItemClick, onSellClick, onProfileClick, onR
                     <div className="flex items-center gap-3 mb-3">
                         <div className="flex items-center gap-3 flex-1">
                             <img
-                                src="/src/assets/unicycle-icon.png"
+                                src={unicycleIcon}
                                 alt="UniCycle"
                                 className="w-10 h-10 object-contain"
                                 style={{ maxWidth: '40px', maxHeight: '40px' }}
                             />
-                            <div>
+                            <div className="flex-1">
                                 <h1 className="text-xl font-bold text-gray-900">UniCycle</h1>
-                                <p className="text-xs text-gray-500">McGill Marketplace</p>
+
+                                {/* MARKETPLACE SWITCHER DROPDOWN */}
+                                <select
+                                    className="text-xs text-gray-600 bg-transparent border-none focus:outline-none cursor-pointer hover:text-unicycle-blue"
+                                    onChange={(e) => {
+                                        if (e.target.value !== 'mcgill') {
+                                            alert(`Switching to ${e.target.value} marketplace...`);
+                                        }
+                                    }}
+                                >
+                                    <option value="mcgill">McGill Marketplace</option>
+                                    <option value="concordia">Concordia Marketplace</option>
+                                    <option value="udem">UdeM Marketplace</option>
+                                    <option value="uqam">UQAM Marketplace</option>
+                                    <option value="ets">ÉTS Marketplace</option>
+                                </select>
                             </div>
                         </div>
 

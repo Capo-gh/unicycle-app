@@ -113,6 +113,18 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                             <p className="text-xs text-gray-500 mt-2">
                                 ✓ Well-lit public area • Security cameras • Student traffic
                             </p>
+
+                            {/* GET DIRECTIONS BUTTON */}
+                            <button
+                                onClick={() => {
+                                    const address = encodeURIComponent(`${item.safeZone}, ${item.safeZoneAddress}, Montreal, QC`);
+                                    window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
+                                }}
+                                className="mt-3 w-full px-4 py-2 bg-unicycle-blue text-white rounded-lg text-sm font-semibold hover:bg-unicycle-blue/90 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <MapPin className="w-4 h-4" />
+                                Get Directions
+                            </button>
                         </div>
                     </div>
                 </div>
