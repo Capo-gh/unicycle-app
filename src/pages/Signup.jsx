@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ShieldCheck, Mail, Building2 } from 'lucide-react';
+import logo from '../assets/unicycle-logo.png';
 
 export default function Signup({ onSignup }) {
     const [step, setStep] = useState(1); // 1 = select university, 2 = enter email
@@ -58,7 +59,7 @@ export default function Signup({ onSignup }) {
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center gap-3 mb-4">
                         <img
-                            src="/src/assets/unicycle-logo.png"
+                            src={logo}
                             alt="UniCycle"
                             className="h-16 w-auto"
                         />
