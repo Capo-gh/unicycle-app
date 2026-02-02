@@ -4,7 +4,7 @@ import logo from '../assets/unicycle-logo.png';
 import VerificationSuccess from './VerificationSuccess';
 
 export default function Signup({ onSignup }) {
-    const [step, setStep] = useState(1); // 1 = select university, 2 = enter email, 3 = verification success
+    const [step, setStep] = useState(1); // 1 = signup form, 2 = verification success
     const [selectedUniversity, setSelectedUniversity] = useState('');
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
@@ -24,19 +24,17 @@ export default function Signup({ onSignup }) {
         const uni = universities.find(u => u.name === e.target.value);
         if (uni) {
             setSelectedUniversity(uni);
+            setEmail(''); // Clear email when switching universities
             setError('');
         }
     };
 
-    const handleContinue = () => {
+    const handleEmailSubmit = () => {
         if (!selectedUniversity) {
             setError('Please select your university');
             return;
         }
-        setStep(2);
-    };
 
-    const handleEmailSubmit = () => {
         const emailDomain = email.substring(email.lastIndexOf('@'));
 
         if (!email.includes('@')) {
@@ -50,11 +48,11 @@ export default function Signup({ onSignup }) {
         }
 
         // Success! Show verification success screen
-        setStep(3);
+        setStep(2);
     };
 
-    // Step 3: Verification Success
-    if (step === 3) {
+    // Step 2: Verification Success
+    if (step === 2) {
         return (
             <VerificationSuccess
                 userData={{ email, university: selectedUniversity.name }}
@@ -79,71 +77,78 @@ export default function Signup({ onSignup }) {
                     <p className="text-gray-600 mt-2">The trusted student marketplace</p>
                 </div>
 
-                {/* Step 1: University Selection */}
-                {step === 1 && (
-                    <div className="bg-white rounded-2xl shadow-xl p-6 animate-fadeIn">
-                        <div className="flex items-center gap-2 mb-6">
-                            <Building2 className="w-6 h-6 text-unicycle-blue" />
-                            <h2 className="text-xl font-semibold text-gray-900">Select Your University</h2>
+                {/* Single Step Form */}
+                <div className="bg-white rounded-2xl shadow-xl p-6 animate-fadeIn">
+                    {/* University Selection */}
+                    <div className="mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Building2 className="w-5 h-5 text-unicycle-blue" />
+                            <label className="text-sm font-semibold text-gray-900">Select Your University</label>
                         </div>
 
-                        {/* DROPDOWN INSTEAD OF BUTTONS */}
-                        <div className="mb-6">
-                            <select
-                                value={selectedUniversity.name || ''}
-                                onChange={handleUniversitySelect}
-                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green focus:border-transparent bg-white text-gray-900"
-                            >
-                                <option value="">Choose your university...</option>
-                                {universities.map((uni) => (
-                                    <option key={uni.name} value={uni.name}>
-                                        {uni.name}
-                                    </option>
-                                ))}
-                            </select>
+                        <select
+                            value={selectedUniversity.name || ''}
+                            onChange={handleUniversitySelect}
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green focus:border-transparent bg-white text-gray-900"
+                        >
+                            <option value="">Choose your university...</option>
+                            {universities.map((uni) => (
+                                <option key={uni.name} value={uni.name}>
+                                    {uni.name}
+                                </option>
+                            ))}
+                        </select>
 
-                            {/* Show selected domain */}
-                            {selectedUniversity && (
-                                <p className="text-xs text-gray-500 mt-2">
-                                    Email domain: {selectedUniversity.domain}
-                                </p>
-                            )}
-                        </div>
-
-                        {error && (
-                            <p className="text-red-500 text-sm mb-4">{error}</p>
+                        {/* Show selected domain */}
+                        {selectedUniversity && (
+                            <p className="text-xs text-gray-500 mt-2">
+                                Email domain: {selectedUniversity.domain}
+                            </p>
                         )}
-
-                        <button
-                            onClick={handleContinue}
-                            disabled={!selectedUniversity}
-                            className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                        >
-                            Continue
-                        </button>
                     </div>
-                )}
 
-                {/* Step 2: Email Entry */}
-                {step === 2 && (
-                    <div className="bg-white rounded-2xl shadow-xl p-6 animate-fadeIn">
-                        <button
-                            onClick={() => setStep(1)}
-                            className="text-sm text-unicycle-blue hover:underline mb-4"
-                        >
-                            ← Change University
-                        </button>
-
-                        <div className="flex items-center gap-2 mb-2">
-                            <Mail className="w-6 h-6 text-unicycle-blue" />
-                            <h2 className="text-xl font-semibold text-gray-900">Verify Your Email</h2>
+                    {/* Email Input - Only enabled after university selection */}
+                    <div className="mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Mail className="w-5 h-5 text-unicycle-blue" />
+                            <label className="text-sm font-semibold text-gray-900">Your University Email</label>
                         </div>
 
-                        <p className="text-sm text-gray-600 mb-6">
-                            Enter your {selectedUniversity.name} email address
-                        </p>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                                setError('');
+                            }}
+                            disabled={!selectedUniversity}
+                            placeholder={
+                                selectedUniversity
+                                    ? `your.name${selectedUniversity.domain}`
+                                    : 'Select university first'
+                            }
+                            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors ${selectedUniversity
+                                ? 'border-gray-200 focus:ring-2 focus:ring-unicycle-green focus:border-transparent bg-white'
+                                : 'border-gray-200 bg-gray-100 cursor-not-allowed'
+                                }`}
+                        />
 
-                        {/* University Badge */}
+                        {selectedUniversity && (
+                            <p className="text-xs text-gray-500 mt-2">
+                                We'll send a verification link to your email
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Error Message */}
+                    {error && (
+                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-red-600 text-sm">{error}</p>
+                        </div>
+                    )}
+
+                    {/* University Badge - Shows after selection */}
+                    {selectedUniversity && (
                         <div className="bg-unicycle-blue/10 rounded-lg p-3 mb-6 border border-unicycle-blue/30">
                             <div className="flex items-center gap-2">
                                 <ShieldCheck className="w-5 h-5 text-unicycle-blue" />
@@ -153,36 +158,17 @@ export default function Signup({ onSignup }) {
                                 </div>
                             </div>
                         </div>
+                    )}
 
-                        {/* Email Input */}
-                        <div className="mb-4">
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => {
-                                    setEmail(e.target.value);
-                                    setError('');
-                                }}
-                                placeholder={`your.name${selectedUniversity.domain}`}
-                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green focus:border-transparent"
-                            />
-                            {error && (
-                                <p className="text-red-500 text-sm mt-2">{error}</p>
-                            )}
-                        </div>
-
-                        <button
-                            onClick={handleEmailSubmit}
-                            className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors"
-                        >
-                            Continue
-                        </button>
-
-                        <p className="text-xs text-gray-500 text-center mt-4">
-                            We'll send a verification link to your email
-                        </p>
-                    </div>
-                )}
+                    {/* Continue Button */}
+                    <button
+                        onClick={handleEmailSubmit}
+                        disabled={!selectedUniversity || !email}
+                        className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                        Continue
+                    </button>
+                </div>
 
                 {/* Trust Badge */}
                 <div className="mt-6 text-center">
