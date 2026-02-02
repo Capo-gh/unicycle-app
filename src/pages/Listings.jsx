@@ -1,5 +1,5 @@
-import { Search, MapPin, ShieldCheck, MessageCircle } from 'lucide-react';
-import unicycleIcon from '../assets/unicycle-icon.png';
+import { Search, MapPin, ShieldCheck, MessageCircle, ClipboardList } from 'lucide-react';
+import logo from '../assets/unicycle-logo.png';
 
 export default function Listings({ onItemClick, onSellClick, onProfileClick, onRequestsClick, onMessagesClick }) {
     // Sample listings data
@@ -165,7 +165,7 @@ export default function Listings({ onItemClick, onSellClick, onProfileClick, onR
             ],
             description: "Compact microwave, barely used. Perfect for heating meals in your dorm or apartment. Easy to clean, all functions working perfectly.",
             seller: {
-                name: "James Wilson",
+                name: "James Kim",
                 verified: true,
                 year: "4th Year",
                 faculty: "Engineering",
@@ -173,84 +173,84 @@ export default function Listings({ onItemClick, onSellClick, onProfileClick, onR
                 reviews: 9
             },
             safeZone: "New Residence Hall",
-            safeZoneAddress: "3625 Park Ave, Front Desk",
+            safeZoneAddress: "3625 Park Ave, Lobby",
             category: "Appliances",
             condition: "Like New",
-            posted: "2 days ago",
+            posted: "1 week ago",
             views: 41,
             verified: true
         },
         {
             id: 8,
-            title: "Organic Chemistry Textbook",
-            price: 65,
-            image: "https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400",
+            title: "Winter Jacket - Size M",
+            price: 50,
+            image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400",
             images: [
-                "https://images.unsplash.com/photo-1532012197267-da84d127e765?w=800",
+                "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800",
             ],
-            description: "Organic Chemistry textbook for CHEM 212/222. Good condition with some notes in margins. Great resource for studying.",
+            description: "Warm winter jacket, perfect for Montreal winters. Size medium. North Face brand. Moving to warmer climate so don't need it anymore.",
             seller: {
-                name: "Priya Patel",
+                name: "Carlos Rodriguez",
                 verified: true,
                 year: "3rd Year",
-                faculty: "Science",
-                rating: 5.0,
-                reviews: 13
-            },
-            safeZone: "Schulich Library",
-            safeZoneAddress: "809 Sherbrooke St W, Main Floor",
-            category: "Textbooks",
-            condition: "Good",
-            posted: "1 week ago",
-            views: 38,
-            verified: true
-        },
-        {
-            id: 9,
-            title: "Coffee Maker",
-            price: 30,
-            image: "https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=400",
-            images: [
-                "https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=800",
-            ],
-            description: "Single-serve coffee maker. Makes great coffee quickly. Perfect for busy mornings before class. Includes reusable filter.",
-            seller: {
-                name: "Carlos Martinez",
-                verified: true,
-                year: "2nd Year",
-                faculty: "Arts",
+                faculty: "Management",
                 rating: 4.7,
                 reviews: 6
             },
             safeZone: "SSMU Building",
             safeZoneAddress: "3480 McTavish St, Main Entrance",
-            category: "Appliances",
+            category: "Clothing",
             condition: "Good",
-            posted: "6 days ago",
-            views: 25,
+            posted: "2 days ago",
+            views: 38,
+            verified: true
+        },
+        {
+            id: 9,
+            title: "Standing Desk Converter",
+            price: 70,
+            image: "https://images.unsplash.com/photo-1595515106969-1ce29566ff1c?w=400",
+            images: [
+                "https://images.unsplash.com/photo-1595515106969-1ce29566ff1c?w=800",
+            ],
+            description: "Adjustable standing desk converter. Great for posture and health. Fits on any desk. Easy height adjustment. Barely used.",
+            seller: {
+                name: "Rachel Green",
+                verified: true,
+                year: "2nd Year",
+                faculty: "Science",
+                rating: 5.0,
+                reviews: 14
+            },
+            safeZone: "Redpath Library",
+            safeZoneAddress: "3461 McTavish St, Ground Floor",
+            category: "Furniture",
+            condition: "Like New",
+            posted: "3 days ago",
+            views: 52,
             verified: true
         },
         {
             id: 10,
             title: "Bluetooth Headphones",
-            price: 50,
+            price: 55,
             image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400",
             images: [
                 "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800",
             ],
-            description: "Wireless Bluetooth headphones with noise cancellation. Great battery life (20+ hours). Perfect for studying in the library or commuting.",
+            description: "Sony wireless headphones with noise cancellation. Perfect for studying in the library. Battery lasts 20+ hours. Comes with charging cable.",
             seller: {
-                name: "Nina Reeves",
+                name: "Alex Thompson",
                 verified: true,
                 year: "1st Year",
-                faculty: "Music",
-                rating: 4.9,
-                reviews: 10
+                faculty: "Arts",
+                rating: 4.6,
+                reviews: 8
             },
-            safeZone: "McConnell Library",
-            safeZoneAddress: "3459 McTavish St, Main Floor Lobby",
+            safeZone: "McLennan Library",
+            safeZoneAddress: "3459 McTavish St, Main Entrance",
             category: "Electronics",
-            condition: "Like New",
+            condition: "Good",
             posted: "3 days ago",
             views: 62,
             verified: true
@@ -265,7 +265,7 @@ export default function Listings({ onItemClick, onSellClick, onProfileClick, onR
                     <div className="flex items-center gap-3 mb-3">
                         <div className="flex items-center gap-3 flex-1">
                             <img
-                                src={unicycleIcon}
+                                src={logo}
                                 alt="UniCycle"
                                 className="w-10 h-10 object-contain"
                                 style={{ maxWidth: '40px', maxHeight: '40px' }}
@@ -392,7 +392,7 @@ export default function Listings({ onItemClick, onSellClick, onProfileClick, onR
                         onClick={onRequestsClick}
                         className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600"
                     >
-                        <MessageCircle className="w-6 h-6" />
+                        <ClipboardList className="w-6 h-6" />
                         <span className="text-xs">Requests</span>
                     </button>
                     <button

@@ -1,8 +1,27 @@
+import { useState } from 'react';
 import { ArrowLeft, MapPin, ShieldCheck, MessageCircle, Share2 } from 'lucide-react';
+import SecurePayModal from './SecurePayModal';
 
 export default function ItemDetail({ item, onBack, onContactSeller }) {
+    const [showSecurePayModal, setShowSecurePayModal] = useState(false);
+
     const handleBack = () => {
         onBack();
+    };
+
+    const handleContactSeller = () => {
+        // If item is >= $50, show Secure-Pay modal first
+        if (item.price >= 50) {
+            setShowSecurePayModal(true);
+        } else {
+            // For items < $50, go directly to chat
+            onContactSeller();
+        }
+    };
+
+    const handleSecurePayProceed = () => {
+        setShowSecurePayModal(false);
+        onContactSeller();
     };
 
     // If no item is passed, show a loading or error state
@@ -135,7 +154,7 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                     <p className="text-sm text-gray-700 leading-relaxed">{item.description}</p>
                 </div>
 
-                {/* Payment Info - Show escrow for items >$50 */}
+                {/* Payment Info - Show escrow for items >=$50 */}
                 {item.price >= 50 && (
                     <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                         <div className="flex items-start gap-3">
@@ -157,7 +176,7 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
                 <div className="max-w-md mx-auto px-4 py-3 flex gap-3">
                     <button
-                        onClick={onContactSeller}
+                        onClick={handleContactSeller}
                         className="flex-1 bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors flex items-center justify-center gap-2"
                     >
                         <MessageCircle className="w-5 h-5" />
@@ -165,6 +184,15 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                     </button>
                 </div>
             </div>
+
+            {/* Secure-Pay Modal */}
+            {showSecurePayModal && (
+                <SecurePayModal
+                    item={item}
+                    onClose={() => setShowSecurePayModal(false)}
+                    onProceed={handleSecurePayProceed}
+                />
+            )}
         </div>
     );
 }

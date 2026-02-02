@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { ShieldCheck, Mail, Building2 } from 'lucide-react';
 import logo from '../assets/unicycle-logo.png';
+import VerificationSuccess from './VerificationSuccess';
 
 export default function Signup({ onSignup }) {
-    const [step, setStep] = useState(1); // 1 = select university, 2 = enter email
+    const [step, setStep] = useState(1); // 1 = select university, 2 = enter email, 3 = verification success
     const [selectedUniversity, setSelectedUniversity] = useState('');
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
@@ -48,9 +49,19 @@ export default function Signup({ onSignup }) {
             return;
         }
 
-        // Success!
-        onSignup({ email, university: selectedUniversity.name });
+        // Success! Show verification success screen
+        setStep(3);
     };
+
+    // Step 3: Verification Success
+    if (step === 3) {
+        return (
+            <VerificationSuccess
+                userData={{ email, university: selectedUniversity.name }}
+                onContinue={() => onSignup({ email, university: selectedUniversity.name })}
+            />
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-unicycle-blue/10 to-unicycle-green/10 flex items-center justify-center px-4">
