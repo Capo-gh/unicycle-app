@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Layout from './components/Layout';
 import Listings from './pages/Listings';
 import ItemDetail from './pages/ItemDetail';
 import SellItem from './pages/SellItem';
@@ -9,7 +10,7 @@ import Chat from './pages/Chat';
 import Signup from './pages/Signup';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('signup'); // Start with signup
+  const [currentPage, setCurrentPage] = useState('signup');
   const [selectedItem, setSelectedItem] = useState(null);
   const [user, setUser] = useState(null);
 
@@ -18,65 +19,79 @@ function App() {
     setCurrentPage('listings');
   };
 
-  return (
-    <div key={currentPage} className="animate-fadeIn">
-      {currentPage === 'signup' && (
+  const handleNavigate = (page) => {
+    setCurrentPage(page);
+    if (page !== 'detail' && page !== 'chat') {
+      setSelectedItem(null);
+    }
+  };
+
+  // ─── Signup is standalone (no Layout) ───
+  if (currentPage === 'signup') {
+    return (
+      <div className="animate-fadeIn">
         <Signup onSignup={handleSignup} />
-      )}
+      </div>
+    );
+  }
 
-      {currentPage === 'listings' && (
-        <Listings
-          onItemClick={(item) => {
-            setSelectedItem(item);
-            setCurrentPage('detail');
-          }}
-          onSellClick={() => setCurrentPage('sell')}
-          onProfileClick={() => setCurrentPage('profile')}
-          onRequestsClick={() => setCurrentPage('requests')}
-          onMessagesClick={() => setCurrentPage('messages')}
-        />
-      )}
+  // ─── Everything else wraps in Layout ───
+  return (
+    <Layout currentPage={currentPage} onNavigate={handleNavigate}>
+      <div key={currentPage} className="animate-fadeIn">
 
-      {currentPage === 'detail' && (
-        <ItemDetail
-          item={selectedItem}
-          onBack={() => setCurrentPage('listings')}
-          onContactSeller={() => setCurrentPage('chat')}
-        />
-      )}
+        {currentPage === 'listings' && (
+          <Listings
+            onItemClick={(item) => {
+              setSelectedItem(item);
+              setCurrentPage('detail');
+            }}
+            onNavigate={handleNavigate}
+          />
+        )}
 
-      {currentPage === 'chat' && (
-        <Chat
-          item={selectedItem}
-          onBack={() => setCurrentPage('detail')}
-        />
-      )}
+        {currentPage === 'detail' && (
+          <ItemDetail
+            item={selectedItem}
+            onBack={() => setCurrentPage('listings')}
+            onContactSeller={() => setCurrentPage('chat')}
+          />
+        )}
 
-      {currentPage === 'sell' && (
-        <SellItem onBack={() => setCurrentPage('listings')} />
-      )}
+        {currentPage === 'chat' && (
+          <Chat
+            item={selectedItem}
+            onBack={() => setCurrentPage('detail')}
+          />
+        )}
 
-      {currentPage === 'profile' && (
-        <Profile
-          onBack={() => setCurrentPage('listings')}
-          onBrowseClick={() => setCurrentPage('listings')}
-          onRequestsClick={() => setCurrentPage('requests')}
-          onSellClick={() => setCurrentPage('sell')}
-        />
-      )}
+        {currentPage === 'sell' && (
+          <SellItem onBack={() => setCurrentPage('listings')} />
+        )}
 
-      {currentPage === 'messages' && (
-        <Messages onBack={() => setCurrentPage('listings')} />
-      )}
+        {currentPage === 'profile' && (
+          <Profile
+            onBack={() => setCurrentPage('listings')}
+            onBrowseClick={() => setCurrentPage('listings')}
+            onRequestsClick={() => setCurrentPage('requests')}
+            onSellClick={() => setCurrentPage('sell')}
+          />
+        )}
 
-      {currentPage === 'requests' && (
-        <Requests
-          onSellClick={() => setCurrentPage('sell')}
-          onBrowseClick={() => setCurrentPage('listings')}
-          onProfileClick={() => setCurrentPage('profile')}
-        />
-      )}
-    </div>
+        {currentPage === 'messages' && (
+          <Messages onBack={() => setCurrentPage('listings')} />
+        )}
+
+        {currentPage === 'requests' && (
+          <Requests
+            onSellClick={() => setCurrentPage('sell')}
+            onBrowseClick={() => setCurrentPage('listings')}
+            onProfileClick={() => setCurrentPage('profile')}
+          />
+        )}
+
+      </div>
+    </Layout>
   );
 }
 

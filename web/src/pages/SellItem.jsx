@@ -2,36 +2,49 @@ import { ArrowLeft, Upload, MapPin, DollarSign } from 'lucide-react';
 import { useState } from 'react';
 
 export default function SellItem({ onBack }) {
+    const categories = ['Furniture', 'Textbooks', 'Electronics', 'Appliances', 'Clothing', 'Sports & Outdoors', 'Kitchen', 'Room Decor', 'Other'];
+    const conditions = ['Brand New', 'Like New', 'Good', 'Fair'];
+
+    const safeZones = [
+        { name: 'McConnell Library', details: 'Main Floor Lobby' },
+        { name: 'SSMU Building', details: 'Main Entrance' },
+        { name: 'Trottier Building', details: 'Lobby' },
+        { name: 'Redpath Library', details: 'Ground Floor' },
+        { name: 'McLennan Library', details: 'Main Entrance' },
+        { name: 'Leacock Building', details: 'Main Entrance' },
+        { name: 'Otto Maass Chemistry', details: 'Main Entrance' },
+        { name: 'New Residence Hall', details: 'Lobby' },
+    ];
+
+    // Smart suggestion based on category
+    const suggestedZoneByCategory = {
+        'Furniture': 'McConnell Library',
+        'Textbooks': 'Redpath Library',
+        'Electronics': 'SSMU Building',
+        'Appliances': 'New Residence Hall',
+        'Clothing': 'Trottier Building',
+        'Sports & Outdoors': 'McLennan Library',
+        'Kitchen': 'New Residence Hall',
+        'Room Decor': 'McConnell Library',
+        'Other': 'SSMU Building'
+    };
+
     const [formData, setFormData] = useState({
         title: '',
         price: '',
         category: 'Furniture',
         condition: 'Like New',
         description: '',
-        image: null
+        image: null,
+        safeZone: 'McConnell Library'  // default matches Furniture suggestion
     });
 
-    const [suggestedSafeZone, setSuggestedSafeZone] = useState('McConnell Library');
-
-    const categories = ['Furniture', 'Textbooks', 'Electronics', 'Appliances', 'Clothing', 'Other'];
-    const conditions = ['Brand New', 'Like New', 'Good', 'Fair'];
-
-    // Safe zones based on category (smart recommendation!)
-    const safeZonesByCategory = {
-        'Textbooks': 'Redpath Library',
-        'Electronics': 'SSMU Building',
-        'Furniture': 'McConnell Library',
-        'Appliances': 'New Residence Hall Lobby',
-        'Clothing': 'University Centre',
-        'Other': 'McLennan Library'
-    };
-
     const handleInputChange = (field, value) => {
-        setFormData({ ...formData, [field]: value });
-
-        // Auto-suggest Safe Zone based on category
         if (field === 'category') {
-            setSuggestedSafeZone(safeZonesByCategory[value]);
+            // When category changes, auto-update Safe Zone to suggested one
+            setFormData({ ...formData, [field]: value, safeZone: suggestedZoneByCategory[value] });
+        } else {
+            setFormData({ ...formData, [field]: value });
         }
     };
 
@@ -47,16 +60,17 @@ export default function SellItem({ onBack }) {
     };
 
     const handleSubmit = () => {
-        // In real app, this would send to backend
-        alert(`Item listed! Safe Zone: ${suggestedSafeZone}`);
+        alert(`Item listed!\nCategory: ${formData.category}\nSafe Zone: ${formData.safeZone}`);
         onBack();
     };
+
+    const selectedZoneDetails = safeZones.find(z => z.name === formData.safeZone);
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
             {/* Header */}
             <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-                <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+                <div className="max-w-md lg:max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
                     <button
                         onClick={onBack}
                         className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -69,12 +83,11 @@ export default function SellItem({ onBack }) {
             </div>
 
             {/* Form */}
-            <div className="max-w-md mx-auto px-4 py-6 space-y-4">
+            <div className="max-w-md lg:max-w-2xl mx-auto px-4 py-6 space-y-4">
 
                 {/* Image Upload */}
                 <div className="bg-white rounded-lg p-4 shadow-sm">
                     <label className="block text-sm font-semibold text-gray-900 mb-3">Photos</label>
-
                     {formData.image ? (
                         <div className="relative">
                             <img
@@ -176,20 +189,35 @@ export default function SellItem({ onBack }) {
                     />
                 </div>
 
-                {/* Auto-Suggested Safe Zone - KEY FEATURE! */}
+                {/* Safe Zone Picker */}
                 <div className="bg-gradient-to-r from-unicycle-green/10 to-unicycle-blue/10 rounded-lg p-4 border-2 border-unicycle-green/30">
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-center gap-2 mb-3">
                         <div className="p-2 bg-unicycle-green rounded-lg">
                             <MapPin className="w-5 h-5 text-white" />
                         </div>
-                        <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 mb-1">Recommended Safe Zone</h3>
-                            <p className="text-sm font-medium text-gray-900 mb-1">{suggestedSafeZone}</p>
-                            <p className="text-xs text-gray-600">
-                                Based on your item category, we recommend this Safe Zone for meetups. You can discuss alternatives with the buyer.
-                            </p>
-                        </div>
+                        <h3 className="font-semibold text-gray-900">Pick Your Safe Zone</h3>
                     </div>
+
+                    <p className="text-xs text-gray-500 mb-3">
+                        We suggested <span className="font-semibold text-unicycle-green">{suggestedZoneByCategory[formData.category]}</span> based on your category. Feel free to change it!
+                    </p>
+
+                    <select
+                        value={formData.safeZone}
+                        onChange={(e) => handleInputChange('safeZone', e.target.value)}
+                        className="w-full px-3 py-2 border border-unicycle-green/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green bg-white"
+                    >
+                        {safeZones.map(zone => (
+                            <option key={zone.name} value={zone.name}>{zone.name} - {zone.details}</option>
+                        ))}
+                    </select>
+
+                    {selectedZoneDetails && (
+                        <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
+                            <MapPin className="w-4 h-4 text-unicycle-green" />
+                            <span>{selectedZoneDetails.name}, {selectedZoneDetails.details}</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Submit Button */}
