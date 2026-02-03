@@ -66,6 +66,7 @@ function App() {
           <Chat
             item={selectedItem}
             onBack={() => setCurrentPage('detail')}
+            user={user}
           />
         )}
 
@@ -74,7 +75,7 @@ function App() {
         )}
 
         {currentPage === 'profile' && (
-          <Profile />
+          <Profile user={user} />
         )}
 
         {currentPage === 'messages' && (
@@ -82,7 +83,7 @@ function App() {
         )}
 
         {currentPage === 'requests' && (
-          <Requests />
+          <Requests user={user} />
         )}
 
       </div>

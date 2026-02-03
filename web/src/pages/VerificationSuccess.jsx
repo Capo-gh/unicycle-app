@@ -24,7 +24,7 @@ export default function VerificationSuccess({ userData, onContinue }) {
                     </div>
 
                     {/* Success Message */}
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">You're Verified! 🎉</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome, {userData.name}! 🎉</h2>
                     <p className="text-gray-600 mb-6">
                         Welcome to {userData.university}'s trusted student marketplace
                     </p>

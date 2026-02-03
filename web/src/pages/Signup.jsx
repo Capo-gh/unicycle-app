@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShieldCheck, Mail, Building2 } from 'lucide-react';
+import { ShieldCheck, Mail, Building2, User } from 'lucide-react';
 import logo from '../assets/unicycle-logo.png';
 import VerificationSuccess from './VerificationSuccess';
 
@@ -7,6 +7,7 @@ export default function Signup({ onSignup }) {
     const [step, setStep] = useState(1); // 1 = signup form, 2 = verification success
     const [selectedUniversity, setSelectedUniversity] = useState('');
     const [email, setEmail] = useState('');
+    const [name, setName] = useState('');
     const [error, setError] = useState('');
 
     const universities = [
@@ -47,6 +48,11 @@ export default function Signup({ onSignup }) {
             return;
         }
 
+        if (!name.trim() || name.trim().length < 2) {
+            setError('Please enter your full name');
+            return;
+        }
+
         // Success! Show verification success screen
         setStep(2);
     };
@@ -55,8 +61,8 @@ export default function Signup({ onSignup }) {
     if (step === 2) {
         return (
             <VerificationSuccess
-                userData={{ email, university: selectedUniversity.name }}
-                onContinue={() => onSignup({ email, university: selectedUniversity.name })}
+                userData={{ email, university: selectedUniversity.name, name }}
+                onContinue={() => onSignup({ email, university: selectedUniversity.name, name })}
             />
         );
     }
@@ -140,6 +146,29 @@ export default function Signup({ onSignup }) {
                         )}
                     </div>
 
+                    {/* Name Input */}
+                    <div className="mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                            <User className="w-5 h-5 text-unicycle-blue" />
+                            <label className="text-sm font-semibold text-gray-900">Your Name</label>
+                        </div>
+
+                        <input
+                            type="text"
+                            value={name}
+                            onChange={(e) => {
+                                setName(e.target.value);
+                                setError('');
+                            }}
+                            disabled={!selectedUniversity}
+                            placeholder="e.g., Sarah Chen"
+                            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors ${selectedUniversity
+                                ? 'border-gray-200 focus:ring-2 focus:ring-unicycle-green focus:border-transparent bg-white'
+                                : 'border-gray-200 bg-gray-100 cursor-not-allowed'
+                                }`}
+                        />
+                    </div>
+
                     {/* Error Message */}
                     {error && (
                         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -163,7 +192,7 @@ export default function Signup({ onSignup }) {
                     {/* Continue Button */}
                     <button
                         onClick={handleEmailSubmit}
-                        disabled={!selectedUniversity || !email}
+                        disabled={!selectedUniversity || !email || !name.trim()}
                         className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                     >
                         Continue

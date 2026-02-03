@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Search, Plus, MessageCircle, Clock, TrendingUp, ArrowLeft, DollarSign, Send } from 'lucide-react';
 
-export default function Requests() {
+export default function Requests({ user }) {
     const [selectedFilter, setSelectedFilter] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [showPostForm, setShowPostForm] = useState(false);
@@ -82,7 +82,7 @@ export default function Requests() {
 
     // ─── POST FORM ───
     if (showPostForm) {
-        return <PostRequestForm onBack={() => setShowPostForm(false)} onAddRequest={(newRequest) => {
+        return <PostRequestForm user={user} onBack={() => setShowPostForm(false)} onAddRequest={(newRequest) => {
             setRequests([newRequest, ...requests]);
             setShowPostForm(false);
         }} />;
@@ -102,8 +102,8 @@ export default function Requests() {
     const handleAddReply = (requestId, replyText) => {
         const newReply = {
             id: Date.now(),
-            author: "You",
-            avatar: "Y",
+            author: user.name,
+            avatar: user.name.charAt(0).toUpperCase(),
             text: replyText,
             timeAgo: "Just now"
         };
@@ -124,10 +124,10 @@ export default function Requests() {
 
     // ─── MAIN VIEW ───
     return (
-        <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row pb-20 lg:pb-0">
+        <div className="w-full min-h-screen lg:h-screen flex flex-col lg:flex-row pb-20 lg:pb-0 overflow-x-hidden">
 
             {/* ─── LEFT: Requests List ─── */}
-            <div className={`${selectedRequest ? 'hidden lg:flex' : 'flex'} flex-col w-full lg:w-1/2 lg:border-r lg:border-gray-200 lg:overflow-y-auto`}>
+            <div className={`${selectedRequest ? 'hidden lg:flex' : 'flex'} flex-col w-full min-w-0 lg:w-1/2 lg:border-r lg:border-gray-200 lg:overflow-y-auto`}>
 
                 {/* Header */}
                 <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
@@ -193,7 +193,7 @@ export default function Requests() {
                 </div>
 
                 {/* Requests List */}
-                <div className="px-4 lg:px-6 pb-6 flex-1">
+                <div className="px-4 lg:px-6 pb-6 flex-1 min-w-0">
                     {filteredRequests.length === 0 ? (
                         <div className="text-center py-16">
                             <p className="text-gray-400 text-lg mb-2">
@@ -243,12 +243,13 @@ export default function Requests() {
             </div>
 
             {/* ─── RIGHT: Replies View ─── */}
-            <div className={`${selectedRequest ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-1/2 lg:h-screen`}>
+            <div className={`${selectedRequest ? 'flex' : 'hidden'} lg:flex flex-col w-full min-w-0 lg:w-1/2 lg:h-screen`}>
                 {selectedRequest ? (
                     <RequestReplies
                         request={selectedRequest}
                         onBack={() => setSelectedRequest(null)}
                         onAddReply={(text) => handleAddReply(selectedRequest.id, text)}
+                        user={user}
                     />
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center bg-gray-50">
@@ -263,7 +264,7 @@ export default function Requests() {
 }
 
 // ─── REQUEST REPLIES ───
-function RequestReplies({ request, onBack, onAddReply }) {
+function RequestReplies({ request, onBack, onAddReply, user }) {
     const [replyText, setReplyText] = useState('');
 
     const handleSend = () => {
@@ -313,21 +314,21 @@ function RequestReplies({ request, onBack, onAddReply }) {
             <div className="flex-1 overflow-y-auto bg-gray-50 pb-28 lg:pb-0">
                 <div className="px-4 py-4 space-y-4">
                     {request.replies.map((reply) => (
-                        <div key={reply.id} className={`flex gap-3 ${reply.author === 'You' ? 'flex-row-reverse' : ''}`}>
+                        <div key={reply.id} className={`flex gap-3 ${reply.author === user.name ? 'flex-row-reverse' : ''}`}>
                             {/* Avatar */}
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 ${reply.author === 'You'
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 ${reply.author === user.name
                                 ? 'bg-gradient-to-br from-unicycle-green to-unicycle-blue'
                                 : 'bg-gradient-to-br from-unicycle-blue to-unicycle-green'
                                 }`}>
                                 {reply.avatar}
                             </div>
                             {/* Bubble */}
-                            <div className={`max-w-[75%] flex flex-col ${reply.author === 'You' ? 'items-end' : 'items-start'}`}>
-                                <div className={`flex items-center gap-2 mb-1 ${reply.author === 'You' ? 'flex-row-reverse' : ''}`}>
+                            <div className={`max-w-[75%] flex flex-col ${reply.author === user.name ? 'items-end' : 'items-start'}`}>
+                                <div className={`flex items-center gap-2 mb-1 ${reply.author === user.name ? 'flex-row-reverse' : ''}`}>
                                     <span className="text-xs font-semibold text-gray-900">{reply.author}</span>
                                     <span className="text-xs text-gray-400">{reply.timeAgo}</span>
                                 </div>
-                                <div className={`px-3 py-2 rounded-lg text-sm ${reply.author === 'You'
+                                <div className={`px-3 py-2 rounded-lg text-sm ${reply.author === user.name
                                     ? 'bg-unicycle-green text-white rounded-tr-sm'
                                     : 'bg-white border border-gray-200 text-gray-900 rounded-tl-sm'
                                     }`}>
@@ -364,7 +365,7 @@ function RequestReplies({ request, onBack, onAddReply }) {
 }
 
 // ─── POST REQUEST FORM ───
-function PostRequestForm({ onBack, onAddRequest }) {
+function PostRequestForm({ onBack, onAddRequest, user }) {
     const categories = ['Furniture', 'Textbooks', 'Electronics', 'Appliances', 'Clothing', 'Sports & Outdoors', 'Kitchen', 'Room Decor', 'Other'];
 
     const [formData, setFormData] = useState({
@@ -387,7 +388,7 @@ function PostRequestForm({ onBack, onAddRequest }) {
             id: Date.now(),
             title: formData.title,
             description: formData.description,
-            author: "You",
+            author: user.name,
             timeAgo: "Just now",
             category: formData.category,
             urgent: formData.urgent,

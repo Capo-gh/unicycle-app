@@ -1,7 +1,7 @@
 import { ArrowLeft, MapPin, Send, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 
-export default function Chat({ item, onBack }) {
+export default function Chat({ item, onBack, user }) {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([
         {
@@ -191,7 +191,7 @@ export default function Chat({ item, onBack }) {
                                             <p className="text-xs text-white/70 mt-1">{msg.timestamp}</p>
                                         </div>
                                         <div className="w-8 h-8 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
-                                            You
+                                            {user.name.charAt(0)}
                                         </div>
                                     </div>
                                 ) : (

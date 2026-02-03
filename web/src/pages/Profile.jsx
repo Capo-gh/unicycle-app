@@ -1,13 +1,12 @@
 import { Settings, ShieldCheck, Package, Star } from 'lucide-react';
 
-export default function Profile() {
+export default function Profile({ user: signupUser }) {
     const user = {
-        name: "Ibrahim Sabiku",
-        email: "ibrahim.sabiku@mail.mcgill.ca",
+        name: signupUser.name,
+        email: signupUser.email,
+        university: signupUser.university,
         verified: true,
-        year: "3rd Year",
-        faculty: "Agriculture & Environmental Sciences",
-        memberSince: "September 2024",
+        memberSince: "February 2025",
         rating: 4.8,
         totalReviews: 15,
         itemsSold: 8,
@@ -56,7 +55,7 @@ export default function Profile() {
                                 <h2 className="text-xl lg:text-2xl font-bold">{user.name}</h2>
                                 {user.verified && <ShieldCheck className="w-5 h-5" />}
                             </div>
-                            <p className="text-sm text-white/80">{user.year} • {user.faculty}</p>
+                            <p className="text-sm text-white/80">{user.university}</p>
                             <p className="text-xs text-white/60 mt-1">Member since {user.memberSince}</p>
                         </div>
                     </div>
@@ -97,7 +96,7 @@ export default function Profile() {
                                 <ShieldCheck className="w-6 h-6 text-white" />
                             </div>
                             <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900">Verified McGill Student</h3>
+                                <h3 className="font-semibold text-gray-900">Verified {user.university} Student</h3>
                                 <p className="text-sm text-gray-600">{user.email}</p>
                             </div>
                         </div>

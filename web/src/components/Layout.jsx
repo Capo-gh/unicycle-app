@@ -39,8 +39,8 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                             key={item.id}
                             onClick={() => onNavigate(item.id)}
                             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeNav === item.id
-                                    ? 'bg-unicycle-green text-white'
-                                    : 'text-gray-700 hover:bg-gray-100'
+                                ? 'bg-unicycle-green text-white'
+                                : 'text-gray-700 hover:bg-gray-100'
                                 }`}
                         >
                             <div className="relative">
@@ -62,7 +62,7 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
             </aside>
 
             {/* ─── MAIN CONTENT ─── */}
-            <main className="flex-1 lg:ml-64 min-h-screen pb-20 lg:pb-0">
+            <main className="flex-1 lg:ml-64 min-h-screen pb-20 lg:pb-0 min-w-0 overflow-x-hidden">
                 {children}
             </main>
 
@@ -74,8 +74,8 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                             key={item.id}
                             onClick={() => onNavigate(item.id)}
                             className={`flex flex-col items-center gap-1 ${activeNav === item.id
-                                    ? 'text-unicycle-green'
-                                    : 'text-gray-400 hover:text-gray-600'
+                                ? 'text-unicycle-green'
+                                : 'text-gray-400 hover:text-gray-600'
                                 }`}
                         >
                             <div className="relative">
