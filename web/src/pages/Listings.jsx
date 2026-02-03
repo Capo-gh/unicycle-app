@@ -5,6 +5,7 @@ import MarketplacePicker from '../components/MarketplacePicker';
 
 export default function Listings({ onItemClick, onNavigate, currentMarketplace, onMarketplaceChange }) {
     const [selectedCategory, setSelectedCategory] = useState('All');
+    const [searchQuery, setSearchQuery] = useState('');
 
     const categories = ['All', 'Furniture', 'Textbooks', 'Electronics', 'Appliances', 'Clothing', 'Sports & Outdoors', 'Kitchen', 'Room Decor', 'Other'];
 
@@ -192,9 +193,15 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
         },
     ];
 
-    const filteredListings = selectedCategory === 'All'
-        ? listings
-        : listings.filter(item => item.category === selectedCategory);
+    const filteredListings = listings.filter(item => {
+        const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
+        const matchesSearch = searchQuery === '' ||
+            item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.seller.name.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesCategory && matchesSearch;
+    });
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -228,6 +235,8 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <input
                             type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search furniture, books, electronics..."
                             className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
                         />
@@ -241,6 +250,8 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                             <input
                                 type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search furniture, books, electronics..."
                                 className="w-full pl-12 pr-4 py-3 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
                             />
@@ -258,8 +269,8 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                                 key={cat}
                                 onClick={() => setSelectedCategory(cat)}
                                 className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === cat
-                                        ? 'bg-unicycle-green text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    ? 'bg-unicycle-green text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     }`}
                             >
                                 {cat}
