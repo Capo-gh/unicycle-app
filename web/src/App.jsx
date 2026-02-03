@@ -13,9 +13,11 @@ function App() {
   const [currentPage, setCurrentPage] = useState('signup');
   const [selectedItem, setSelectedItem] = useState(null);
   const [user, setUser] = useState(null);
+  const [currentMarketplace, setCurrentMarketplace] = useState('');
 
   const handleSignup = (userData) => {
     setUser(userData);
+    setCurrentMarketplace(userData.university);
     setCurrentPage('listings');
   };
 
@@ -26,7 +28,7 @@ function App() {
     }
   };
 
-  // ─── Signup is standalone (no Layout) ───
+  // Signup is standalone (no Layout)
   if (currentPage === 'signup') {
     return (
       <div className="animate-fadeIn">
@@ -35,9 +37,9 @@ function App() {
     );
   }
 
-  // ─── Everything else wraps in Layout ───
+  // Everything else wraps in Layout
   return (
-    <Layout currentPage={currentPage} onNavigate={handleNavigate}>
+    <Layout currentPage={currentPage} onNavigate={handleNavigate} currentMarketplace={currentMarketplace} onMarketplaceChange={setCurrentMarketplace}>
       <div key={currentPage} className="animate-fadeIn">
 
         {currentPage === 'listings' && (
@@ -47,6 +49,8 @@ function App() {
               setCurrentPage('detail');
             }}
             onNavigate={handleNavigate}
+            currentMarketplace={currentMarketplace}
+            onMarketplaceChange={setCurrentMarketplace}
           />
         )}
 
@@ -70,24 +74,15 @@ function App() {
         )}
 
         {currentPage === 'profile' && (
-          <Profile
-            onBack={() => setCurrentPage('listings')}
-            onBrowseClick={() => setCurrentPage('listings')}
-            onRequestsClick={() => setCurrentPage('requests')}
-            onSellClick={() => setCurrentPage('sell')}
-          />
+          <Profile />
         )}
 
         {currentPage === 'messages' && (
-          <Messages onBack={() => setCurrentPage('listings')} />
+          <Messages />
         )}
 
         {currentPage === 'requests' && (
-          <Requests
-            onSellClick={() => setCurrentPage('sell')}
-            onBrowseClick={() => setCurrentPage('listings')}
-            onProfileClick={() => setCurrentPage('profile')}
-          />
+          <Requests />
         )}
 
       </div>

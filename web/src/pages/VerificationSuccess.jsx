@@ -26,14 +26,14 @@ export default function VerificationSuccess({ userData, onContinue }) {
                     {/* Success Message */}
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">You're Verified! 🎉</h2>
                     <p className="text-gray-600 mb-6">
-                        Welcome to McGill's trusted student marketplace
+                        Welcome to {userData.university}'s trusted student marketplace
                     </p>
 
                     {/* Verification Details */}
                     <div className="bg-gradient-to-r from-unicycle-blue/10 to-unicycle-green/10 rounded-lg p-4 mb-6 border-2 border-unicycle-green/30">
                         <div className="flex items-center justify-center gap-2 mb-2">
                             <ShieldCheck className="w-5 h-5 text-unicycle-blue" />
-                            <span className="font-semibold text-gray-900">Verified McGill Student</span>
+                            <span className="font-semibold text-gray-900">Verified {userData.university} Student</span>
                         </div>
                         <p className="text-sm text-gray-700">{userData.email}</p>
                         <p className="text-xs text-gray-600 mt-1">{userData.university}</p>
@@ -92,7 +92,7 @@ export default function VerificationSuccess({ userData, onContinue }) {
                 <div className="mt-6 text-center">
                     <div className="inline-flex items-center gap-2 text-sm text-gray-600">
                         <ShieldCheck className="w-4 h-4 text-unicycle-blue" />
-                        <span>Part of McGill's trusted student community</span>
+                        <span>Part of {userData.university}'s trusted student community</span>
                     </div>
                 </div>
             </div>

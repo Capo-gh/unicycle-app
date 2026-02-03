@@ -1,7 +1,8 @@
 import { Search, ClipboardList, MessageCircle, User } from 'lucide-react';
 import icon from '../assets/unicycle-icon.png';
+import MarketplacePicker from './MarketplacePicker';
 
-export default function Layout({ currentPage, onNavigate, children }) {
+export default function Layout({ currentPage, onNavigate, currentMarketplace, onMarketplaceChange, children }) {
     const navItems = [
         { id: 'listings', label: 'Browse', Icon: Search },
         { id: 'requests', label: 'Requests', Icon: ClipboardList },
@@ -10,7 +11,7 @@ export default function Layout({ currentPage, onNavigate, children }) {
         { id: 'profile', label: 'Profile', Icon: User },
     ];
 
-    // detail and chat are sub-pages of listings, so highlight Browse
+    // detail and chat are sub-pages, so highlight Browse
     const getActiveNav = () => {
         if (currentPage === 'detail' || currentPage === 'chat') return 'listings';
         return currentPage;
@@ -20,30 +21,15 @@ export default function Layout({ currentPage, onNavigate, children }) {
     return (
         <div className="flex min-h-screen bg-gray-50">
 
-            {/* ─── SIDEBAR (Desktop only: lg+ screens) ─── */}
+            {/* ─── SIDEBAR (Desktop only) ─── */}
             <aside className="hidden lg:flex lg:w-64 bg-white border-r border-gray-200 flex-col fixed h-full z-20">
-                {/* Logo + Marketplace Switcher */}
+                {/* Logo + Marketplace Picker */}
                 <div className="p-6 border-b border-gray-200">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 mb-3">
                         <img src={icon} alt="UniCycle" className="w-10 h-10 object-contain" />
-                        <div>
-                            <h1 className="text-xl font-bold text-gray-900">UniCycle</h1>
-                            <select
-                                className="text-xs text-gray-500 bg-transparent border-none focus:outline-none cursor-pointer hover:text-unicycle-blue"
-                                onChange={(e) => {
-                                    if (e.target.value !== 'mcgill') {
-                                        alert(`Switching to ${e.target.value} marketplace...`);
-                                    }
-                                }}
-                            >
-                                <option value="mcgill">McGill Marketplace</option>
-                                <option value="concordia">Concordia Marketplace</option>
-                                <option value="udem">UdeM Marketplace</option>
-                                <option value="uqam">UQAM Marketplace</option>
-                                <option value="ets">ÉTS Marketplace</option>
-                            </select>
-                        </div>
+                        <h1 className="text-xl font-bold text-gray-900">UniCycle</h1>
                     </div>
+                    <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} />
                 </div>
 
                 {/* Nav Items */}
@@ -80,7 +66,7 @@ export default function Layout({ currentPage, onNavigate, children }) {
                 {children}
             </main>
 
-            {/* ─── BOTTOM NAV (Mobile only: hidden on lg+) ─── */}
+            {/* ─── BOTTOM NAV (Mobile only) ─── */}
             <nav className="fixed bottom-0 left-0 right-0 lg:hidden bg-white border-t border-gray-200 shadow-lg z-10">
                 <div className="max-w-md mx-auto px-4 py-3 flex justify-around">
                     {navItems.map((item) => (

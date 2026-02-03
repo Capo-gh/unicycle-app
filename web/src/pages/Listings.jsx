@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Search, MapPin, ShieldCheck, MessageCircle } from 'lucide-react';
 import icon from '../assets/unicycle-icon.png';
+import MarketplacePicker from '../components/MarketplacePicker';
 
-export default function Listings({ onItemClick, onNavigate }) {
+export default function Listings({ onItemClick, onNavigate, currentMarketplace, onMarketplaceChange }) {
     const [selectedCategory, setSelectedCategory] = useState('All');
 
     const categories = ['All', 'Furniture', 'Textbooks', 'Electronics', 'Appliances', 'Clothing', 'Sports & Outdoors', 'Kitchen', 'Room Decor', 'Other'];
@@ -109,7 +110,7 @@ export default function Listings({ onItemClick, onNavigate }) {
             ],
             description: "Standard white lab coat, size medium. Freshly washed. Required for CHEM labs. Only used for one semester.",
             seller: { name: "Lisa Wong", verified: true, year: "2nd Year", faculty: "Science", rating: 4.9, reviews: 11 },
-            safeZone: "Otto Maass Building",
+            safeZone: "Otto Maass Chemistry",
             safeZoneAddress: "801 Sherbrooke St W, Main Entrance",
             category: "Clothing",
             condition: "Like New",
@@ -201,37 +202,22 @@ export default function Listings({ onItemClick, onNavigate }) {
             {/* ─── HEADER ─── */}
             <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
 
-                {/* Mobile Header (hidden on desktop) */}
+                {/* Mobile Header */}
                 <div className="lg:hidden max-w-md mx-auto px-4 py-4">
                     <div className="flex items-center gap-3 mb-3">
-                        <div className="flex items-center gap-3 flex-1">
-                            <img
-                                src={icon}
-                                alt="UniCycle"
-                                className="w-10 h-10 object-contain"
-                            />
-                            <div className="flex-1">
-                                <h1 className="text-xl font-bold text-gray-900">UniCycle</h1>
-                                <select
-                                    className="text-xs text-gray-600 bg-transparent border-none focus:outline-none cursor-pointer hover:text-unicycle-blue"
-                                    onChange={(e) => {
-                                        if (e.target.value !== 'mcgill') {
-                                            alert(`Switching to ${e.target.value} marketplace...`);
-                                        }
-                                    }}
-                                >
-                                    <option value="mcgill">McGill Marketplace</option>
-                                    <option value="concordia">Concordia Marketplace</option>
-                                    <option value="udem">UdeM Marketplace</option>
-                                    <option value="uqam">UQAM Marketplace</option>
-                                    <option value="ets">ÉTS Marketplace</option>
-                                </select>
-                            </div>
+                        <img
+                            src={icon}
+                            alt="UniCycle"
+                            className="w-10 h-10 object-contain"
+                        />
+                        <div className="flex-1 min-w-0">
+                            <h1 className="text-xl font-bold text-gray-900">UniCycle</h1>
+                            <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} compact={true} />
                         </div>
-                        {/* Messages Icon - mobile only */}
+                        {/* Messages Icon */}
                         <button
                             onClick={() => onNavigate('messages')}
-                            className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            className="relative p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
                         >
                             <MessageCircle className="w-6 h-6 text-gray-700" />
                             <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
@@ -248,7 +234,7 @@ export default function Listings({ onItemClick, onNavigate }) {
                     </div>
                 </div>
 
-                {/* Desktop Header (hidden on mobile) */}
+                {/* Desktop Header */}
                 <div className="hidden lg:flex items-center px-6 py-4">
                     <div className="flex-1 max-w-2xl">
                         <div className="relative">
@@ -272,8 +258,8 @@ export default function Listings({ onItemClick, onNavigate }) {
                                 key={cat}
                                 onClick={() => setSelectedCategory(cat)}
                                 className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === cat
-                                    ? 'bg-unicycle-green text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        ? 'bg-unicycle-green text-white'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     }`}
                             >
                                 {cat}
@@ -334,8 +320,6 @@ export default function Listings({ onItemClick, onNavigate }) {
                     ))}
                 </div>
             </div>
-
-            {/* ─── NO BOTTOM NAV HERE — Layout.jsx handles it ─── */}
         </div>
     );
 }
