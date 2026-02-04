@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { ShieldCheck, Mail, Building2, User } from 'lucide-react';
 import logo from '../assets/unicycle-logo.png';
 import VerificationSuccess from './VerificationSuccess';
+import { signup } from '../api/auth';
 
 export default function Signup({ onSignup }) {
-    const [step, setStep] = useState(1); // 1 = signup form, 2 = verification success
+    const [step, setStep] = useState(1);
     const [selectedUniversity, setSelectedUniversity] = useState('');
     const [email, setEmail] = useState('');
     const [name, setName] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const universities = [
         { name: 'McGill University', domain: '@mail.mcgill.ca' },
@@ -25,12 +27,12 @@ export default function Signup({ onSignup }) {
         const uni = universities.find(u => u.name === e.target.value);
         if (uni) {
             setSelectedUniversity(uni);
-            setEmail(''); // Clear email when switching universities
+            setEmail('');
             setError('');
         }
     };
 
-    const handleEmailSubmit = () => {
+    const handleEmailSubmit = async () => {
         if (!selectedUniversity) {
             setError('Please select your university');
             return;
@@ -53,11 +55,31 @@ export default function Signup({ onSignup }) {
             return;
         }
 
-        // Success! Show verification success screen
-        setStep(2);
+        // Call backend API
+        setLoading(true);
+        setError('');
+
+        try {
+            const userData = await signup({
+                email: email,
+                name: name,
+                university: selectedUniversity.name
+            });
+
+            console.log('Signup successful:', userData);
+            setStep(2);
+        } catch (err) {
+            console.error('Signup error:', err);
+            if (err.response?.data?.detail) {
+                setError(err.response.data.detail);
+            } else {
+                setError('Signup failed. Please try again.');
+            }
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // Step 2: Verification Success
     if (step === 2) {
         return (
             <VerificationSuccess
@@ -70,20 +92,14 @@ export default function Signup({ onSignup }) {
     return (
         <div className="min-h-screen bg-gradient-to-br from-unicycle-blue/10 to-unicycle-green/10 flex items-center justify-center px-4">
             <div className="max-w-md w-full">
-                {/* Logo */}
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center gap-3 mb-4">
-                        <img
-                            src={logo}
-                            alt="UniCycle"
-                            className="h-16 w-auto"
-                        />
+                        <img src={logo} alt="UniCycle" className="h-16 w-auto" />
                     </div>
                     <h1 className="text-3xl font-bold text-gray-900">Welcome to UniCycle</h1>
                     <p className="text-gray-600 mt-2">The trusted student marketplace</p>
                 </div>
 
-                {/* Single Step Form */}
                 <div className="bg-white rounded-2xl shadow-xl p-6 animate-fadeIn">
                     {/* University Selection */}
                     <div className="mb-6">
@@ -91,7 +107,6 @@ export default function Signup({ onSignup }) {
                             <Building2 className="w-5 h-5 text-unicycle-blue" />
                             <label className="text-sm font-semibold text-gray-900">Select Your University</label>
                         </div>
-
                         <select
                             value={selectedUniversity.name || ''}
                             onChange={handleUniversitySelect}
@@ -104,8 +119,6 @@ export default function Signup({ onSignup }) {
                                 </option>
                             ))}
                         </select>
-
-                        {/* Show selected domain */}
                         {selectedUniversity && (
                             <p className="text-xs text-gray-500 mt-2">
                                 Email domain: {selectedUniversity.domain}
@@ -113,13 +126,12 @@ export default function Signup({ onSignup }) {
                         )}
                     </div>
 
-                    {/* Email Input - Only enabled after university selection */}
+                    {/* Email Input */}
                     <div className="mb-6">
                         <div className="flex items-center gap-2 mb-3">
                             <Mail className="w-5 h-5 text-unicycle-blue" />
                             <label className="text-sm font-semibold text-gray-900">Your University Email</label>
                         </div>
-
                         <input
                             type="email"
                             value={email}
@@ -128,20 +140,15 @@ export default function Signup({ onSignup }) {
                                 setError('');
                             }}
                             disabled={!selectedUniversity}
-                            placeholder={
-                                selectedUniversity
-                                    ? `your.name${selectedUniversity.domain}`
-                                    : 'Select university first'
-                            }
+                            placeholder={selectedUniversity ? `your.name${selectedUniversity.domain}` : 'Select university first'}
                             className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors ${selectedUniversity
                                 ? 'border-gray-200 focus:ring-2 focus:ring-unicycle-green focus:border-transparent bg-white'
                                 : 'border-gray-200 bg-gray-100 cursor-not-allowed'
                                 }`}
                         />
-
                         {selectedUniversity && (
                             <p className="text-xs text-gray-500 mt-2">
-                                We'll send a verification link to your email
+                                We'll verify your student status
                             </p>
                         )}
                     </div>
@@ -152,7 +159,6 @@ export default function Signup({ onSignup }) {
                             <User className="w-5 h-5 text-unicycle-blue" />
                             <label className="text-sm font-semibold text-gray-900">Your Name</label>
                         </div>
-
                         <input
                             type="text"
                             value={name}
@@ -176,7 +182,7 @@ export default function Signup({ onSignup }) {
                         </div>
                     )}
 
-                    {/* University Badge - Shows after selection */}
+                    {/* University Badge */}
                     {selectedUniversity && (
                         <div className="bg-unicycle-blue/10 rounded-lg p-3 mb-6 border border-unicycle-blue/30">
                             <div className="flex items-center gap-2">
@@ -192,14 +198,13 @@ export default function Signup({ onSignup }) {
                     {/* Continue Button */}
                     <button
                         onClick={handleEmailSubmit}
-                        disabled={!selectedUniversity || !email || !name.trim()}
+                        disabled={!selectedUniversity || !email || !name.trim() || loading}
                         className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                     >
-                        Continue
+                        {loading ? 'Creating account...' : 'Continue'}
                     </button>
                 </div>
 
-                {/* Trust Badge */}
                 <div className="mt-6 text-center">
                     <div className="inline-flex items-center gap-2 text-sm text-gray-600">
                         <ShieldCheck className="w-4 h-4 text-unicycle-blue" />
