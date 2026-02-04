@@ -6,7 +6,6 @@ import SellItem from './pages/SellItem';
 import Profile from './pages/Profile';
 import Messages from './pages/Messages';
 import Requests from './pages/Requests';
-import Chat from './pages/Chat';
 import Signup from './pages/Signup';
 
 function App() {
@@ -23,7 +22,7 @@ function App() {
 
   const handleNavigate = (page) => {
     setCurrentPage(page);
-    if (page !== 'detail' && page !== 'chat') {
+    if (page !== 'detail') {
       setSelectedItem(null);
     }
   };
@@ -58,15 +57,9 @@ function App() {
           <ItemDetail
             item={selectedItem}
             onBack={() => setCurrentPage('listings')}
-            onContactSeller={() => setCurrentPage('chat')}
-          />
-        )}
-
-        {currentPage === 'chat' && (
-          <Chat
-            item={selectedItem}
-            onBack={() => setCurrentPage('detail')}
-            user={user}
+            onContactSeller={() => {
+              setCurrentPage('messages');
+            }}
           />
         )}
 
@@ -79,7 +72,14 @@ function App() {
         )}
 
         {currentPage === 'messages' && (
-          <Messages />
+          <Messages
+            user={user}
+            incomingRequest={selectedItem ? {
+              sellerName: selectedItem.seller?.name,
+              itemTitle: selectedItem.title,
+              itemPrice: selectedItem.price
+            } : null}
+          />
         )}
 
         {currentPage === 'requests' && (
