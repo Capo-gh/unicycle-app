@@ -1,15 +1,16 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+// Use environment variable for API URL, fallback to localhost for development
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const apiClient = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-// Add token to requests if it exists
+// Add auth token to requests
 apiClient.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -17,5 +18,20 @@ apiClient.interceptors.request.use((config) => {
     }
     return config;
 });
+
+// Handle auth errors
+apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Token expired or invalid
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            // Optionally redirect to login
+            // window.location.href = '/';
+        }
+        return Promise.reject(error);
+    }
+);
 
 export default apiClient;
