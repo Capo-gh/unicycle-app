@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, MessageCircle, Clock, TrendingUp, ArrowLeft, DollarSign, Send, Trash2 } from 'lucide-react';
+import { Search, Plus, MessageCircle, Clock, TrendingUp, ArrowLeft, DollarSign, Send, Trash2, X } from 'lucide-react';
 import { getAllRequests, getRequest, createRequest, createReply, deleteRequest, deleteReply } from '../api/requests';
 
 export default function Requests({ user }) {
@@ -48,7 +48,6 @@ export default function Requests({ user }) {
 
     // Handle adding a new request
     const handleAddRequest = async (newRequest) => {
-        // Refresh the list
         await fetchRequests();
         setShowPostForm(false);
     };
@@ -88,6 +87,30 @@ export default function Requests({ user }) {
         } catch (err) {
             console.error('Error deleting request:', err);
             alert('Failed to delete request');
+        }
+    };
+
+    // Handle deleting a reply
+    const handleDeleteReply = async (requestId, replyId) => {
+        try {
+            await deleteReply(requestId, replyId);
+
+            // Update the selected request
+            setSelectedRequest(prev => ({
+                ...prev,
+                replies: prev.replies.filter(r => r.id !== replyId)
+            }));
+
+            // Update reply count in list
+            setRequests(prev => prev.map(req => {
+                if (req.id === requestId) {
+                    return { ...req, reply_count: Math.max((req.reply_count || 1) - 1, 0) };
+                }
+                return req;
+            }));
+        } catch (err) {
+            console.error('Error deleting reply:', err);
+            alert('Failed to delete reply');
         }
     };
 
@@ -209,17 +232,13 @@ export default function Requests({ user }) {
                             <button
                                 key={request.id}
                                 onClick={() => handleSelectRequest(request.id)}
-                                className={`w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${selectedRequest?.id === request.id ? 'bg-unicycle-green/10' : ''
-                                    }`}
+                                className={`w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${selectedRequest?.id === request.id ? 'bg-unicycle-green/10' : ''}`}
                             >
                                 <div className="flex items-start gap-3">
-                                    {/* Avatar */}
                                     <div className="w-10 h-10 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
                                         {request.author?.name?.charAt(0) || '?'}
                                     </div>
-
                                     <div className="flex-1 min-w-0">
-                                        {/* Tags */}
                                         <div className="flex flex-wrap items-center gap-1.5 mb-1">
                                             {request.urgent && (
                                                 <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">
@@ -230,18 +249,12 @@ export default function Requests({ user }) {
                                                 {request.category}
                                             </span>
                                         </div>
-
-                                        {/* Title */}
                                         <h3 className="font-semibold text-gray-900 text-sm mb-1 truncate">
                                             {request.title}
                                         </h3>
-
-                                        {/* Description */}
                                         <p className="text-xs text-gray-600 line-clamp-2 mb-2">
                                             {request.description}
                                         </p>
-
-                                        {/* Meta */}
                                         <div className="flex items-center gap-3 text-xs text-gray-500">
                                             <span>{request.author?.name}</span>
                                             <span>•</span>
@@ -272,6 +285,7 @@ export default function Requests({ user }) {
                         onBack={() => setSelectedRequest(null)}
                         onAddReply={handleAddReply}
                         onDelete={handleDeleteRequest}
+                        onDeleteReply={handleDeleteReply}
                         formatTimeAgo={formatTimeAgo}
                     />
                 ) : (
@@ -290,7 +304,7 @@ export default function Requests({ user }) {
 // ═══════════════════════════════════════════════════════════════════
 // REQUEST DETAIL COMPONENT
 // ═══════════════════════════════════════════════════════════════════
-function RequestDetail({ request, user, onBack, onAddReply, onDelete, formatTimeAgo }) {
+function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteReply, formatTimeAgo }) {
     const [replyText, setReplyText] = useState('');
     const [sending, setSending] = useState(false);
 
@@ -307,6 +321,11 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, formatTime
     };
 
     const isOwner = user?.id === request.author_id || user?.email === request.author?.email;
+
+    // Check if user can delete a reply (own reply or request owner)
+    const canDeleteReply = (reply) => {
+        return user?.id === reply.author_id || isOwner;
+    };
 
     return (
         <div className="flex flex-col h-full">
@@ -381,7 +400,7 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, formatTime
 
                     <div className="space-y-3">
                         {request.replies?.map((reply) => (
-                            <div key={reply.id} className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                            <div key={reply.id} className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 group">
                                 <div className="flex items-start gap-3">
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${reply.author_id === request.author_id
                                         ? 'bg-gradient-to-br from-unicycle-blue to-unicycle-green'
@@ -405,6 +424,21 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, formatTime
                                         </div>
                                         <p className="text-sm text-gray-700">{reply.text}</p>
                                     </div>
+
+                                    {/* Delete reply button */}
+                                    {canDeleteReply(reply) && (
+                                        <button
+                                            onClick={() => {
+                                                if (confirm('Delete this reply?')) {
+                                                    onDeleteReply(request.id, reply.id);
+                                                }
+                                            }}
+                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="Delete reply"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))}

@@ -9,13 +9,21 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
         if (item.price >= 50) {
             setShowSecurePayModal(true);
         } else {
-            onContactSeller();
+            // Pass listing ID and a default message
+            onContactSeller({
+                listingId: item.id,
+                initialMessage: `Hi! Is "${item.title}" still available?`
+            });
         }
     };
 
     const handleSecurePayProceed = () => {
         setShowSecurePayModal(false);
-        onContactSeller();
+        // Pass listing ID and a default message
+        onContactSeller({
+            listingId: item.id,
+            initialMessage: `Hi! I'm interested in "${item.title}" ($${item.price}). Is it still available?`
+        });
     };
 
     if (!item) {
@@ -52,12 +60,12 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                 <div className="lg:flex-1">
                     <div className="relative h-80 lg:h-auto lg:aspect-square lg:rounded-xl overflow-hidden">
                         <img
-                            src={item.images[0]}
+                            src={item.images?.[0] || 'https://via.placeholder.com/400'}
                             alt={item.title}
                             className="w-full h-full object-cover"
                         />
                         <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
-                            1 / {item.images.length}
+                            1 / {item.images?.length || 1}
                         </div>
                     </div>
                 </div>
@@ -75,7 +83,7 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                                     <span>•</span>
                                     <span>{item.condition}</span>
                                     <span>•</span>
-                                    <span>{item.posted}</span>
+                                    <span>{item.posted || 'Recently'}</span>
                                 </div>
                             </div>
                             <div className="text-3xl font-bold text-unicycle-green">${item.price}</div>
@@ -86,26 +94,25 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                     <div className="bg-white rounded-lg p-4 shadow-sm">
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="font-semibold text-gray-900">Seller</h3>
-                            {/* TODO: Add ratings later */}
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="w-12 h-12 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold text-lg">
-                                {item.seller.name.charAt(0)}
+                                {item.seller?.name?.charAt(0) || '?'}
                             </div>
                             <div className="flex-1">
                                 <div className="flex items-center gap-2">
-                                    <span className="font-medium text-gray-900">{item.seller.name}</span>
-                                    {item.seller.is_verified && (
+                                    <span className="font-medium text-gray-900">{item.seller?.name || 'Unknown'}</span>
+                                    {item.seller?.is_verified && (
                                         <ShieldCheck className="w-4 h-4 text-unicycle-blue" />
                                     )}
                                 </div>
-                                <p className="text-sm text-gray-600">{item.seller.university}</p>
+                                <p className="text-sm text-gray-600">{item.seller?.university || ''}</p>
                             </div>
                         </div>
                         <div className="mt-3 pt-3 border-t border-gray-200">
                             <div className="flex items-center gap-2 text-sm">
                                 <ShieldCheck className="w-4 h-4 text-unicycle-blue" />
-                                <span className="text-gray-700">Verified {item.seller.university} Student</span>
+                                <span className="text-gray-700">Verified Student</span>
                             </div>
                         </div>
                     </div>
@@ -124,14 +131,14 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                             </div>
                             <div className="flex-1">
                                 <h3 className="font-semibold text-gray-900 mb-1">Recommended Safe Zone</h3>
-                                <p className="text-sm font-medium text-gray-900">{item.safeZone}</p>
-                                <p className="text-xs text-gray-600 mt-1">{item.safeZoneAddress}</p>
+                                <p className="text-sm font-medium text-gray-900">{item.safeZone || item.safe_zone}</p>
+                                <p className="text-xs text-gray-600 mt-1">{item.safeZoneAddress || item.safe_zone_address}</p>
                                 <p className="text-xs text-gray-500 mt-2">
                                     ✓ Well-lit public area • Security cameras • Student traffic
                                 </p>
                                 <button
                                     onClick={() => {
-                                        const address = encodeURIComponent(`${item.safeZone}, ${item.safeZoneAddress}, Montreal, QC`);
+                                        const address = encodeURIComponent(`${item.safeZone || item.safe_zone}, ${item.safeZoneAddress || item.safe_zone_address}, Montreal, QC`);
                                         window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
                                     }}
                                     className="mt-3 w-full px-4 py-2 bg-unicycle-blue text-white rounded-lg text-sm font-semibold hover:bg-unicycle-blue/90 transition-colors flex items-center justify-center gap-2"
@@ -160,7 +167,7 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                         </div>
                     )}
 
-                    {/* ─── Contact Seller — Desktop (inside details column) ─── */}
+                    {/* ─── Contact Seller – Desktop ─── */}
                     <button
                         onClick={handleContactSeller}
                         className="hidden lg:flex w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors items-center justify-center gap-2"
@@ -171,7 +178,7 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                 </div>
             </div>
 
-            {/* ─── Contact Seller — Mobile fixed bottom (hidden on desktop) ─── */}
+            {/* ─── Contact Seller – Mobile ─── */}
             <div className="lg:hidden fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20">
                 <div className="max-w-md mx-auto px-4 py-3">
                     <button

@@ -15,6 +15,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState('loading');
   const [selectedItem, setSelectedItem] = useState(null);
   const [editingListing, setEditingListing] = useState(null);
+  const [messageRequest, setMessageRequest] = useState(null); // For starting conversations
   const [user, setUser] = useState(null);
   const [currentMarketplace, setCurrentMarketplace] = useState('');
 
@@ -65,7 +66,16 @@ function App() {
       if (page !== 'edit-listing') {
         setEditingListing(null);
       }
+      if (page !== 'messages') {
+        setMessageRequest(null);
+      }
     }
+  };
+
+  // Handle contact seller from ItemDetail
+  const handleContactSeller = (request) => {
+    setMessageRequest(request);
+    setCurrentPage('messages');
   };
 
   // Show loading while checking auth
@@ -110,9 +120,7 @@ function App() {
           <ItemDetail
             item={selectedItem}
             onBack={() => setCurrentPage('listings')}
-            onContactSeller={() => {
-              setCurrentPage('messages');
-            }}
+            onContactSeller={handleContactSeller}
           />
         )}
 
@@ -146,11 +154,7 @@ function App() {
         {currentPage === 'messages' && (
           <Messages
             user={user}
-            incomingRequest={selectedItem ? {
-              sellerName: selectedItem.seller?.name,
-              itemTitle: selectedItem.title,
-              itemPrice: selectedItem.price
-            } : null}
+            incomingRequest={messageRequest}
           />
         )}
 
