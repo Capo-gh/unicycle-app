@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Listings from './pages/Listings';
 import ItemDetail from './pages/ItemDetail';
 import SellItem from './pages/SellItem';
+import EditListing from './pages/EditListing';
 import Profile from './pages/Profile';
 import Messages from './pages/Messages';
 import Requests from './pages/Requests';
@@ -13,6 +14,7 @@ import { getCurrentUser } from './api/auth';
 function App() {
   const [currentPage, setCurrentPage] = useState('loading');
   const [selectedItem, setSelectedItem] = useState(null);
+  const [editingListing, setEditingListing] = useState(null);
   const [user, setUser] = useState(null);
   const [currentMarketplace, setCurrentMarketplace] = useState('');
 
@@ -50,10 +52,19 @@ function App() {
     setCurrentPage('listings');
   };
 
-  const handleNavigate = (page) => {
-    setCurrentPage(page);
-    if (page !== 'detail') {
-      setSelectedItem(null);
+  // Updated navigation handler to support passing data
+  const handleNavigate = (page, data = null) => {
+    if (page === 'edit-listing' && data) {
+      setEditingListing(data);
+      setCurrentPage('edit-listing');
+    } else {
+      setCurrentPage(page);
+      if (page !== 'detail') {
+        setSelectedItem(null);
+      }
+      if (page !== 'edit-listing') {
+        setEditingListing(null);
+      }
     }
   };
 
@@ -108,6 +119,15 @@ function App() {
         {currentPage === 'sell' && (
           <SellItem onBack={() => setCurrentPage('listings')} />
         )}
+
+        {currentPage === 'edit-listing' && (
+          <EditListing
+            listing={editingListing}
+            onBack={() => setCurrentPage('profile')}
+            onSuccess={() => setCurrentPage('profile')}
+          />
+        )}
+
         {currentPage === 'profile' && (
           <Profile user={user} onNavigate={handleNavigate} />
         )}

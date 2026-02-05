@@ -1,126 +1,117 @@
-import { useState } from 'react';
-import { Search, Plus, MessageCircle, Clock, TrendingUp, ArrowLeft, DollarSign, Send } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Plus, MessageCircle, Clock, TrendingUp, ArrowLeft, DollarSign, Send, Trash2 } from 'lucide-react';
+import { getAllRequests, getRequest, createRequest, createReply, deleteRequest, deleteReply } from '../api/requests';
 
 export default function Requests({ user }) {
     const [selectedFilter, setSelectedFilter] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [showPostForm, setShowPostForm] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState(null);
+    const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     const filters = ['All', 'Urgent', 'Furniture', 'Textbooks', 'Electronics', 'Appliances', 'Clothing', 'Sports & Outdoors', 'Kitchen', 'Room Decor', 'Other'];
 
-    const [requests, setRequests] = useState([
-        {
-            id: 1,
-            title: "ISO: Mini Fridge under $70",
-            description: "Looking for a mini fridge in good condition. Moving into dorms next week and need one ASAP. Budget is $50-70.",
-            author: "Emma Liu",
-            timeAgo: "2 hours ago",
-            category: "Appliances",
-            urgent: true,
-            replies: [
-                { id: 1, author: "Carlos Rodriguez", avatar: "C", text: "I have a mini fridge in great condition! Only used one semester. $60 - DM me!", timeAgo: "1 hour ago" },
-                { id: 2, author: "Emma Liu", avatar: "E", text: "Thanks Carlos! Is it still available? Can we meet this afternoon?", timeAgo: "45 min ago" },
-                { id: 3, author: "Sarah Chen", avatar: "S", text: "I also have one, $65 but like new. Let me know if interested!", timeAgo: "30 min ago" },
-            ]
-        },
-        {
-            id: 2,
-            title: "WTB: Calculus Textbook (9th or 10th edition)",
-            description: "Need for MATH 140. Willing to pay up to $80 for good condition.",
-            author: "David Park",
-            timeAgo: "5 hours ago",
-            category: "Textbooks",
-            urgent: false,
-            replies: [
-                { id: 1, author: "Lisa Wong", avatar: "L", text: "I have the 9th edition! Minimal highlighting. $70 - interested?", timeAgo: "4 hours ago" },
-                { id: 2, author: "David Park", avatar: "D", text: "Yes! Does it come with the solution manual?", timeAgo: "3 hours ago" },
-                { id: 3, author: "Lisa Wong", avatar: "L", text: "Yes it does! Meet at Redpath Library?", timeAgo: "3 hours ago" },
-                { id: 4, author: "Ahmed Hassan", avatar: "A", text: "I have the 10th edition if the 9th doesn't work out. $75.", timeAgo: "2 hours ago" },
-                { id: 5, author: "Rachel Green", avatar: "R", text: "Check my listing, I posted the same book yesterday!", timeAgo: "1 hour ago" },
-                { id: 6, author: "Mike Johnson", avatar: "M", text: "Still looking? I have a copy in great shape.", timeAgo: "45 min ago" },
-                { id: 7, author: "David Park", avatar: "D", text: "Going with Lisa's copy, thanks everyone!", timeAgo: "20 min ago" },
-            ]
-        },
-        {
-            id: 3,
-            title: "Looking for: Desk lamp",
-            description: "Simple desk lamp for studying. Budget around $15-20. Let me know what you have!",
-            author: "Lisa Wong",
-            timeAgo: "1 day ago",
-            category: "Furniture",
-            urgent: false,
-            replies: [
-                { id: 1, author: "James Kim", avatar: "J", text: "I have a modern LED desk lamp, $15. Works perfectly!", timeAgo: "20 hours ago" },
-                { id: 2, author: "Lisa Wong", avatar: "L", text: "Perfect! Can we meet at McConnell today?", timeAgo: "18 hours ago" },
-            ]
-        },
-        {
-            id: 4,
-            title: "ISO: Winter jacket (size M)",
-            description: "International student here, didn't realize how cold Montreal gets! Looking for a warm winter jacket, size medium.",
-            author: "Ahmed Hassan",
-            timeAgo: "2 days ago",
-            category: "Clothing",
-            urgent: false,
-            replies: [
-                { id: 1, author: "Carlos Rodriguez", avatar: "C", text: "Montreal winters are no joke! I have a North Face jacket, size M. $50.", timeAgo: "2 days ago" },
-                { id: 2, author: "Ahmed Hassan", avatar: "A", text: "That sounds great! Is it warm enough for -20?", timeAgo: "2 days ago" },
-                { id: 3, author: "Carlos Rodriguez", avatar: "C", text: "Absolutely, kept me warm all last winter!", timeAgo: "1 day ago" },
-                { id: 4, author: "Emma Liu", avatar: "E", text: "I have a Columbia jacket too if the North Face doesn't work. $45.", timeAgo: "1 day ago" },
-                { id: 5, author: "Sarah Chen", avatar: "S", text: "Pro tip: layer up! A good hoodie underneath makes any jacket warmer.", timeAgo: "1 day ago" },
-                { id: 6, author: "Mike Johnson", avatar: "M", text: "I have a Patagonia fleece for $40 if you want a middle layer.", timeAgo: "12 hours ago" },
-                { id: 7, author: "Ahmed Hassan", avatar: "A", text: "Thanks everyone! Going with Carlos's jacket 😄", timeAgo: "10 hours ago" },
-                { id: 8, author: "David Park", avatar: "D", text: "Welcome to Montreal winters! You'll get used to it 😄", timeAgo: "8 hours ago" },
-                { id: 9, author: "Lisa Wong", avatar: "L", text: "Don't forget to get a good pair of boots too!", timeAgo: "6 hours ago" },
-                { id: 10, author: "Rachel Green", avatar: "R", text: "And hand warmers! Game changer.", timeAgo: "5 hours ago" },
-                { id: 11, author: "Alex Thompson", avatar: "A", text: "Good luck staying warm! ❄️", timeAgo: "4 hours ago" },
-                { id: 12, author: "James Kim", avatar: "J", text: "I also have a spare scarf if you need one.", timeAgo: "2 hours ago" },
-            ]
+    // Fetch requests from backend
+    useEffect(() => {
+        fetchRequests();
+    }, [selectedFilter, searchQuery]);
+
+    const fetchRequests = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const filters_obj = {
+                category: selectedFilter !== 'All' ? selectedFilter : undefined,
+                search: searchQuery || undefined
+            };
+            const data = await getAllRequests(filters_obj);
+            setRequests(data);
+        } catch (err) {
+            console.error('Error fetching requests:', err);
+            setError('Failed to load requests');
+        } finally {
+            setLoading(false);
         }
-    ]);
+    };
+
+    // Fetch single request with replies when selected
+    const handleSelectRequest = async (requestId) => {
+        try {
+            const data = await getRequest(requestId);
+            setSelectedRequest(data);
+        } catch (err) {
+            console.error('Error fetching request:', err);
+        }
+    };
+
+    // Handle adding a new request
+    const handleAddRequest = async (newRequest) => {
+        // Refresh the list
+        await fetchRequests();
+        setShowPostForm(false);
+    };
+
+    // Handle adding a reply
+    const handleAddReply = async (requestId, replyText) => {
+        try {
+            const newReply = await createReply(requestId, replyText);
+
+            // Update the selected request with new reply
+            setSelectedRequest(prev => ({
+                ...prev,
+                replies: [...prev.replies, newReply]
+            }));
+
+            // Update reply count in list
+            setRequests(prev => prev.map(req => {
+                if (req.id === requestId) {
+                    return { ...req, reply_count: (req.reply_count || 0) + 1 };
+                }
+                return req;
+            }));
+        } catch (err) {
+            console.error('Error adding reply:', err);
+            alert('Failed to add reply. Please try again.');
+        }
+    };
+
+    // Handle deleting a request
+    const handleDeleteRequest = async (requestId) => {
+        if (!confirm('Are you sure you want to delete this request?')) return;
+
+        try {
+            await deleteRequest(requestId);
+            setRequests(prev => prev.filter(r => r.id !== requestId));
+            setSelectedRequest(null);
+        } catch (err) {
+            console.error('Error deleting request:', err);
+            alert('Failed to delete request');
+        }
+    };
+
+    // Format time ago
+    const formatTimeAgo = (dateString) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const seconds = Math.floor((now - date) / 1000);
+
+        if (seconds < 60) return 'Just now';
+        if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+        if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+        return date.toLocaleDateString();
+    };
 
     // ─── POST FORM ───
     if (showPostForm) {
-        return <PostRequestForm user={user} onBack={() => setShowPostForm(false)} onAddRequest={(newRequest) => {
-            setRequests([newRequest, ...requests]);
-            setShowPostForm(false);
-        }} />;
+        return <PostRequestForm
+            user={user}
+            onBack={() => setShowPostForm(false)}
+            onAddRequest={handleAddRequest}
+        />;
     }
-
-    const filteredRequests = requests.filter(request => {
-        const matchesFilter = selectedFilter === 'All' ||
-            (selectedFilter === 'Urgent' ? request.urgent : request.category === selectedFilter);
-        const matchesSearch = searchQuery === '' ||
-            request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            request.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            request.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            request.author.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesFilter && matchesSearch;
-    });
-
-    const handleAddReply = (requestId, replyText) => {
-        const newReply = {
-            id: Date.now(),
-            author: user.name,
-            avatar: user.name.charAt(0).toUpperCase(),
-            text: replyText,
-            timeAgo: "Just now"
-        };
-
-        setRequests(prev => prev.map(req => {
-            if (req.id === requestId) {
-                return { ...req, replies: [...req.replies, newReply] };
-            }
-            return req;
-        }));
-
-        // Update the selected request view too
-        setSelectedRequest(prev => ({
-            ...prev,
-            replies: [...prev.replies, newReply]
-        }));
-    };
 
     // ─── MAIN VIEW ───
     return (
@@ -135,127 +126,159 @@ export default function Requests({ user }) {
                         <div className="flex items-center justify-between mb-3">
                             <div>
                                 <h1 className="text-xl font-bold text-gray-900">Requests</h1>
-                                <p className="text-xs text-gray-500">Students looking to buy</p>
+                                <p className="text-xs text-gray-500">Looking for something? Post it here!</p>
                             </div>
                             <button
                                 onClick={() => setShowPostForm(true)}
-                                className="px-4 py-2 bg-unicycle-green text-white rounded-lg text-sm font-semibold hover:bg-unicycle-green/90 transition-colors flex items-center gap-2"
+                                className="bg-unicycle-green text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-unicycle-green/90 transition-colors"
                             >
                                 <Plus className="w-4 h-4" />
-                                Post
+                                <span className="hidden sm:inline">Post Request</span>
                             </button>
                         </div>
-                        <div className="relative">
+
+                        {/* Search */}
+                        <div className="relative mb-3">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                             <input
                                 type="text"
+                                placeholder="Search requests..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search requests..."
                                 className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
                             />
                         </div>
-                    </div>
-                </div>
 
-                {/* Filter Tabs */}
-                <div className="bg-white border-b border-gray-200 overflow-x-auto">
-                    <div className="px-4 lg:px-6">
-                        <div className="flex gap-3 py-3">
+                        {/* Filters */}
+                        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4">
                             {filters.map((filter) => (
                                 <button
                                     key={filter}
                                     onClick={() => setSelectedFilter(filter)}
-                                    className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedFilter === filter
+                                    className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${selectedFilter === filter
                                         ? 'bg-unicycle-green text-white'
                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         }`}
                                 >
-                                    {filter === 'Urgent' && '🔥 '}
-                                    {filter}
+                                    {filter === 'Urgent' && '🔥 '}{filter}
                                 </button>
                             ))}
                         </div>
                     </div>
                 </div>
 
-                {/* Info Banner */}
-                <div className="px-4 lg:px-6 py-4">
-                    <div className="bg-gradient-to-r from-unicycle-blue/10 to-unicycle-green/10 rounded-lg p-3 border border-unicycle-blue/30">
-                        <div className="flex items-start gap-2">
-                            <TrendingUp className="w-5 h-5 text-unicycle-blue flex-shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-sm text-gray-900 font-medium">Have what they're looking for?</p>
-                                <p className="text-xs text-gray-600 mt-0.5">Reply to requests or create a listing!</p>
-                            </div>
+                {/* Loading State */}
+                {loading && (
+                    <div className="flex justify-center items-center py-20">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-unicycle-green"></div>
+                    </div>
+                )}
+
+                {/* Error State */}
+                {error && !loading && (
+                    <div className="p-4">
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                            <p className="text-red-600">{error}</p>
+                            <button onClick={fetchRequests} className="mt-2 text-sm text-unicycle-blue hover:underline">
+                                Try again
+                            </button>
                         </div>
                     </div>
-                </div>
+                )}
+
+                {/* Empty State */}
+                {!loading && !error && requests.length === 0 && (
+                    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                        <div className="text-5xl mb-4">🔍</div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No requests found</h3>
+                        <p className="text-gray-600 mb-4">Be the first to post what you're looking for!</p>
+                        <button
+                            onClick={() => setShowPostForm(true)}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Post a Request
+                        </button>
+                    </div>
+                )}
 
                 {/* Requests List */}
-                <div className="px-4 lg:px-6 pb-6 flex-1 min-w-0">
-                    {filteredRequests.length === 0 ? (
-                        <div className="text-center py-16">
-                            <p className="text-gray-400 text-lg mb-2">
-                                {searchQuery ? `No results for "${searchQuery}"` : `No requests for ${selectedFilter} yet`}
-                            </p>
-                            <p className="text-gray-400 text-sm">
-                                {searchQuery ? 'Try a different search term' : 'Check back later!'}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {filteredRequests.map((request) => (
-                                <div
-                                    key={request.id}
-                                    onClick={() => setSelectedRequest(request)}
-                                    className={`bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-all cursor-pointer ${selectedRequest?.id === request.id
-                                        ? 'border-unicycle-green ring-2 ring-unicycle-green/20'
-                                        : ''
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-2 mb-2">
-                                        {request.urgent && (
-                                            <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">🔥 URGENT</span>
-                                        )}
-                                        <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded">{request.category}</span>
+                {!loading && !error && requests.length > 0 && (
+                    <div className="flex-1 overflow-y-auto">
+                        {requests.map((request) => (
+                            <button
+                                key={request.id}
+                                onClick={() => handleSelectRequest(request.id)}
+                                className={`w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${selectedRequest?.id === request.id ? 'bg-unicycle-green/10' : ''
+                                    }`}
+                            >
+                                <div className="flex items-start gap-3">
+                                    {/* Avatar */}
+                                    <div className="w-10 h-10 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                                        {request.author?.name?.charAt(0) || '?'}
                                     </div>
-                                    <h3 className="font-semibold text-gray-900 mb-1">{request.title}</h3>
-                                    <p className="text-sm text-gray-700 mb-3 line-clamp-2">{request.description}</p>
-                                    <div className="flex items-center justify-between text-xs text-gray-500">
-                                        <div className="flex items-center gap-3">
-                                            <span>{request.author}</span>
-                                            <span className="flex items-center gap-1">
-                                                <Clock className="w-3 h-3" />
-                                                {request.timeAgo}
+
+                                    <div className="flex-1 min-w-0">
+                                        {/* Tags */}
+                                        <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                                            {request.urgent && (
+                                                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">
+                                                    🔥 URGENT
+                                                </span>
+                                            )}
+                                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                                                {request.category}
                                             </span>
                                         </div>
-                                        <span className="flex items-center gap-1 text-unicycle-blue font-medium">
-                                            <MessageCircle className="w-3.5 h-3.5" />
-                                            {request.replies.length} replies
-                                        </span>
+
+                                        {/* Title */}
+                                        <h3 className="font-semibold text-gray-900 text-sm mb-1 truncate">
+                                            {request.title}
+                                        </h3>
+
+                                        {/* Description */}
+                                        <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+                                            {request.description}
+                                        </p>
+
+                                        {/* Meta */}
+                                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                                            <span>{request.author?.name}</span>
+                                            <span>•</span>
+                                            <span className="flex items-center gap-1">
+                                                <Clock className="w-3 h-3" />
+                                                {formatTimeAgo(request.created_at)}
+                                            </span>
+                                            <span>•</span>
+                                            <span className="flex items-center gap-1">
+                                                <MessageCircle className="w-3 h-3" />
+                                                {request.reply_count || 0} replies
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
-            {/* ─── RIGHT: Replies View ─── */}
-            <div className={`${selectedRequest ? 'flex' : 'hidden'} lg:flex flex-col w-full min-w-0 lg:w-1/2 lg:h-screen`}>
+            {/* ─── RIGHT: Request Detail ─── */}
+            <div className={`${selectedRequest ? 'flex' : 'hidden lg:flex'} flex-col w-full lg:w-1/2 bg-gray-50 lg:overflow-hidden`}>
                 {selectedRequest ? (
-                    <RequestReplies
+                    <RequestDetail
                         request={selectedRequest}
-                        onBack={() => setSelectedRequest(null)}
-                        onAddReply={(text) => handleAddReply(selectedRequest.id, text)}
                         user={user}
+                        onBack={() => setSelectedRequest(null)}
+                        onAddReply={handleAddReply}
+                        onDelete={handleDeleteRequest}
+                        formatTimeAgo={formatTimeAgo}
                     />
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center bg-gray-50">
-                        <MessageCircle className="w-16 h-16 text-gray-300 mb-4" />
-                        <p className="text-gray-500 text-lg font-medium">Select a request</p>
-                        <p className="text-gray-400 text-sm mt-1">Read and reply to student requests</p>
+                    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                        <TrendingUp className="w-16 h-16 text-gray-300 mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900">Select a request</h3>
+                        <p className="text-gray-500 text-sm">Choose from the list to see details and replies</p>
                     </div>
                 )}
             </div>
@@ -263,98 +286,148 @@ export default function Requests({ user }) {
     );
 }
 
-// ─── REQUEST REPLIES ───
-function RequestReplies({ request, onBack, onAddReply, user }) {
-    const [replyText, setReplyText] = useState('');
 
-    const handleSend = () => {
-        if (replyText.trim()) {
-            onAddReply(replyText.trim());
+// ═══════════════════════════════════════════════════════════════════
+// REQUEST DETAIL COMPONENT
+// ═══════════════════════════════════════════════════════════════════
+function RequestDetail({ request, user, onBack, onAddReply, onDelete, formatTimeAgo }) {
+    const [replyText, setReplyText] = useState('');
+    const [sending, setSending] = useState(false);
+
+    const handleSendReply = async () => {
+        if (!replyText.trim()) return;
+
+        setSending(true);
+        try {
+            await onAddReply(request.id, replyText.trim());
             setReplyText('');
+        } finally {
+            setSending(false);
         }
     };
 
+    const isOwner = user?.id === request.author_id || user?.email === request.author?.email;
+
     return (
-        <div className="flex flex-col lg:h-full">
-
+        <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 flex-shrink-0 sticky top-0 z-10">
-                <div className="px-4 py-3">
-                    {/* Back — mobile only */}
-                    <button onClick={onBack} className="lg:hidden flex items-center gap-2 text-unicycle-blue mb-2">
-                        <ArrowLeft className="w-4 h-4" />
-                        <span className="text-sm font-medium">Back</span>
+            <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
+                <button
+                    onClick={onBack}
+                    className="lg:hidden p-2 -ml-2 hover:bg-gray-100 rounded-full"
+                >
+                    <ArrowLeft className="w-5 h-5 text-gray-700" />
+                </button>
+                <h2 className="font-semibold text-gray-900 truncate flex-1 mx-2">Request Details</h2>
+                {isOwner && (
+                    <button
+                        onClick={() => onDelete(request.id)}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-full"
+                        title="Delete request"
+                    >
+                        <Trash2 className="w-5 h-5" />
                     </button>
-                    <div className="flex items-center gap-2 mb-1">
-                        {request.urgent && (
-                            <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">🔥 URGENT</span>
-                        )}
-                        <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded">{request.category}</span>
-                    </div>
-                    <h2 className="font-semibold text-gray-900">{request.title}</h2>
-                    <p className="text-xs text-gray-500 mt-1">
-                        Posted by {request.author} • {request.timeAgo} • {request.replies.length} replies
-                    </p>
-                </div>
+                )}
             </div>
 
-            {/* Original Post */}
-            <div className="bg-unicycle-green/5 border-b border-gray-200 px-4 py-3 flex-shrink-0">
-                <div className="flex items-center gap-2 mb-1">
-                    <div className="w-7 h-7 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold text-xs">
-                        {request.author.charAt(0)}
-                    </div>
-                    <span className="text-sm font-medium text-gray-900">{request.author}</span>
-                    <span className="text-xs text-gray-400">• Original post</span>
-                </div>
-                <p className="text-sm text-gray-700 ml-9">{request.description}</p>
-            </div>
-
-            {/* Replies — scrollable */}
-            <div className="flex-1 overflow-y-auto bg-gray-50 pb-28 lg:pb-0">
-                <div className="px-4 py-4 space-y-4">
-                    {request.replies.map((reply) => (
-                        <div key={reply.id} className={`flex gap-3 ${reply.author === user.name ? 'flex-row-reverse' : ''}`}>
-                            {/* Avatar */}
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 ${reply.author === user.name
-                                ? 'bg-gradient-to-br from-unicycle-green to-unicycle-blue'
-                                : 'bg-gradient-to-br from-unicycle-blue to-unicycle-green'
-                                }`}>
-                                {reply.avatar}
-                            </div>
-                            {/* Bubble */}
-                            <div className={`max-w-[75%] flex flex-col ${reply.author === user.name ? 'items-end' : 'items-start'}`}>
-                                <div className={`flex items-center gap-2 mb-1 ${reply.author === user.name ? 'flex-row-reverse' : ''}`}>
-                                    <span className="text-xs font-semibold text-gray-900">{reply.author}</span>
-                                    <span className="text-xs text-gray-400">{reply.timeAgo}</span>
-                                </div>
-                                <div className={`px-3 py-2 rounded-lg text-sm ${reply.author === user.name
-                                    ? 'bg-unicycle-green text-white rounded-tr-sm'
-                                    : 'bg-white border border-gray-200 text-gray-900 rounded-tl-sm'
-                                    }`}>
-                                    {reply.text}
-                                </div>
-                            </div>
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* Request Card */}
+                <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                    <div className="flex items-start gap-3 mb-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0">
+                            {request.author?.name?.charAt(0) || '?'}
                         </div>
-                    ))}
+                        <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900">{request.author?.name}</h3>
+                            <p className="text-xs text-gray-500">{request.author?.university}</p>
+                        </div>
+                        <span className="text-xs text-gray-500">{formatTimeAgo(request.created_at)}</span>
+                    </div>
+
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                        {request.urgent && (
+                            <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded">
+                                🔥 URGENT
+                            </span>
+                        )}
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                            {request.category}
+                        </span>
+                        {request.budget_min && request.budget_max && (
+                            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">
+                                💰 ${request.budget_min} - ${request.budget_max}
+                            </span>
+                        )}
+                    </div>
+
+                    <h2 className="text-lg font-bold text-gray-900 mb-2">{request.title}</h2>
+                    <p className="text-sm text-gray-700 leading-relaxed">{request.description}</p>
+                </div>
+
+                {/* Replies */}
+                <div>
+                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <MessageCircle className="w-5 h-5" />
+                        Replies ({request.replies?.length || 0})
+                    </h3>
+
+                    {request.replies?.length === 0 && (
+                        <div className="bg-white rounded-lg p-6 text-center border border-gray-200">
+                            <p className="text-gray-500 text-sm">No replies yet. Be the first to help!</p>
+                        </div>
+                    )}
+
+                    <div className="space-y-3">
+                        {request.replies?.map((reply) => (
+                            <div key={reply.id} className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                                <div className="flex items-start gap-3">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${reply.author_id === request.author_id
+                                        ? 'bg-gradient-to-br from-unicycle-blue to-unicycle-green'
+                                        : 'bg-gray-400'
+                                        }`}>
+                                        {reply.author?.name?.charAt(0) || '?'}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-medium text-sm text-gray-900">
+                                                {reply.author?.name}
+                                            </span>
+                                            {reply.author_id === request.author_id && (
+                                                <span className="px-1.5 py-0.5 bg-unicycle-blue/10 text-unicycle-blue text-xs rounded">
+                                                    OP
+                                                </span>
+                                            )}
+                                            <span className="text-xs text-gray-500">
+                                                {formatTimeAgo(reply.created_at)}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-gray-700">{reply.text}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
 
-            {/* Reply Input — fixed on mobile (above nav), inline on desktop */}
-            <div className="fixed lg:relative bottom-16 lg:bottom-auto left-0 lg:left-auto right-0 lg:right-auto bg-white border-t border-gray-200 p-4 z-20 lg:z-0 flex-shrink-0">
-                <div className="flex gap-2 items-end">
+            {/* Reply Input */}
+            <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
+                <div className="flex gap-2">
                     <input
                         type="text"
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                        onKeyPress={(e) => e.key === 'Enter' && !sending && handleSendReply()}
                         placeholder="Write a reply..."
                         className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
+                        disabled={sending}
                     />
                     <button
-                        onClick={handleSend}
-                        disabled={!replyText.trim()}
-                        className="p-2.5 bg-unicycle-green text-white rounded-full hover:bg-unicycle-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={handleSendReply}
+                        disabled={!replyText.trim() || sending}
+                        className="p-2.5 bg-unicycle-green text-white rounded-full hover:bg-unicycle-green/90 disabled:opacity-50 flex-shrink-0"
                     >
                         <Send className="w-5 h-5" />
                     </button>
@@ -364,71 +437,58 @@ function RequestReplies({ request, onBack, onAddReply, user }) {
     );
 }
 
-// ─── POST REQUEST FORM ───
-function PostRequestForm({ onBack, onAddRequest, user }) {
-    const categories = ['Furniture', 'Textbooks', 'Electronics', 'Appliances', 'Clothing', 'Sports & Outdoors', 'Kitchen', 'Room Decor', 'Other'];
 
+// ═══════════════════════════════════════════════════════════════════
+// POST REQUEST FORM COMPONENT
+// ═══════════════════════════════════════════════════════════════════
+function PostRequestForm({ user, onBack, onAddRequest }) {
     const [formData, setFormData] = useState({
         title: '',
-        category: 'Furniture',
         description: '',
+        category: 'Furniture',
+        urgent: false,
         budgetMin: '',
-        budgetMax: '',
-        urgent: false
+        budgetMax: ''
     });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    const [submitted, setSubmitted] = useState(false);
+    const categories = ['Furniture', 'Textbooks', 'Electronics', 'Appliances', 'Clothing', 'Sports & Outdoors', 'Kitchen', 'Room Decor', 'Other'];
 
     const handleInputChange = (field, value) => {
-        setFormData({ ...formData, [field]: value });
+        setFormData(prev => ({ ...prev, [field]: value }));
+        setError('');
     };
 
-    const handleSubmit = () => {
-        onAddRequest({
-            id: Date.now(),
-            title: formData.title,
-            description: formData.description,
-            author: user.name,
-            timeAgo: "Just now",
-            category: formData.category,
-            urgent: formData.urgent,
-            replies: []
-        });
-        setSubmitted(true);
+    const handleSubmit = async () => {
+        if (!formData.title.trim() || !formData.description.trim()) {
+            setError('Please fill in title and description');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+
+        try {
+            const requestData = {
+                title: formData.title.trim(),
+                description: formData.description.trim(),
+                category: formData.category,
+                urgent: formData.urgent,
+                budget_min: formData.budgetMin ? parseFloat(formData.budgetMin) : null,
+                budget_max: formData.budgetMax ? parseFloat(formData.budgetMax) : null
+            };
+
+            await createRequest(requestData);
+            onAddRequest();
+        } catch (err) {
+            console.error('Error creating request:', err);
+            setError('Failed to post request. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // Success screen
-    if (submitted) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-                <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-unicycle-green to-unicycle-blue rounded-full mb-6">
-                        <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Posted! 🎉</h2>
-                    <p className="text-gray-600 mb-2">Your request is now live.</p>
-                    <div className="bg-gray-50 rounded-lg p-3 mb-6 text-left">
-                        <p className="text-sm font-semibold text-gray-900">{formData.title}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                            {formData.category}
-                            {formData.budgetMin && formData.budgetMax ? ` • $${formData.budgetMin} - $${formData.budgetMax}` : ''}
-                            {formData.urgent ? ' • 🔥 Urgent' : ''}
-                        </p>
-                    </div>
-                    <button
-                        onClick={onBack}
-                        className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors"
-                    >
-                        Back to Requests
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    // Post form
     return (
         <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
             {/* Header */}
@@ -545,13 +605,20 @@ function PostRequestForm({ onBack, onAddRequest, user }) {
                     </div>
                 )}
 
+                {/* Error */}
+                {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <p className="text-red-600 text-sm">{error}</p>
+                    </div>
+                )}
+
                 {/* Submit */}
                 <button
                     onClick={handleSubmit}
-                    disabled={!formData.title || !formData.description}
+                    disabled={!formData.title || !formData.description || loading}
                     className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
-                    Post Request
+                    {loading ? 'Posting...' : 'Post Request'}
                 </button>
             </div>
         </div>

@@ -16,6 +16,14 @@ export const getListing = async (id) => {
     return response.data;
 };
 
+// ═══════════════════════════════════════════════════════════════════
+// NEW: Get current user's listings
+// ═══════════════════════════════════════════════════════════════════
+export const getMyListings = async () => {
+    const response = await apiClient.get('/listings/my');
+    return response.data;
+};
+
 export const createListing = async (listingData) => {
     const response = await apiClient.post('/listings', listingData);
     return response.data;

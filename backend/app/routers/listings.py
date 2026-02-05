@@ -59,6 +59,22 @@ def create_listing(
     
     return db_listing
 
+# ═══════════════════════════════════════════════════════════════════
+# NEW ENDPOINT: Get current user's listings
+# ═══════════════════════════════════════════════════════════════════
+@router.get("/my", response_model=List[ListingResponse])
+def get_my_listings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token)
+):
+    """Get all listings owned by the current user"""
+    listings = db.query(Listing).filter(
+        Listing.seller_id == current_user.id,
+        Listing.is_active == True
+    ).order_by(Listing.created_at.desc()).all()
+    
+    return listings
+
 @router.get("/", response_model=List[ListingResponse])
 def get_listings(
     category: Optional[str] = None,
