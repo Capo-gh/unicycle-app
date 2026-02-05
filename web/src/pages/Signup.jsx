@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ShieldCheck, Mail, Building2, User } from 'lucide-react';
 import logo from '../assets/unicycle-logo.png';
 import VerificationSuccess from './VerificationSuccess';
-import { signup } from '../api/auth';
+import { signup, login } from '../api/auth';
 
 export default function Signup({ onSignup }) {
     const [step, setStep] = useState(1);
@@ -55,11 +55,11 @@ export default function Signup({ onSignup }) {
             return;
         }
 
-        // Call backend API
         setLoading(true);
         setError('');
 
         try {
+            // Create account
             const userData = await signup({
                 email: email,
                 name: name,
@@ -67,6 +67,14 @@ export default function Signup({ onSignup }) {
             });
 
             console.log('Signup successful:', userData);
+
+            // Auto-login after signup
+            const loginResponse = await login(email);
+
+            // Store token
+            localStorage.setItem('token', loginResponse.access_token);
+            localStorage.setItem('user', JSON.stringify(userData));
+
             setStep(2);
         } catch (err) {
             console.error('Signup error:', err);
@@ -178,7 +186,7 @@ export default function Signup({ onSignup }) {
                     {/* Error Message */}
                     {error && (
                         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                            <p className="text-red-600 text-sm">{error}</p>
+                            <p className="text-red-600 text-sm">{typeof error === 'string' ? error : 'An error occurred. Please try again.'}</p>
                         </div>
                     )}
 

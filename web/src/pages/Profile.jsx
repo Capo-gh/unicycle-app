@@ -1,6 +1,6 @@
 import { Settings, ShieldCheck, Package, Star } from 'lucide-react';
 
-export default function Profile({ user: signupUser }) {
+export default function Profile({ user: signupUser, onNavigate }) {
     const user = {
         name: signupUser.name,
         email: signupUser.email,
@@ -40,7 +40,10 @@ export default function Profile({ user: signupUser }) {
                 <div className="max-w-md lg:max-w-4xl mx-auto px-4 py-6">
                     <div className="flex items-center justify-between mb-4">
                         <h1 className="text-xl font-bold">Profile</h1>
-                        <button className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                        <button
+                            onClick={() => onNavigate('settings')}
+                            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                        >
                             <Settings className="w-6 h-6" />
                         </button>
                     </div>
@@ -195,8 +198,6 @@ export default function Profile({ user: signupUser }) {
                     </div>
                 </div>
             </div>
-
-            {/* ─── NO BOTTOM NAV — Layout handles it ─── */}
         </div>
     );
 }

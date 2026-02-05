@@ -86,10 +86,7 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                     <div className="bg-white rounded-lg p-4 shadow-sm">
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="font-semibold text-gray-900">Seller</h3>
-                            <div className="flex items-center gap-1 text-sm text-gray-600">
-                                <span>⭐ {item.seller.rating}</span>
-                                <span>({item.seller.reviews} reviews)</span>
-                            </div>
+                            {/* TODO: Add ratings later */}
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="w-12 h-12 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold text-lg">
@@ -98,17 +95,17 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                             <div className="flex-1">
                                 <div className="flex items-center gap-2">
                                     <span className="font-medium text-gray-900">{item.seller.name}</span>
-                                    {item.seller.verified && (
+                                    {item.seller.is_verified && (
                                         <ShieldCheck className="w-4 h-4 text-unicycle-blue" />
                                     )}
                                 </div>
-                                <p className="text-sm text-gray-600">{item.seller.year} • {item.seller.faculty}</p>
+                                <p className="text-sm text-gray-600">{item.seller.university}</p>
                             </div>
                         </div>
                         <div className="mt-3 pt-3 border-t border-gray-200">
                             <div className="flex items-center gap-2 text-sm">
                                 <ShieldCheck className="w-4 h-4 text-unicycle-blue" />
-                                <span className="text-gray-700">Verified McGill Student</span>
+                                <span className="text-gray-700">Verified {item.seller.university} Student</span>
                             </div>
                         </div>
                     </div>

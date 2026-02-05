@@ -1,233 +1,272 @@
-import { ArrowLeft, Upload, MapPin, DollarSign } from 'lucide-react';
 import { useState } from 'react';
+import { ArrowLeft, Upload, MapPin, DollarSign } from 'lucide-react';
+import { createListing } from '../api/listings';
 
 export default function SellItem({ onBack }) {
-    const categories = ['Furniture', 'Textbooks', 'Electronics', 'Appliances', 'Clothing', 'Sports & Outdoors', 'Kitchen', 'Room Decor', 'Other'];
-    const conditions = ['Brand New', 'Like New', 'Good', 'Fair'];
-
-    const safeZones = [
-        { name: 'McConnell Library', details: 'Main Floor Lobby' },
-        { name: 'SSMU Building', details: 'Main Entrance' },
-        { name: 'Trottier Building', details: 'Lobby' },
-        { name: 'Redpath Library', details: 'Ground Floor' },
-        { name: 'McLennan Library', details: 'Main Entrance' },
-        { name: 'Leacock Building', details: 'Main Entrance' },
-        { name: 'Otto Maass Chemistry', details: 'Main Entrance' },
-        { name: 'New Residence Hall', details: 'Lobby' },
-    ];
-
-    // Smart suggestion based on category
-    const suggestedZoneByCategory = {
-        'Furniture': 'McConnell Library',
-        'Textbooks': 'Redpath Library',
-        'Electronics': 'SSMU Building',
-        'Appliances': 'New Residence Hall',
-        'Clothing': 'Trottier Building',
-        'Sports & Outdoors': 'McLennan Library',
-        'Kitchen': 'New Residence Hall',
-        'Room Decor': 'McConnell Library',
-        'Other': 'SSMU Building'
-    };
-
     const [formData, setFormData] = useState({
         title: '',
+        category: '',
+        condition: '',
         price: '',
-        category: 'Furniture',
-        condition: 'Like New',
         description: '',
-        image: null,
-        safeZone: 'McConnell Library'  // default matches Furniture suggestion
+        safeZone: '',
+        safeZoneAddress: ''
     });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState(false);
 
-    const handleInputChange = (field, value) => {
-        if (field === 'category') {
-            // When category changes, auto-update Safe Zone to suggested one
-            setFormData({ ...formData, [field]: value, safeZone: suggestedZoneByCategory[value] });
-        } else {
-            setFormData({ ...formData, [field]: value });
+    const categories = [
+        'Textbooks & Course Materials',
+        'Electronics & Gadgets',
+        'Furniture & Decor',
+        'Clothing & Accessories',
+        'Sports & Fitness',
+        'Kitchen & Dining',
+        'School Supplies',
+        'Bikes & Transportation',
+        'Other'
+    ];
+
+    const conditions = ['New', 'Like New', 'Good', 'Fair'];
+
+    const safeZones = [
+        { name: 'McConnell Library', address: '3459 McTavish St, Main Floor Lobby' },
+        { name: 'Redpath Library', address: '3461 McTavish St, Front Entrance' },
+        { name: 'Leacock Building', address: '855 Sherbrooke St W, Main Entrance' },
+        { name: 'Shatner University Centre', address: '3480 McTavish St, Main Floor' },
+        { name: 'Trottier Building', address: '3630 University St, Lobby' }
+    ];
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        setError('');
+    };
+
+    const handleSafeZoneSelect = (e) => {
+        const zone = safeZones.find(z => z.name === e.target.value);
+        if (zone) {
+            setFormData(prev => ({
+                ...prev,
+                safeZone: zone.name,
+                safeZoneAddress: zone.address
+            }));
         }
     };
 
-    const handleImageUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData({ ...formData, image: reader.result });
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        // Validation
+        if (!formData.title || !formData.category || !formData.condition ||
+            !formData.price || !formData.description || !formData.safeZone) {
+            setError('Please fill in all fields');
+            return;
+        }
+
+        if (parseFloat(formData.price) <= 0) {
+            setError('Price must be greater than 0');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+
+        try {
+            const listingData = {
+                title: formData.title,
+                description: formData.description,
+                price: parseFloat(formData.price),
+                category: formData.category,
+                condition: formData.condition,
+                safe_zone: formData.safeZone,
+                safe_zone_address: formData.safeZoneAddress,
+                images: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=800' // Placeholder
             };
-            reader.readAsDataURL(file);
+
+            const result = await createListing(listingData);
+            console.log('Listing created:', result);
+            setSuccess(true);
+
+            // Redirect after 2 seconds
+            setTimeout(() => {
+                onBack();
+            }, 2000);
+
+        } catch (err) {
+            console.error('Error creating listing:', err);
+            if (err.response?.data?.detail) {
+                setError(Array.isArray(err.response.data.detail)
+                    ? err.response.data.detail[0].msg
+                    : err.response.data.detail);
+            } else {
+                setError('Failed to create listing. Please try again.');
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleSubmit = () => {
-        alert(`Item listed!\nCategory: ${formData.category}\nSafe Zone: ${formData.safeZone}`);
-        onBack();
-    };
-
-    const selectedZoneDetails = safeZones.find(z => z.name === formData.safeZone);
+    if (success) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+                <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Item Posted! 🎉</h2>
+                    <p className="text-gray-600">Your listing is now live on the marketplace</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
             {/* Header */}
             <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-                <div className="max-w-md lg:max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+                <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
                     <button
                         onClick={onBack}
                         className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                     >
                         <ArrowLeft className="w-6 h-6 text-gray-700" />
                     </button>
-                    <h1 className="text-lg font-semibold text-gray-900">List an Item</h1>
-                    <div className="w-10"></div>
+                    <h1 className="text-lg font-semibold text-gray-900">Sell an Item</h1>
                 </div>
             </div>
 
             {/* Form */}
-            <div className="max-w-md lg:max-w-2xl mx-auto px-4 py-6 space-y-4">
+            <div className="max-w-2xl mx-auto px-4 py-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
 
-                {/* Image Upload */}
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                    <label className="block text-sm font-semibold text-gray-900 mb-3">Photos</label>
-                    {formData.image ? (
-                        <div className="relative">
-                            <img
-                                src={formData.image}
-                                alt="Preview"
-                                className="w-full h-48 object-cover rounded-lg"
-                            />
-                            <button
-                                onClick={() => setFormData({ ...formData, image: null })}
-                                className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded text-sm"
-                            >
-                                Remove
-                            </button>
+                    {/* Image Upload Placeholder */}
+                    <div className="bg-white rounded-lg p-6 shadow-sm">
+                        <label className="block text-sm font-semibold text-gray-900 mb-3">Photos</label>
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                            <p className="text-sm text-gray-600 mb-1">Image upload coming soon!</p>
+                            <p className="text-xs text-gray-500">Using placeholder image for now</p>
                         </div>
-                    ) : (
-                        <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-unicycle-green transition-colors">
-                            <Upload className="w-12 h-12 text-gray-400 mb-2" />
-                            <span className="text-sm text-gray-600">Upload photo</span>
-                            <input
-                                type="file"
-                                className="hidden"
-                                accept="image/*"
-                                onChange={handleImageUpload}
-                            />
-                        </label>
-                    )}
-                </div>
-
-                {/* Title */}
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">Title</label>
-                    <input
-                        type="text"
-                        placeholder="e.g., IKEA Desk - Perfect Condition"
-                        value={formData.title}
-                        onChange={(e) => handleInputChange('title', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
-                    />
-                </div>
-
-                {/* Category & Condition */}
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white rounded-lg p-4 shadow-sm">
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Category</label>
-                        <select
-                            value={formData.category}
-                            onChange={(e) => handleInputChange('category', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
-                        >
-                            {categories.map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
-                            ))}
-                        </select>
                     </div>
 
-                    <div className="bg-white rounded-lg p-4 shadow-sm">
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Condition</label>
-                        <select
-                            value={formData.condition}
-                            onChange={(e) => handleInputChange('condition', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
-                        >
-                            {conditions.map(cond => (
-                                <option key={cond} value={cond}>{cond}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                {/* Price */}
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">Price (CAD)</label>
-                    <div className="relative">
-                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    {/* Title */}
+                    <div className="bg-white rounded-lg p-6 shadow-sm">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">Title *</label>
                         <input
-                            type="number"
-                            placeholder="45"
-                            value={formData.price}
-                            onChange={(e) => handleInputChange('price', e.target.value)}
-                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
+                            type="text"
+                            name="title"
+                            value={formData.title}
+                            onChange={handleChange}
+                            placeholder="e.g., IKEA Desk - Perfect Condition"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
                         />
                     </div>
-                    {formData.price >= 50 && (
-                        <p className="text-xs text-unicycle-blue mt-2">
-                            ✓ Qualifies for Secure-Pay escrow protection
-                        </p>
-                    )}
-                </div>
 
-                {/* Description */}
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">Description</label>
-                    <textarea
-                        placeholder="Describe the item, condition, reason for selling..."
-                        value={formData.description}
-                        onChange={(e) => handleInputChange('description', e.target.value)}
-                        rows="4"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green resize-none"
-                    />
-                </div>
-
-                {/* Safe Zone Picker */}
-                <div className="bg-gradient-to-r from-unicycle-green/10 to-unicycle-blue/10 rounded-lg p-4 border-2 border-unicycle-green/30">
-                    <div className="flex items-center gap-2 mb-3">
-                        <div className="p-2 bg-unicycle-green rounded-lg">
-                            <MapPin className="w-5 h-5 text-white" />
+                    {/* Category & Condition */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="bg-white rounded-lg p-6 shadow-sm">
+                            <label className="block text-sm font-semibold text-gray-900 mb-2">Category *</label>
+                            <select
+                                name="category"
+                                value={formData.category}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
+                            >
+                                <option value="">Select category</option>
+                                {categories.map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
                         </div>
-                        <h3 className="font-semibold text-gray-900">Pick Your Safe Zone</h3>
+
+                        <div className="bg-white rounded-lg p-6 shadow-sm">
+                            <label className="block text-sm font-semibold text-gray-900 mb-2">Condition *</label>
+                            <select
+                                name="condition"
+                                value={formData.condition}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
+                            >
+                                <option value="">Select condition</option>
+                                {conditions.map(cond => (
+                                    <option key={cond} value={cond}>{cond}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
-                    <p className="text-xs text-gray-500 mb-3">
-                        We suggested <span className="font-semibold text-unicycle-green">{suggestedZoneByCategory[formData.category]}</span> based on your category. Feel free to change it!
-                    </p>
+                    {/* Price */}
+                    <div className="bg-white rounded-lg p-6 shadow-sm">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">Price *</label>
+                        <div className="relative">
+                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                                type="number"
+                                name="price"
+                                value={formData.price}
+                                onChange={handleChange}
+                                placeholder="0.00"
+                                step="0.01"
+                                min="0"
+                                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
+                            />
+                        </div>
+                    </div>
 
-                    <select
-                        value={formData.safeZone}
-                        onChange={(e) => handleInputChange('safeZone', e.target.value)}
-                        className="w-full px-3 py-2 border border-unicycle-green/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green bg-white"
-                    >
-                        {safeZones.map(zone => (
-                            <option key={zone.name} value={zone.name}>{zone.name} - {zone.details}</option>
-                        ))}
-                    </select>
+                    {/* Description */}
+                    <div className="bg-white rounded-lg p-6 shadow-sm">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">Description *</label>
+                        <textarea
+                            name="description"
+                            value={formData.description}
+                            onChange={handleChange}
+                            placeholder="Describe your item, its condition, any flaws, etc."
+                            rows="4"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green resize-none"
+                        />
+                    </div>
 
-                    {selectedZoneDetails && (
-                        <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
-                            <MapPin className="w-4 h-4 text-unicycle-green" />
-                            <span>{selectedZoneDetails.name}, {selectedZoneDetails.details}</span>
+                    {/* Safe Zone */}
+                    <div className="bg-white rounded-lg p-6 shadow-sm">
+                        <div className="flex items-center gap-2 mb-3">
+                            <MapPin className="w-5 h-5 text-unicycle-green" />
+                            <label className="text-sm font-semibold text-gray-900">Meeting Location (Safe Zone) *</label>
+                        </div>
+                        <select
+                            value={formData.safeZone}
+                            onChange={handleSafeZoneSelect}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green mb-2"
+                        >
+                            <option value="">Select a safe zone</option>
+                            {safeZones.map(zone => (
+                                <option key={zone.name} value={zone.name}>{zone.name}</option>
+                            ))}
+                        </select>
+                        {formData.safeZoneAddress && (
+                            <p className="text-sm text-gray-600">{formData.safeZoneAddress}</p>
+                        )}
+                    </div>
+
+                    {/* Error Message */}
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <p className="text-red-600 text-sm">{error}</p>
                         </div>
                     )}
-                </div>
 
-                {/* Submit Button */}
-                <button
-                    onClick={handleSubmit}
-                    disabled={!formData.title || !formData.price || !formData.image}
-                    className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                    List Item
-                </button>
+                    {/* Submit Button */}
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                        {loading ? 'Posting...' : 'Post Item'}
+                    </button>
+                </form>
             </div>
         </div>
     );
