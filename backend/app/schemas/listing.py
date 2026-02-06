@@ -1,49 +1,62 @@
 from pydantic import BaseModel, Field
+from typing import Optional
 from datetime import datetime
-from typing import Optional, List
-from ..models.listing import CategoryEnum, ConditionEnum
 
-class ListingBase(BaseModel):
-    title: str = Field(..., min_length=3, max_length=100)
-    description: str = Field(..., min_length=10, max_length=2000)
-    price: float = Field(..., gt=0, le=10000)
-    category: CategoryEnum
-    condition: ConditionEnum
-    images: Optional[str] = None  # Comma-separated URLs
-    safe_zone: str
-    safe_zone_address: str
-
-class ListingCreate(ListingBase):
-    pass
-
-class ListingUpdate(BaseModel):
-    title: Optional[str] = Field(None, min_length=3, max_length=100)
-    description: Optional[str] = Field(None, min_length=10, max_length=2000)
-    price: Optional[float] = Field(None, gt=0, le=10000)
-    category: Optional[CategoryEnum] = None
-    condition: Optional[ConditionEnum] = None
-    images: Optional[str] = None
-    safe_zone: Optional[str] = None
-    safe_zone_address: Optional[str] = None
-    is_active: Optional[bool] = None
 
 class SellerInfo(BaseModel):
     id: int
     name: str
-    email: str
     university: str
-    is_verified: bool
+    avg_rating: Optional[float] = 0.0
+    review_count: Optional[int] = 0
     
     class Config:
         from_attributes = True
 
-class ListingResponse(ListingBase):
+
+class ListingBase(BaseModel):
+    title: str = Field(..., min_length=3)
+    description: str = Field(..., min_length=10)
+    price: float = Field(..., gt=0)
+    category: str
+    condition: str
+    safe_zone: str
+    safe_zone_address: Optional[str] = None
+    images: Optional[str] = None
+
+
+class ListingCreate(ListingBase):
+    pass
+
+
+class ListingUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=3)
+    description: Optional[str] = Field(None, min_length=10)
+    price: Optional[float] = Field(None, gt=0)
+    category: Optional[str] = None
+    condition: Optional[str] = None
+    safe_zone: Optional[str] = None
+    safe_zone_address: Optional[str] = None
+    images: Optional[str] = None
+    is_sold: Optional[bool] = None  # Allow marking as sold
+
+
+class ListingResponse(BaseModel):
     id: int
+    title: str
+    description: str
+    price: float
+    category: str
+    condition: str
+    safe_zone: str
+    safe_zone_address: Optional[str]
+    images: Optional[str]
     is_active: bool
+    is_sold: bool = False  # NEW: Include sold status
     seller_id: int
-    seller: SellerInfo
+    seller: Optional[SellerInfo] = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime
     
     class Config:
         from_attributes = True

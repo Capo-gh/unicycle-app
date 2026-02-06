@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, ShieldCheck, MessageCircle, Share2, Edit, Star } from 'lucide-react';
+import { ArrowLeft, MapPin, ShieldCheck, MessageCircle, Share2, Edit, Star, CheckCircle, ChevronRight } from 'lucide-react';
 import SecurePayModal from './SecurePayModal';
 import { getUserReviews } from '../api/reviews';
+import { markAsSold, markAsUnsold } from '../api/listings';
 
-export default function ItemDetail({ item, onBack, onContactSeller, onNavigate }) {
+export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, onViewSellerProfile }) {
     const [showSecurePayModal, setShowSecurePayModal] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [sellerReviews, setSellerReviews] = useState(null);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [isSold, setIsSold] = useState(item?.is_sold || false);
+    const [updating, setUpdating] = useState(false);
 
     // Get current user from localStorage
     useEffect(() => {
@@ -26,6 +30,11 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate }
             fetchSellerReviews();
         }
     }, [item?.seller_id]);
+
+    // Update sold status when item changes
+    useEffect(() => {
+        setIsSold(item?.is_sold || false);
+    }, [item?.is_sold]);
 
     const fetchSellerReviews = async () => {
         try {
@@ -61,6 +70,30 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate }
     const handleEditListing = () => {
         if (onNavigate) {
             onNavigate('edit-listing', item);
+        }
+    };
+
+    const handleToggleSold = async () => {
+        setUpdating(true);
+        try {
+            if (isSold) {
+                await markAsUnsold(item.id);
+                setIsSold(false);
+            } else {
+                await markAsSold(item.id);
+                setIsSold(true);
+            }
+        } catch (err) {
+            console.error('Error updating sold status:', err);
+            alert('Failed to update listing status');
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handleViewSellerProfile = () => {
+        if (onViewSellerProfile) {
+            onViewSellerProfile(item.seller_id);
         }
     };
 
@@ -112,25 +145,65 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate }
             {/* Body */}
             <div className="max-w-md lg:max-w-5xl mx-auto lg:flex lg:gap-8 lg:p-6">
 
-                {/* Left: Image */}
+                {/* Left: Image Gallery */}
                 <div className="lg:flex-1">
                     <div className="relative h-80 lg:h-auto lg:aspect-square lg:rounded-xl overflow-hidden">
                         <img
-                            src={images[0]}
+                            src={images[currentImageIndex]}
                             alt={item.title}
                             className="w-full h-full object-cover"
                         />
+
+                        {/* Image counter / navigation */}
                         {images.length > 1 && (
-                            <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
-                                1 / {images.length}
-                            </div>
+                            <>
+                                <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                                    {currentImageIndex + 1} / {images.length}
+                                </div>
+                                <div className="absolute bottom-4 left-4 flex gap-1">
+                                    {images.map((_, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setCurrentImageIndex(idx)}
+                                            className={`w-2 h-2 rounded-full transition-colors ${idx === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                                                }`}
+                                        />
+                                    ))}
+                                </div>
+                            </>
                         )}
+
+                        {/* Owner badge */}
                         {isOwner && (
                             <div className="absolute top-4 left-4 bg-unicycle-blue text-white px-3 py-1 rounded-full text-sm font-medium">
                                 Your Listing
                             </div>
                         )}
+
+                        {/* Sold badge */}
+                        {isSold && (
+                            <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                                <CheckCircle className="w-4 h-4" />
+                                SOLD
+                            </div>
+                        )}
                     </div>
+
+                    {/* Thumbnail strip for multiple images */}
+                    {images.length > 1 && (
+                        <div className="flex gap-2 p-2 overflow-x-auto lg:mt-2">
+                            {images.map((img, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setCurrentImageIndex(idx)}
+                                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${idx === currentImageIndex ? 'border-unicycle-green' : 'border-transparent'
+                                        }`}
+                                >
+                                    <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Right: Details */}
@@ -147,19 +220,26 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate }
                                     <span>{item.condition}</span>
                                 </div>
                             </div>
-                            <div className="text-3xl font-bold text-unicycle-green">${item.price}</div>
+                            <div className={`text-3xl font-bold ${isSold ? 'text-gray-400 line-through' : 'text-unicycle-green'}`}>
+                                ${item.price}
+                            </div>
                         </div>
+                        {isSold && !isOwner && (
+                            <p className="text-red-600 text-sm font-medium">This item has been sold</p>
+                        )}
                     </div>
 
-                    {/* Seller Info with Reviews */}
-                    <div className="bg-white rounded-lg p-4 shadow-sm">
+                    {/* Seller Info - Clickable */}
+                    <button
+                        onClick={handleViewSellerProfile}
+                        className="w-full bg-white rounded-lg p-4 shadow-sm text-left hover:bg-gray-50 transition-colors"
+                    >
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="font-semibold text-gray-900">Seller</h3>
-                            {isOwner && (
-                                <span className="text-xs bg-unicycle-blue/10 text-unicycle-blue px-2 py-1 rounded">
-                                    This is you
-                                </span>
-                            )}
+                            <div className="flex items-center gap-1 text-unicycle-blue text-sm">
+                                View Profile
+                                <ChevronRight className="w-4 h-4" />
+                            </div>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="w-12 h-12 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold text-lg">
@@ -169,6 +249,11 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate }
                                 <div className="flex items-center gap-2">
                                     <span className="font-medium text-gray-900">{item.seller?.name || 'Unknown'}</span>
                                     <ShieldCheck className="w-4 h-4 text-unicycle-blue" />
+                                    {isOwner && (
+                                        <span className="text-xs bg-unicycle-blue/10 text-unicycle-blue px-2 py-0.5 rounded">
+                                            You
+                                        </span>
+                                    )}
                                 </div>
                                 <p className="text-sm text-gray-600">{item.seller?.university || ''}</p>
 
@@ -183,13 +268,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate }
                                 )}
                             </div>
                         </div>
-                        <div className="mt-3 pt-3 border-t border-gray-200">
-                            <div className="flex items-center gap-2 text-sm">
-                                <ShieldCheck className="w-4 h-4 text-unicycle-blue" />
-                                <span className="text-gray-700">Verified Student</span>
-                            </div>
-                        </div>
-                    </div>
+                    </button>
 
                     {/* Description */}
                     <div className="bg-white rounded-lg p-4 shadow-sm">
@@ -224,8 +303,8 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate }
                         </div>
                     </div>
 
-                    {/* Secure-Pay Info (only for buyers) */}
-                    {!isOwner && item.price >= 50 && (
+                    {/* Secure-Pay Info (only for buyers, not sold) */}
+                    {!isOwner && !isSold && item.price >= 50 && (
                         <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                             <div className="flex items-start gap-3">
                                 <div className="p-2 bg-unicycle-blue rounded-lg">
@@ -241,16 +320,32 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate }
                         </div>
                     )}
 
-                    {/* Action Buttons – Desktop */}
-                    {isOwner ? (
-                        <button
-                            onClick={handleEditListing}
-                            className="hidden lg:flex w-full bg-unicycle-blue text-white py-3 rounded-lg font-semibold hover:bg-unicycle-blue/90 transition-colors items-center justify-center gap-2"
-                        >
-                            <Edit className="w-5 h-5" />
-                            Edit Listing
-                        </button>
-                    ) : (
+                    {/* Owner Actions */}
+                    {isOwner && (
+                        <div className="hidden lg:flex flex-col gap-2">
+                            <button
+                                onClick={handleEditListing}
+                                className="w-full bg-unicycle-blue text-white py-3 rounded-lg font-semibold hover:bg-unicycle-blue/90 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Edit className="w-5 h-5" />
+                                Edit Listing
+                            </button>
+                            <button
+                                onClick={handleToggleSold}
+                                disabled={updating}
+                                className={`w-full py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 ${isSold
+                                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        : 'bg-green-600 text-white hover:bg-green-700'
+                                    }`}
+                            >
+                                <CheckCircle className="w-5 h-5" />
+                                {updating ? 'Updating...' : isSold ? 'Mark as Available' : 'Mark as Sold'}
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Contact Seller - Desktop (only if not owner and not sold) */}
+                    {!isOwner && !isSold && (
                         <button
                             onClick={handleContactSeller}
                             className="hidden lg:flex w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors items-center justify-center gap-2"
@@ -262,17 +357,34 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate }
                 </div>
             </div>
 
-            {/* Action Buttons – Mobile */}
+            {/* Mobile Bottom Bar */}
             <div className="lg:hidden fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20">
                 <div className="max-w-md mx-auto px-4 py-3">
                     {isOwner ? (
-                        <button
-                            onClick={handleEditListing}
-                            className="w-full bg-unicycle-blue text-white py-3 rounded-lg font-semibold hover:bg-unicycle-blue/90 transition-colors flex items-center justify-center gap-2"
-                        >
-                            <Edit className="w-5 h-5" />
-                            Edit Listing
-                        </button>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleEditListing}
+                                className="flex-1 bg-unicycle-blue text-white py-3 rounded-lg font-semibold hover:bg-unicycle-blue/90 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Edit className="w-5 h-5" />
+                                Edit
+                            </button>
+                            <button
+                                onClick={handleToggleSold}
+                                disabled={updating}
+                                className={`flex-1 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 ${isSold
+                                        ? 'bg-gray-200 text-gray-700'
+                                        : 'bg-green-600 text-white'
+                                    }`}
+                            >
+                                <CheckCircle className="w-5 h-5" />
+                                {isSold ? 'Relist' : 'Sold'}
+                            </button>
+                        </div>
+                    ) : isSold ? (
+                        <div className="text-center py-2 text-gray-500 font-medium">
+                            This item has been sold
+                        </div>
                     ) : (
                         <button
                             onClick={handleContactSeller}

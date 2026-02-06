@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Upload, MapPin, DollarSign, X, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Upload, MapPin, DollarSign, X, Image } from 'lucide-react';
 import { createListing } from '../api/listings';
 import { uploadImage } from '../api/upload';
 
@@ -13,7 +13,8 @@ export default function SellItem({ onBack }) {
         safeZone: '',
         safeZoneAddress: ''
     });
-    const [images, setImages] = useState([]); // Array of { file, preview, url, uploading }
+    const [images, setImages] = useState([]);
+    const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
@@ -57,73 +58,33 @@ export default function SellItem({ onBack }) {
         }
     };
 
-    const handleImageSelect = (e) => {
+    const handleImageUpload = async (e) => {
         const files = Array.from(e.target.files);
+        if (files.length === 0) return;
 
         if (images.length + files.length > 5) {
             setError('Maximum 5 images allowed');
             return;
         }
 
-        const newImages = files.map(file => ({
-            file,
-            preview: URL.createObjectURL(file),
-            url: null,
-            uploading: false
-        }));
-
-        setImages(prev => [...prev, ...newImages]);
+        setUploading(true);
         setError('');
+
+        try {
+            for (const file of files) {
+                const url = await uploadImage(file);
+                setImages(prev => [...prev, url]);
+            }
+        } catch (err) {
+            console.error('Upload error:', err);
+            setError('Failed to upload image. Please try again.');
+        } finally {
+            setUploading(false);
+        }
     };
 
     const removeImage = (index) => {
-        setImages(prev => {
-            const newImages = [...prev];
-            // Revoke object URL to free memory
-            if (newImages[index].preview) {
-                URL.revokeObjectURL(newImages[index].preview);
-            }
-            newImages.splice(index, 1);
-            return newImages;
-        });
-    };
-
-    const uploadAllImages = async () => {
-        const uploadedUrls = [];
-
-        for (let i = 0; i < images.length; i++) {
-            const img = images[i];
-
-            if (img.url) {
-                // Already uploaded
-                uploadedUrls.push(img.url);
-                continue;
-            }
-
-            // Update uploading state
-            setImages(prev => {
-                const newImages = [...prev];
-                newImages[i] = { ...newImages[i], uploading: true };
-                return newImages;
-            });
-
-            try {
-                const result = await uploadImage(img.file);
-                uploadedUrls.push(result.url);
-
-                // Update with URL
-                setImages(prev => {
-                    const newImages = [...prev];
-                    newImages[i] = { ...newImages[i], url: result.url, uploading: false };
-                    return newImages;
-                });
-            } catch (err) {
-                console.error('Failed to upload image:', err);
-                throw new Error('Failed to upload images. Please try again.');
-            }
-        }
-
-        return uploadedUrls;
+        setImages(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async (e) => {
@@ -132,7 +93,12 @@ export default function SellItem({ onBack }) {
         // Validation
         if (!formData.title || !formData.category || !formData.condition ||
             !formData.price || !formData.description || !formData.safeZone) {
-            setError('Please fill in all fields');
+            setError('Please fill in all required fields');
+            return;
+        }
+
+        if (formData.description.length < 10) {
+            setError('Description must be at least 10 characters');
             return;
         }
 
@@ -142,7 +108,7 @@ export default function SellItem({ onBack }) {
         }
 
         if (images.length === 0) {
-            setError('Please add at least one image');
+            setError('Please upload at least one image');
             return;
         }
 
@@ -150,9 +116,6 @@ export default function SellItem({ onBack }) {
         setError('');
 
         try {
-            // Upload all images first
-            const imageUrls = await uploadAllImages();
-
             const listingData = {
                 title: formData.title,
                 description: formData.description,
@@ -161,23 +124,20 @@ export default function SellItem({ onBack }) {
                 condition: formData.condition,
                 safe_zone: formData.safeZone,
                 safe_zone_address: formData.safeZoneAddress,
-                images: imageUrls.join(',')  // Comma-separated URLs
+                images: images.join(',')
             };
 
             const result = await createListing(listingData);
             console.log('Listing created:', result);
             setSuccess(true);
 
-            // Redirect after 2 seconds
             setTimeout(() => {
                 onBack();
             }, 2000);
 
         } catch (err) {
             console.error('Error creating listing:', err);
-            if (err.message) {
-                setError(err.message);
-            } else if (err.response?.data?.detail) {
+            if (err.response?.data?.detail) {
                 setError(Array.isArray(err.response.data.detail)
                     ? err.response.data.detail[0].msg
                     : err.response.data.detail);
@@ -227,59 +187,50 @@ export default function SellItem({ onBack }) {
                     {/* Image Upload */}
                     <div className="bg-white rounded-lg p-6 shadow-sm">
                         <label className="block text-sm font-semibold text-gray-900 mb-3">
-                            Photos * <span className="font-normal text-gray-500">({images.length}/5)</span>
+                            Photos * <span className="font-normal text-gray-500">(up to 5)</span>
                         </label>
 
-                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                            {/* Existing Images */}
-                            {images.map((img, index) => (
-                                <div key={index} className="relative aspect-square">
-                                    <img
-                                        src={img.preview}
-                                        alt={`Preview ${index + 1}`}
-                                        className="w-full h-full object-cover rounded-lg"
-                                    />
-                                    {img.uploading && (
-                                        <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                                            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        </div>
-                                    )}
-                                    {!img.uploading && (
-                                        <button
-                                            type="button"
-                                            onClick={() => removeImage(index)}
-                                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    )}
-                                    {index === 0 && (
-                                        <span className="absolute bottom-1 left-1 px-2 py-0.5 bg-black/70 text-white text-xs rounded">
-                                            Main
-                                        </span>
-                                    )}
+                        {/* Image Preview Grid */}
+                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-4">
+                            {images.map((url, index) => (
+                                <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
+                                    <img src={url} alt={`Upload ${index + 1}`} className="w-full h-full object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeImage(index)}
+                                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
                                 </div>
                             ))}
 
                             {/* Add Image Button */}
                             {images.length < 5 && (
-                                <label className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-unicycle-green hover:bg-unicycle-green/5 transition-colors">
-                                    <ImageIcon className="w-8 h-8 text-gray-400 mb-1" />
-                                    <span className="text-xs text-gray-500">Add Photo</span>
+                                <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-unicycle-green hover:bg-gray-50 transition-colors">
                                     <input
                                         type="file"
                                         accept="image/*"
-                                        onChange={handleImageSelect}
                                         multiple
+                                        onChange={handleImageUpload}
                                         className="hidden"
+                                        disabled={uploading}
                                     />
+                                    {uploading ? (
+                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-unicycle-green"></div>
+                                    ) : (
+                                        <>
+                                            <Image className="w-6 h-6 text-gray-400 mb-1" />
+                                            <span className="text-xs text-gray-500">Add</span>
+                                        </>
+                                    )}
                                 </label>
                             )}
                         </div>
 
-                        <p className="text-xs text-gray-500 mt-3">
-                            First image will be the cover. Max 5 images, 10MB each.
-                        </p>
+                        {images.length === 0 && (
+                            <p className="text-xs text-gray-500 text-center">Add photos to attract more buyers</p>
+                        )}
                     </div>
 
                     {/* Title */}
@@ -357,6 +308,14 @@ export default function SellItem({ onBack }) {
                             rows="4"
                             className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green resize-none"
                         />
+                        <div className="flex justify-between mt-1">
+                            <p className={`text-xs ${formData.description.length < 10 ? 'text-amber-600' : 'text-gray-500'}`}>
+                                Minimum 10 characters
+                            </p>
+                            <p className={`text-xs ${formData.description.length < 10 ? 'text-amber-600' : 'text-gray-500'}`}>
+                                {formData.description.length}/10+
+                            </p>
+                        </div>
                     </div>
 
                     {/* Safe Zone */}
@@ -390,17 +349,10 @@ export default function SellItem({ onBack }) {
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        disabled={loading}
-                        className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        disabled={loading || uploading}
+                        className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                     >
-                        {loading ? (
-                            <>
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                Posting...
-                            </>
-                        ) : (
-                            'Post Item'
-                        )}
+                        {loading ? 'Posting...' : 'Post Item'}
                     </button>
                 </form>
             </div>

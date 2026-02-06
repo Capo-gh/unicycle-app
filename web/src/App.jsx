@@ -6,6 +6,7 @@ import ItemDetail from './pages/ItemDetail';
 import SellItem from './pages/SellItem';
 import EditListing from './pages/EditListing';
 import Profile from './pages/Profile';
+import UserProfile from './pages/UserProfile';
 import Messages from './pages/Messages';
 import Requests from './pages/Requests';
 import Signup from './pages/Signup';
@@ -18,6 +19,7 @@ function App() {
   const [messageRequest, setMessageRequest] = useState(null);
   const [user, setUser] = useState(null);
   const [currentMarketplace, setCurrentMarketplace] = useState('');
+  const [viewingUserId, setViewingUserId] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -67,12 +69,20 @@ function App() {
       if (page !== 'messages') {
         setMessageRequest(null);
       }
+      if (page !== 'user-profile') {
+        setViewingUserId(null);
+      }
     }
   };
 
   const handleContactSeller = (request) => {
     setMessageRequest(request);
     setCurrentPage('messages');
+  };
+
+  const handleViewSellerProfile = (userId) => {
+    setViewingUserId(userId);
+    setCurrentPage('user-profile');
   };
 
   if (currentPage === 'loading') {
@@ -116,6 +126,25 @@ function App() {
             onBack={() => setCurrentPage('listings')}
             onContactSeller={handleContactSeller}
             onNavigate={handleNavigate}
+            onViewSellerProfile={handleViewSellerProfile}
+          />
+        )}
+
+        {currentPage === 'user-profile' && (
+          <UserProfile
+            userId={viewingUserId}
+            currentUser={user}
+            onBack={() => {
+              if (selectedItem) {
+                setCurrentPage('detail');
+              } else {
+                setCurrentPage('listings');
+              }
+            }}
+            onItemClick={(item) => {
+              setSelectedItem(item);
+              setCurrentPage('detail');
+            }}
           />
         )}
 

@@ -50,15 +50,19 @@ def get_listings(
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
     search: Optional[str] = None,
-    university: Optional[str] = None,  # Filter by university/marketplace
+    university: Optional[str] = None,
+    include_sold: Optional[bool] = False,  # Option to include sold items
     db: Session = Depends(get_db)
 ):
     """Get all active listings with optional filters including university"""
     query = db.query(Listing).options(joinedload(Listing.seller)).filter(Listing.is_active == True)
     
+    # By default, exclude sold items unless specifically requested
+    if not include_sold:
+        query = query.filter(Listing.is_sold == False)
+    
     # Filter by university/marketplace
     if university:
-        # Join with User table to filter by seller's university
         query = query.join(User, Listing.seller_id == User.id).filter(User.university == university)
     
     if category:
@@ -89,12 +93,36 @@ def get_my_listings(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_from_token)
 ):
-    """Get current user's listings"""
+    """Get current user's listings (including sold ones)"""
     listings = db.query(Listing).options(
         joinedload(Listing.seller)
     ).filter(
         Listing.seller_id == current_user.id,
         Listing.is_active == True
+    ).order_by(Listing.created_at.desc()).all()
+    
+    return listings
+
+
+@router.get("/user/{user_id}", response_model=List[ListingResponse])
+def get_user_listings(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get all active listings for a specific user (public view - excludes sold)"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    listings = db.query(Listing).options(
+        joinedload(Listing.seller)
+    ).filter(
+        Listing.seller_id == user_id,
+        Listing.is_active == True,
+        Listing.is_sold == False
     ).order_by(Listing.created_at.desc()).all()
     
     return listings
@@ -166,6 +194,72 @@ def update_listing(
     for field, value in update_data.items():
         setattr(db_listing, field, value)
     
+    db.commit()
+    db.refresh(db_listing)
+    
+    # Reload with seller relationship
+    db_listing = db.query(Listing).options(
+        joinedload(Listing.seller)
+    ).filter(Listing.id == db_listing.id).first()
+    
+    return db_listing
+
+
+@router.patch("/{listing_id}/sold", response_model=ListingResponse)
+def mark_as_sold(
+    listing_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token)
+):
+    """Mark a listing as sold (only owner can mark)"""
+    db_listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    
+    if not db_listing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Listing not found"
+        )
+    
+    if db_listing.seller_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to update this listing"
+        )
+    
+    db_listing.is_sold = True
+    db.commit()
+    db.refresh(db_listing)
+    
+    # Reload with seller relationship
+    db_listing = db.query(Listing).options(
+        joinedload(Listing.seller)
+    ).filter(Listing.id == db_listing.id).first()
+    
+    return db_listing
+
+
+@router.patch("/{listing_id}/unsold", response_model=ListingResponse)
+def mark_as_unsold(
+    listing_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_token)
+):
+    """Mark a listing as available again (only owner can mark)"""
+    db_listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    
+    if not db_listing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Listing not found"
+        )
+    
+    if db_listing.seller_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to update this listing"
+        )
+    
+    db_listing.is_sold = False
     db.commit()
     db.refresh(db_listing)
     
