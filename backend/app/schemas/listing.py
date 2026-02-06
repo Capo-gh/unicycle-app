@@ -56,7 +56,7 @@ class ListingResponse(BaseModel):
     seller_id: int
     seller: Optional[SellerInfo] = None
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True
