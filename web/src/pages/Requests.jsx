@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, MessageCircle, Clock, TrendingUp, ArrowLeft, DollarSign, Send, Trash2, X } from 'lucide-react';
+import { Search, Plus, MessageCircle, Clock, TrendingUp, ArrowLeft, DollarSign, Send, Trash2, X, CornerDownRight } from 'lucide-react';
 import { getAllRequests, getRequest, createRequest, createReply, deleteRequest, deleteReply } from '../api/requests';
 
 export default function Requests({ user }) {
@@ -13,7 +13,6 @@ export default function Requests({ user }) {
 
     const filters = ['All', 'Urgent', 'Furniture', 'Textbooks', 'Electronics', 'Appliances', 'Clothing', 'Sports & Outdoors', 'Kitchen', 'Room Decor', 'Other'];
 
-    // Fetch requests from backend
     useEffect(() => {
         fetchRequests();
     }, [selectedFilter, searchQuery]);
@@ -36,7 +35,6 @@ export default function Requests({ user }) {
         }
     };
 
-    // Fetch single request with replies when selected
     const handleSelectRequest = async (requestId) => {
         try {
             const data = await getRequest(requestId);
@@ -46,22 +44,17 @@ export default function Requests({ user }) {
         }
     };
 
-    // Handle adding a new request
-    const handleAddRequest = async (newRequest) => {
+    const handleAddRequest = async () => {
         await fetchRequests();
         setShowPostForm(false);
     };
 
-    // Handle adding a reply
-    const handleAddReply = async (requestId, replyText) => {
+    const handleAddReply = async (requestId, replyText, parentReplyId = null) => {
         try {
-            const newReply = await createReply(requestId, replyText);
-
-            // Update the selected request with new reply
-            setSelectedRequest(prev => ({
-                ...prev,
-                replies: [...prev.replies, newReply]
-            }));
+            await createReply(requestId, replyText, parentReplyId);
+            // Refetch to get updated nested structure
+            const data = await getRequest(requestId);
+            setSelectedRequest(data);
 
             // Update reply count in list
             setRequests(prev => prev.map(req => {
@@ -76,7 +69,6 @@ export default function Requests({ user }) {
         }
     };
 
-    // Handle deleting a request
     const handleDeleteRequest = async (requestId) => {
         if (!confirm('Are you sure you want to delete this request?')) return;
 
@@ -90,18 +82,13 @@ export default function Requests({ user }) {
         }
     };
 
-    // Handle deleting a reply
     const handleDeleteReply = async (requestId, replyId) => {
         try {
             await deleteReply(requestId, replyId);
+            // Refetch to get updated structure
+            const data = await getRequest(requestId);
+            setSelectedRequest(data);
 
-            // Update the selected request
-            setSelectedRequest(prev => ({
-                ...prev,
-                replies: prev.replies.filter(r => r.id !== replyId)
-            }));
-
-            // Update reply count in list
             setRequests(prev => prev.map(req => {
                 if (req.id === requestId) {
                     return { ...req, reply_count: Math.max((req.reply_count || 1) - 1, 0) };
@@ -114,7 +101,6 @@ export default function Requests({ user }) {
         }
     };
 
-    // Format time ago
     const formatTimeAgo = (dateString) => {
         const date = new Date(dateString);
         const now = new Date();
@@ -127,7 +113,6 @@ export default function Requests({ user }) {
         return date.toLocaleDateString();
     };
 
-    // ─── POST FORM ───
     if (showPostForm) {
         return <PostRequestForm
             user={user}
@@ -136,11 +121,10 @@ export default function Requests({ user }) {
         />;
     }
 
-    // ─── MAIN VIEW ───
     return (
         <div className="w-full min-h-screen lg:h-screen flex flex-col lg:flex-row pb-20 lg:pb-0 overflow-x-hidden">
 
-            {/* ─── LEFT: Requests List ─── */}
+            {/* LEFT: Requests List */}
             <div className={`${selectedRequest ? 'hidden lg:flex' : 'flex'} flex-col w-full min-w-0 lg:w-1/2 lg:border-r lg:border-gray-200 lg:overflow-y-auto`}>
 
                 {/* Header */}
@@ -190,14 +174,13 @@ export default function Requests({ user }) {
                     </div>
                 </div>
 
-                {/* Loading State */}
+                {/* Loading/Error/Empty States */}
                 {loading && (
                     <div className="flex justify-center items-center py-20">
                         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-unicycle-green"></div>
                     </div>
                 )}
 
-                {/* Error State */}
                 {error && !loading && (
                     <div className="p-4">
                         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
@@ -209,7 +192,6 @@ export default function Requests({ user }) {
                     </div>
                 )}
 
-                {/* Empty State */}
                 {!loading && !error && requests.length === 0 && (
                     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
                         <div className="text-5xl mb-4">🔍</div>
@@ -276,7 +258,7 @@ export default function Requests({ user }) {
                 )}
             </div>
 
-            {/* ─── RIGHT: Request Detail ─── */}
+            {/* RIGHT: Request Detail */}
             <div className={`${selectedRequest ? 'flex' : 'hidden lg:flex'} flex-col w-full lg:w-1/2 bg-gray-50 lg:overflow-hidden`}>
                 {selectedRequest ? (
                     <RequestDetail
@@ -306,6 +288,7 @@ export default function Requests({ user }) {
 // ═══════════════════════════════════════════════════════════════════
 function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteReply, formatTimeAgo }) {
     const [replyText, setReplyText] = useState('');
+    const [replyingTo, setReplyingTo] = useState(null); // { id, authorName } for nested reply
     const [sending, setSending] = useState(false);
 
     const handleSendReply = async () => {
@@ -313,18 +296,83 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteRe
 
         setSending(true);
         try {
-            await onAddReply(request.id, replyText.trim());
+            await onAddReply(request.id, replyText.trim(), replyingTo?.id || null);
             setReplyText('');
+            setReplyingTo(null);
         } finally {
             setSending(false);
         }
     };
 
-    const isOwner = user?.id === request.author_id || user?.email === request.author?.email;
+    const isOwner = user?.id === request.author_id;
+    const canDeleteReply = (reply) => user?.id === reply.author_id || isOwner;
 
-    // Check if user can delete a reply (own reply or request owner)
-    const canDeleteReply = (reply) => {
-        return user?.id === reply.author_id || isOwner;
+    // Recursive reply renderer
+    const renderReply = (reply, depth = 0) => {
+        const maxDepth = 3; // Limit nesting depth for UI
+
+        return (
+            <div key={reply.id} className={`${depth > 0 ? 'ml-8 border-l-2 border-gray-200 pl-3' : ''}`}>
+                <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 group mb-2">
+                    <div className="flex items-start gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${reply.author_id === request.author_id
+                            ? 'bg-gradient-to-br from-unicycle-blue to-unicycle-green'
+                            : 'bg-gray-400'
+                            }`}>
+                            {reply.author?.name?.charAt(0) || '?'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-sm text-gray-900">
+                                    {reply.author?.name}
+                                </span>
+                                {reply.author_id === request.author_id && (
+                                    <span className="px-1.5 py-0.5 bg-unicycle-blue/10 text-unicycle-blue text-xs rounded">
+                                        OP
+                                    </span>
+                                )}
+                                <span className="text-xs text-gray-500">
+                                    {formatTimeAgo(reply.created_at)}
+                                </span>
+                            </div>
+                            <p className="text-sm text-gray-700">{reply.text}</p>
+
+                            {/* Reply button */}
+                            {depth < maxDepth && (
+                                <button
+                                    onClick={() => setReplyingTo({ id: reply.id, authorName: reply.author?.name })}
+                                    className="mt-2 text-xs text-unicycle-blue hover:underline flex items-center gap-1"
+                                >
+                                    <CornerDownRight className="w-3 h-3" />
+                                    Reply
+                                </button>
+                            )}
+                        </div>
+
+                        {canDeleteReply(reply) && (
+                            <button
+                                onClick={() => {
+                                    if (confirm('Delete this reply?')) {
+                                        onDeleteReply(request.id, reply.id);
+                                    }
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Delete reply"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Render child replies */}
+                {reply.child_replies && reply.child_replies.length > 0 && (
+                    <div className="mt-2">
+                        {reply.child_replies.map(childReply => renderReply(childReply, depth + 1))}
+                    </div>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -364,7 +412,6 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteRe
                         <span className="text-xs text-gray-500">{formatTimeAgo(request.created_at)}</span>
                     </div>
 
-                    {/* Tags */}
                     <div className="flex flex-wrap gap-2 mb-3">
                         {request.urgent && (
                             <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded">
@@ -392,69 +439,40 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteRe
                         Replies ({request.replies?.length || 0})
                     </h3>
 
-                    {request.replies?.length === 0 && (
+                    {(!request.replies || request.replies.length === 0) && (
                         <div className="bg-white rounded-lg p-6 text-center border border-gray-200">
                             <p className="text-gray-500 text-sm">No replies yet. Be the first to help!</p>
                         </div>
                     )}
 
-                    <div className="space-y-3">
-                        {request.replies?.map((reply) => (
-                            <div key={reply.id} className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 group">
-                                <div className="flex items-start gap-3">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${reply.author_id === request.author_id
-                                        ? 'bg-gradient-to-br from-unicycle-blue to-unicycle-green'
-                                        : 'bg-gray-400'
-                                        }`}>
-                                        {reply.author?.name?.charAt(0) || '?'}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-medium text-sm text-gray-900">
-                                                {reply.author?.name}
-                                            </span>
-                                            {reply.author_id === request.author_id && (
-                                                <span className="px-1.5 py-0.5 bg-unicycle-blue/10 text-unicycle-blue text-xs rounded">
-                                                    OP
-                                                </span>
-                                            )}
-                                            <span className="text-xs text-gray-500">
-                                                {formatTimeAgo(reply.created_at)}
-                                            </span>
-                                        </div>
-                                        <p className="text-sm text-gray-700">{reply.text}</p>
-                                    </div>
-
-                                    {/* Delete reply button */}
-                                    {canDeleteReply(reply) && (
-                                        <button
-                                            onClick={() => {
-                                                if (confirm('Delete this reply?')) {
-                                                    onDeleteReply(request.id, reply.id);
-                                                }
-                                            }}
-                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                            title="Delete reply"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                    <div className="space-y-2">
+                        {request.replies?.map(reply => renderReply(reply, 0))}
                     </div>
                 </div>
             </div>
 
             {/* Reply Input */}
             <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
+                {replyingTo && (
+                    <div className="mb-2 flex items-center justify-between bg-gray-100 px-3 py-2 rounded-lg">
+                        <span className="text-sm text-gray-600">
+                            Replying to <strong>{replyingTo.authorName}</strong>
+                        </span>
+                        <button
+                            onClick={() => setReplyingTo(null)}
+                            className="text-gray-400 hover:text-gray-600"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
                 <div className="flex gap-2">
                     <input
                         type="text"
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && !sending && handleSendReply()}
-                        placeholder="Write a reply..."
+                        placeholder={replyingTo ? `Reply to ${replyingTo.authorName}...` : "Write a reply..."}
                         className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
                         disabled={sending}
                     />
@@ -473,7 +491,7 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteRe
 
 
 // ═══════════════════════════════════════════════════════════════════
-// POST REQUEST FORM COMPONENT
+// POST REQUEST FORM
 // ═══════════════════════════════════════════════════════════════════
 function PostRequestForm({ user, onBack, onAddRequest }) {
     const [formData, setFormData] = useState({
@@ -525,7 +543,6 @@ function PostRequestForm({ user, onBack, onAddRequest }) {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
-            {/* Header */}
             <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
                 <div className="max-w-md lg:max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
                     <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -536,10 +553,7 @@ function PostRequestForm({ user, onBack, onAddRequest }) {
                 </div>
             </div>
 
-            {/* Form */}
             <div className="max-w-md lg:max-w-2xl mx-auto px-4 py-6 space-y-4">
-
-                {/* Title */}
                 <div className="bg-white rounded-lg p-4 shadow-sm">
                     <label className="block text-sm font-semibold text-gray-900 mb-2">What are you looking for?</label>
                     <input
@@ -549,10 +563,8 @@ function PostRequestForm({ user, onBack, onAddRequest }) {
                         onChange={(e) => handleInputChange('title', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
                     />
-                    <p className="text-xs text-gray-400 mt-1">Tip: Start with "ISO:" or "WTB:" to get more replies</p>
                 </div>
 
-                {/* Category & Urgency */}
                 <div className="grid grid-cols-2 gap-3">
                     <div className="bg-white rounded-lg p-4 shadow-sm">
                         <label className="block text-sm font-semibold text-gray-900 mb-2">Category</label>
@@ -581,7 +593,6 @@ function PostRequestForm({ user, onBack, onAddRequest }) {
                     </div>
                 </div>
 
-                {/* Budget */}
                 <div className="bg-white rounded-lg p-4 shadow-sm">
                     <label className="block text-sm font-semibold text-gray-900 mb-2">Budget (CAD)</label>
                     <div className="flex items-center gap-3">
@@ -609,11 +620,10 @@ function PostRequestForm({ user, onBack, onAddRequest }) {
                     </div>
                 </div>
 
-                {/* Description */}
                 <div className="bg-white rounded-lg p-4 shadow-sm">
                     <label className="block text-sm font-semibold text-gray-900 mb-2">Description</label>
                     <textarea
-                        placeholder="Describe what you're looking for, condition, any specific requirements..."
+                        placeholder="Describe what you're looking for..."
                         value={formData.description}
                         onChange={(e) => handleInputChange('description', e.target.value)}
                         rows="4"
@@ -621,32 +631,12 @@ function PostRequestForm({ user, onBack, onAddRequest }) {
                     />
                 </div>
 
-                {/* Preview */}
-                {formData.title && (
-                    <div className="bg-gradient-to-r from-unicycle-blue/10 to-unicycle-green/10 rounded-lg p-4 border border-unicycle-blue/30">
-                        <p className="text-xs font-semibold text-gray-500 mb-2">Preview</p>
-                        <div className="flex items-center gap-2 mb-1">
-                            {formData.urgent && (
-                                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">🔥 URGENT</span>
-                            )}
-                            <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded">{formData.category}</span>
-                        </div>
-                        <p className="text-sm font-semibold text-gray-900">{formData.title}</p>
-                        {formData.description && <p className="text-xs text-gray-600 mt-1">{formData.description}</p>}
-                        {formData.budgetMin && formData.budgetMax && (
-                            <p className="text-xs text-unicycle-green font-medium mt-1">Budget: ${formData.budgetMin} - ${formData.budgetMax}</p>
-                        )}
-                    </div>
-                )}
-
-                {/* Error */}
                 {error && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                         <p className="text-red-600 text-sm">{error}</p>
                     </div>
                 )}
 
-                {/* Submit */}
                 <button
                     onClick={handleSubmit}
                     disabled={!formData.title || !formData.description || loading}

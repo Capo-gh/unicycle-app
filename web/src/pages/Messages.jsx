@@ -12,19 +12,19 @@ export default function Messages({ incomingRequest, user }) {
     const [error, setError] = useState(null);
     const messagesEndRef = useRef(null);
 
-    // Fetch conversations on mount
+    // Get current user ID
+    const currentUserId = user?.id;
+
     useEffect(() => {
         fetchConversations();
     }, []);
 
-    // Handle incoming request from ItemDetail (Contact Seller)
     useEffect(() => {
         if (incomingRequest?.listingId && incomingRequest?.initialMessage !== undefined) {
             handleStartConversation(incomingRequest.listingId, incomingRequest.initialMessage || "Hi, is this still available?");
         }
     }, [incomingRequest]);
 
-    // Scroll to bottom when messages change
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [activeConversation?.messages]);
@@ -49,7 +49,6 @@ export default function Messages({ incomingRequest, user }) {
             const data = await getConversation(convId);
             setActiveConversation(data);
 
-            // Update unread count in list
             setConversations(prev => prev.map(c =>
                 c.id === convId ? { ...c, unread_count: 0 } : c
             ));
@@ -61,9 +60,7 @@ export default function Messages({ incomingRequest, user }) {
     const handleStartConversation = async (listingId, initialMessage) => {
         try {
             const conv = await createConversation(listingId, initialMessage);
-            // Refresh conversations list
             await fetchConversations();
-            // Select the new/existing conversation
             handleSelectConversation(conv.id);
         } catch (err) {
             console.error('Error starting conversation:', err);
@@ -78,13 +75,11 @@ export default function Messages({ incomingRequest, user }) {
         try {
             const newMessage = await sendMessage(selectedConvId, messageText.trim());
 
-            // Add message to active conversation
             setActiveConversation(prev => ({
                 ...prev,
                 messages: [...prev.messages, newMessage]
             }));
 
-            // Update last message in conversations list
             setConversations(prev => prev.map(c =>
                 c.id === selectedConvId
                     ? { ...c, last_message: newMessage, updated_at: newMessage.created_at }
@@ -115,13 +110,11 @@ export default function Messages({ incomingRequest, user }) {
         }
     };
 
-    // Get the other person in the conversation
     const getOtherPerson = (conv) => {
-        if (!conv || !user) return null;
-        return conv.buyer_id === user.id ? conv.seller : conv.buyer;
+        if (!conv || !currentUserId) return null;
+        return conv.buyer_id === currentUserId ? conv.seller : conv.buyer;
     };
 
-    // Format time ago
     const formatTimeAgo = (dateString) => {
         if (!dateString) return '';
         const date = new Date(dateString);
@@ -138,7 +131,7 @@ export default function Messages({ incomingRequest, user }) {
     return (
         <div className="h-screen flex flex-col lg:flex-row bg-gray-50 overflow-hidden">
 
-            {/* ─── LEFT: Conversation List ─── */}
+            {/* LEFT: Conversation List */}
             <div className={`w-full lg:w-96 bg-white flex flex-col border-r border-gray-200 ${selectedConvId ? 'hidden lg:flex' : 'flex'}`}>
                 {/* Header */}
                 <div className="px-4 py-4 border-b border-gray-200 flex-shrink-0">
@@ -226,23 +219,9 @@ export default function Messages({ incomingRequest, user }) {
                         })}
                     </div>
                 )}
-
-                {/* Safety Tips (mobile only when no chat selected) */}
-                {!selectedConvId && !loading && (
-                    <div className="lg:hidden p-4 flex-shrink-0">
-                        <div className="bg-gradient-to-r from-unicycle-green/10 to-unicycle-blue/10 rounded-lg p-4 border border-unicycle-green/30">
-                            <h4 className="font-semibold text-gray-900 mb-2 text-sm">🛡️ Safety Tips</h4>
-                            <ul className="text-xs text-gray-700 space-y-1">
-                                <li>• Always meet at campus Safe Zones</li>
-                                <li>• Verify items before completing payment</li>
-                                <li>• Use Secure-Pay for items over $50</li>
-                            </ul>
-                        </div>
-                    </div>
-                )}
             </div>
 
-            {/* ─── RIGHT: Chat Interface ─── */}
+            {/* RIGHT: Chat Interface */}
             <div className={`flex-1 flex flex-col bg-white ${selectedConvId ? 'flex' : 'hidden lg:flex'}`}>
                 {activeConversation ? (
                     <>
@@ -287,7 +266,9 @@ export default function Messages({ incomingRequest, user }) {
                                 </div>
                             ) : (
                                 activeConversation.messages.map((msg) => {
-                                    const isMe = msg.sender_id === user?.id;
+                                    // FIXED: Check if message is from current user
+                                    const isMe = msg.sender_id === currentUserId;
+
                                     return (
                                         <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                                             {/* Avatar */}

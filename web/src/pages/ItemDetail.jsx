@@ -1,15 +1,48 @@
-import { useState } from 'react';
-import { ArrowLeft, MapPin, ShieldCheck, MessageCircle, Share2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, MapPin, ShieldCheck, MessageCircle, Share2, Edit, Star } from 'lucide-react';
 import SecurePayModal from './SecurePayModal';
+import { getUserReviews } from '../api/reviews';
 
-export default function ItemDetail({ item, onBack, onContactSeller }) {
+export default function ItemDetail({ item, onBack, onContactSeller, onNavigate }) {
     const [showSecurePayModal, setShowSecurePayModal] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
+    const [sellerReviews, setSellerReviews] = useState(null);
+
+    // Get current user from localStorage
+    useEffect(() => {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            try {
+                setCurrentUser(JSON.parse(userStr));
+            } catch (e) {
+                console.error('Error parsing user:', e);
+            }
+        }
+    }, []);
+
+    // Fetch seller reviews
+    useEffect(() => {
+        if (item?.seller_id) {
+            fetchSellerReviews();
+        }
+    }, [item?.seller_id]);
+
+    const fetchSellerReviews = async () => {
+        try {
+            const data = await getUserReviews(item.seller_id);
+            setSellerReviews(data);
+        } catch (err) {
+            console.error('Error fetching reviews:', err);
+        }
+    };
+
+    // Check if current user is the seller
+    const isOwner = currentUser && item?.seller_id === currentUser.id;
 
     const handleContactSeller = () => {
         if (item.price >= 50) {
             setShowSecurePayModal(true);
         } else {
-            // Pass listing ID and a default message
             onContactSeller({
                 listingId: item.id,
                 initialMessage: `Hi! Is "${item.title}" still available?`
@@ -19,11 +52,34 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
 
     const handleSecurePayProceed = () => {
         setShowSecurePayModal(false);
-        // Pass listing ID and a default message
         onContactSeller({
             listingId: item.id,
             initialMessage: `Hi! I'm interested in "${item.title}" ($${item.price}). Is it still available?`
         });
+    };
+
+    const handleEditListing = () => {
+        if (onNavigate) {
+            onNavigate('edit-listing', item);
+        }
+    };
+
+    // Get images from comma-separated list
+    const getImages = () => {
+        if (!item.images) return ['https://via.placeholder.com/400x400?text=No+Image'];
+        return item.images.split(',').filter(img => img.trim());
+    };
+
+    const images = getImages();
+
+    // Render stars
+    const renderStars = (rating) => {
+        return [...Array(5)].map((_, i) => (
+            <Star
+                key={i}
+                className={`w-4 h-4 ${i < Math.round(rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+            />
+        ));
     };
 
     if (!item) {
@@ -37,7 +93,7 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
     return (
         <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
 
-            {/* ─── HEADER ─── */}
+            {/* Header */}
             <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
                 <div className="max-w-md lg:max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
                     <button
@@ -53,24 +109,31 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                 </div>
             </div>
 
-            {/* ─── BODY: stacked mobile, side-by-side desktop ─── */}
+            {/* Body */}
             <div className="max-w-md lg:max-w-5xl mx-auto lg:flex lg:gap-8 lg:p-6">
 
-                {/* ─── LEFT: Image ─── */}
+                {/* Left: Image */}
                 <div className="lg:flex-1">
                     <div className="relative h-80 lg:h-auto lg:aspect-square lg:rounded-xl overflow-hidden">
                         <img
-                            src={item.images?.[0] || 'https://via.placeholder.com/400'}
+                            src={images[0]}
                             alt={item.title}
                             className="w-full h-full object-cover"
                         />
-                        <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
-                            1 / {item.images?.length || 1}
-                        </div>
+                        {images.length > 1 && (
+                            <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                                1 / {images.length}
+                            </div>
+                        )}
+                        {isOwner && (
+                            <div className="absolute top-4 left-4 bg-unicycle-blue text-white px-3 py-1 rounded-full text-sm font-medium">
+                                Your Listing
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* ─── RIGHT: Details ─── */}
+                {/* Right: Details */}
                 <div className="lg:flex-1 px-4 lg:px-0 py-4 lg:py-0 space-y-4">
 
                     {/* Price & Title */}
@@ -82,18 +145,21 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                                     <span>{item.category}</span>
                                     <span>•</span>
                                     <span>{item.condition}</span>
-                                    <span>•</span>
-                                    <span>{item.posted || 'Recently'}</span>
                                 </div>
                             </div>
                             <div className="text-3xl font-bold text-unicycle-green">${item.price}</div>
                         </div>
                     </div>
 
-                    {/* Seller Info */}
+                    {/* Seller Info with Reviews */}
                     <div className="bg-white rounded-lg p-4 shadow-sm">
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="font-semibold text-gray-900">Seller</h3>
+                            {isOwner && (
+                                <span className="text-xs bg-unicycle-blue/10 text-unicycle-blue px-2 py-1 rounded">
+                                    This is you
+                                </span>
+                            )}
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="w-12 h-12 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold text-lg">
@@ -102,11 +168,19 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                             <div className="flex-1">
                                 <div className="flex items-center gap-2">
                                     <span className="font-medium text-gray-900">{item.seller?.name || 'Unknown'}</span>
-                                    {item.seller?.is_verified && (
-                                        <ShieldCheck className="w-4 h-4 text-unicycle-blue" />
-                                    )}
+                                    <ShieldCheck className="w-4 h-4 text-unicycle-blue" />
                                 </div>
                                 <p className="text-sm text-gray-600">{item.seller?.university || ''}</p>
+
+                                {/* Rating */}
+                                {sellerReviews && sellerReviews.review_count > 0 && (
+                                    <div className="flex items-center gap-1 mt-1">
+                                        <div className="flex">{renderStars(sellerReviews.avg_rating)}</div>
+                                        <span className="text-sm text-gray-600">
+                                            ({sellerReviews.avg_rating.toFixed(1)}) • {sellerReviews.review_count} review{sellerReviews.review_count !== 1 ? 's' : ''}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="mt-3 pt-3 border-t border-gray-200">
@@ -150,8 +224,8 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                         </div>
                     </div>
 
-                    {/* Secure-Pay Info */}
-                    {item.price >= 50 && (
+                    {/* Secure-Pay Info (only for buyers) */}
+                    {!isOwner && item.price >= 50 && (
                         <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                             <div className="flex items-start gap-3">
                                 <div className="p-2 bg-unicycle-blue rounded-lg">
@@ -160,34 +234,54 @@ export default function ItemDetail({ item, onBack, onContactSeller }) {
                                 <div className="flex-1">
                                     <h3 className="font-semibold text-gray-900 mb-1">Secure-Pay Protected</h3>
                                     <p className="text-xs text-gray-600">
-                                        This item qualifies for escrow protection. Your payment is held securely until you verify the item in person at the Safe Zone.
+                                        This item qualifies for escrow protection. Your payment is held securely until you verify the item in person.
                                     </p>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* ─── Contact Seller – Desktop ─── */}
-                    <button
-                        onClick={handleContactSeller}
-                        className="hidden lg:flex w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors items-center justify-center gap-2"
-                    >
-                        <MessageCircle className="w-5 h-5" />
-                        Contact Seller
-                    </button>
+                    {/* Action Buttons – Desktop */}
+                    {isOwner ? (
+                        <button
+                            onClick={handleEditListing}
+                            className="hidden lg:flex w-full bg-unicycle-blue text-white py-3 rounded-lg font-semibold hover:bg-unicycle-blue/90 transition-colors items-center justify-center gap-2"
+                        >
+                            <Edit className="w-5 h-5" />
+                            Edit Listing
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleContactSeller}
+                            className="hidden lg:flex w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors items-center justify-center gap-2"
+                        >
+                            <MessageCircle className="w-5 h-5" />
+                            Contact Seller
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* ─── Contact Seller – Mobile ─── */}
+            {/* Action Buttons – Mobile */}
             <div className="lg:hidden fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20">
                 <div className="max-w-md mx-auto px-4 py-3">
-                    <button
-                        onClick={handleContactSeller}
-                        className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors flex items-center justify-center gap-2"
-                    >
-                        <MessageCircle className="w-5 h-5" />
-                        Contact Seller
-                    </button>
+                    {isOwner ? (
+                        <button
+                            onClick={handleEditListing}
+                            className="w-full bg-unicycle-blue text-white py-3 rounded-lg font-semibold hover:bg-unicycle-blue/90 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Edit className="w-5 h-5" />
+                            Edit Listing
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleContactSeller}
+                            className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <MessageCircle className="w-5 h-5" />
+                            Contact Seller
+                        </button>
+                    )}
                 </div>
             </div>
 

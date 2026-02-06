@@ -1,225 +1,257 @@
 import { useState } from 'react';
-import { ShieldCheck, Mail, Building2, User } from 'lucide-react';
-import logo from '../assets/unicycle-logo.png';
-import VerificationSuccess from './VerificationSuccess';
+import { Mail, User, Building2, ShieldCheck, Eye, EyeOff, Lock } from 'lucide-react';
 import { signup, login } from '../api/auth';
 
+// Import logo
+import logo from '../assets/logo.svg';
+
 export default function Signup({ onSignup }) {
-    const [step, setStep] = useState(1);
+    const [isLogin, setIsLogin] = useState(false);
     const [selectedUniversity, setSelectedUniversity] = useState('');
     const [email, setEmail] = useState('');
     const [name, setName] = useState('');
-    const [error, setError] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const universities = [
-        { name: 'McGill University', domain: '@mail.mcgill.ca' },
-        { name: 'Concordia University', domain: '@live.concordia.ca' },
-        { name: 'École de technologie supérieure (ÉTS)', domain: '@ens.etsmtl.ca' },
-        { name: 'Polytechnique Montréal', domain: '@polymtl.ca' },
-        { name: 'Université de Montréal (UdeM)', domain: '@umontreal.ca' },
-        { name: 'Université du Québec à Montréal (UQAM)', domain: '@courrier.uqam.ca' },
-        { name: 'Université Laval', domain: '@ulaval.ca' },
-        { name: 'Université de Sherbrooke', domain: '@usherbrooke.ca' }
+        { name: 'McGill University', domain: 'mail.mcgill.ca' },
+        { name: 'Concordia University', domain: 'concordia.ca' },
+        { name: 'Université de Montréal', domain: 'umontreal.ca' },
+        { name: 'UQAM', domain: 'uqam.ca' },
+        { name: 'HEC Montréal', domain: 'hec.ca' }
     ];
 
-    const handleUniversitySelect = (e) => {
-        const uni = universities.find(u => u.name === e.target.value);
-        if (uni) {
-            setSelectedUniversity(uni);
-            setEmail('');
-            setError('');
-        }
+    const selectedUni = universities.find(u => u.name === selectedUniversity);
+
+    const validateEmail = () => {
+        if (!selectedUni) return true;
+        return email.endsWith(`@${selectedUni.domain}`);
     };
 
-    const handleEmailSubmit = async () => {
-        if (!selectedUniversity) {
-            setError('Please select your university');
-            return;
-        }
+    const handleSubmit = async () => {
+        setError('');
 
-        const emailDomain = email.substring(email.lastIndexOf('@'));
-
-        if (!email.includes('@')) {
-            setError('Please enter a valid email address');
-            return;
-        }
-
-        if (emailDomain !== selectedUniversity.domain) {
-            setError(`Email must end with ${selectedUniversity.domain}`);
-            return;
-        }
-
-        if (!name.trim() || name.trim().length < 2) {
-            setError('Please enter your full name');
-            return;
+        if (isLogin) {
+            if (!email || !password) {
+                setError('Please fill in all fields');
+                return;
+            }
+        } else {
+            if (!selectedUniversity || !email || !name || !password) {
+                setError('Please fill in all fields');
+                return;
+            }
+            if (!validateEmail()) {
+                setError(`Email must end with @${selectedUni.domain}`);
+                return;
+            }
+            if (password.length < 6) {
+                setError('Password must be at least 6 characters');
+                return;
+            }
         }
 
         setLoading(true);
-        setError('');
 
         try {
-            // Create account
-            const userData = await signup({
-                email: email,
-                name: name,
-                university: selectedUniversity.name
-            });
+            let response;
 
-            console.log('Signup successful:', userData);
+            if (isLogin) {
+                response = await login({
+                    email: email,
+                    password: password
+                });
+            } else {
+                response = await signup({
+                    email: email,
+                    name: name,
+                    university: selectedUniversity,
+                    password: password
+                });
+            }
 
-            // Auto-login after signup
-            const loginResponse = await login(email);
+            localStorage.setItem('token', response.access_token);
+            localStorage.setItem('user', JSON.stringify(response.user));
+            onSignup(response.user);
 
-            // Store token
-            localStorage.setItem('token', loginResponse.access_token);
-            localStorage.setItem('user', JSON.stringify(userData));
-
-            setStep(2);
         } catch (err) {
-            console.error('Signup error:', err);
+            console.error('Auth error:', err);
             if (err.response?.data?.detail) {
                 setError(err.response.data.detail);
             } else {
-                setError('Signup failed. Please try again.');
+                setError(isLogin ? 'Login failed. Please check your credentials.' : 'Signup failed. Please try again.');
             }
         } finally {
             setLoading(false);
         }
     };
 
-    if (step === 2) {
-        return (
-            <VerificationSuccess
-                userData={{ email, university: selectedUniversity.name, name }}
-                onContinue={() => onSignup({ email, university: selectedUniversity.name, name })}
-            />
-        );
-    }
+    const toggleMode = () => {
+        setIsLogin(!isLogin);
+        setError('');
+    };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-unicycle-blue/10 to-unicycle-green/10 flex items-center justify-center px-4">
-            <div className="max-w-md w-full">
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center gap-3 mb-4">
-                        <img src={logo} alt="UniCycle" className="h-16 w-auto" />
-                    </div>
-                    <h1 className="text-3xl font-bold text-gray-900">Welcome to UniCycle</h1>
-                    <p className="text-gray-600 mt-2">The trusted student marketplace</p>
-                </div>
+        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col items-center justify-center px-4 py-8">
+            {/* Logo */}
+            <div className="mb-6">
+                <img src={logo} alt="UniCycle" className="h-16 w-auto" />
+            </div>
 
-                <div className="bg-white rounded-2xl shadow-xl p-6 animate-fadeIn">
-                    {/* University Selection */}
-                    <div className="mb-6">
-                        <div className="flex items-center gap-2 mb-3">
-                            <Building2 className="w-5 h-5 text-unicycle-blue" />
-                            <label className="text-sm font-semibold text-gray-900">Select Your University</label>
-                        </div>
+            {/* Title */}
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {isLogin ? 'Welcome Back!' : 'Welcome to UniCycle'}
+            </h1>
+            <p className="text-gray-600 mb-8">
+                {isLogin ? 'Sign in to your account' : 'The trusted student marketplace'}
+            </p>
+
+            {/* Form Card */}
+            <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 space-y-5">
+
+                {/* University Selector (Signup only) */}
+                {!isLogin && (
+                    <div>
+                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                            <Building2 className="w-4 h-4" />
+                            Select Your University
+                        </label>
                         <select
-                            value={selectedUniversity.name || ''}
-                            onChange={handleUniversitySelect}
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green focus:border-transparent bg-white text-gray-900"
+                            value={selectedUniversity}
+                            onChange={(e) => {
+                                setSelectedUniversity(e.target.value);
+                                setEmail('');
+                            }}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
                         >
-                            <option value="">Choose your university...</option>
-                            {universities.map((uni) => (
-                                <option key={uni.name} value={uni.name}>
-                                    {uni.name}
-                                </option>
+                            <option value="">Choose your university</option>
+                            {universities.map(uni => (
+                                <option key={uni.name} value={uni.name}>{uni.name}</option>
                             ))}
                         </select>
-                        {selectedUniversity && (
-                            <p className="text-xs text-gray-500 mt-2">
-                                Email domain: {selectedUniversity.domain}
+                        {selectedUni && (
+                            <p className="text-xs text-gray-500 mt-1">
+                                Email domain: @{selectedUni.domain}
                             </p>
                         )}
                     </div>
+                )}
 
-                    {/* Email Input */}
-                    <div className="mb-6">
-                        <div className="flex items-center gap-2 mb-3">
-                            <Mail className="w-5 h-5 text-unicycle-blue" />
-                            <label className="text-sm font-semibold text-gray-900">Your University Email</label>
-                        </div>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => {
-                                setEmail(e.target.value);
-                                setError('');
-                            }}
-                            disabled={!selectedUniversity}
-                            placeholder={selectedUniversity ? `your.name${selectedUniversity.domain}` : 'Select university first'}
-                            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors ${selectedUniversity
-                                ? 'border-gray-200 focus:ring-2 focus:ring-unicycle-green focus:border-transparent bg-white'
-                                : 'border-gray-200 bg-gray-100 cursor-not-allowed'
-                                }`}
-                        />
-                        {selectedUniversity && (
-                            <p className="text-xs text-gray-500 mt-2">
-                                We'll verify your student status
-                            </p>
-                        )}
-                    </div>
+                {/* Email */}
+                <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                        <Mail className="w-4 h-4" />
+                        {isLogin ? 'Email' : 'Your University Email'}
+                    </label>
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder={isLogin ? "your@email.com" : (selectedUni ? `username@${selectedUni.domain}` : "Select university first")}
+                        disabled={!isLogin && !selectedUniversity}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green disabled:bg-gray-100"
+                    />
+                    {!isLogin && (
+                        <p className="text-xs text-gray-500 mt-1">We'll verify your student status</p>
+                    )}
+                </div>
 
-                    {/* Name Input */}
-                    <div className="mb-6">
-                        <div className="flex items-center gap-2 mb-3">
-                            <User className="w-5 h-5 text-unicycle-blue" />
-                            <label className="text-sm font-semibold text-gray-900">Your Name</label>
-                        </div>
+                {/* Name (Signup only) */}
+                {!isLogin && (
+                    <div>
+                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                            <User className="w-4 h-4" />
+                            Your Name
+                        </label>
                         <input
                             type="text"
                             value={name}
-                            onChange={(e) => {
-                                setName(e.target.value);
-                                setError('');
-                            }}
-                            disabled={!selectedUniversity}
-                            placeholder="e.g., Sarah Chen"
-                            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors ${selectedUniversity
-                                ? 'border-gray-200 focus:ring-2 focus:ring-unicycle-green focus:border-transparent bg-white'
-                                : 'border-gray-200 bg-gray-100 cursor-not-allowed'
-                                }`}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="How others will see you"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
                         />
                     </div>
+                )}
 
-                    {/* Error Message */}
-                    {error && (
-                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                            <p className="text-red-600 text-sm">{typeof error === 'string' ? error : 'An error occurred. Please try again.'}</p>
-                        </div>
-                    )}
-
-                    {/* University Badge */}
-                    {selectedUniversity && (
-                        <div className="bg-unicycle-blue/10 rounded-lg p-3 mb-6 border border-unicycle-blue/30">
-                            <div className="flex items-center gap-2">
-                                <ShieldCheck className="w-5 h-5 text-unicycle-blue" />
-                                <div>
-                                    <p className="text-sm font-semibold text-gray-900">{selectedUniversity.name}</p>
-                                    <p className="text-xs text-gray-600">Email must end with {selectedUniversity.domain}</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Continue Button */}
-                    <button
-                        onClick={handleEmailSubmit}
-                        disabled={!selectedUniversity || !email || !name.trim() || loading}
-                        className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                    >
-                        {loading ? 'Creating account...' : 'Continue'}
-                    </button>
-                </div>
-
-                <div className="mt-6 text-center">
-                    <div className="inline-flex items-center gap-2 text-sm text-gray-600">
-                        <ShieldCheck className="w-4 h-4 text-unicycle-blue" />
-                        <span>Verified students only • Safe & secure</span>
+                {/* Password */}
+                <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                        <Lock className="w-4 h-4" />
+                        Password
+                    </label>
+                    <div className="relative">
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder={isLogin ? "Enter your password" : "Create a password (min 6 characters)"}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green pr-12"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
                     </div>
                 </div>
+
+                {/* Error Message */}
+                {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <p className="text-red-600 text-sm">{error}</p>
+                    </div>
+                )}
+
+                {/* Verified Badge (Signup only) */}
+                {!isLogin && selectedUni && (
+                    <div className="flex items-center gap-3 bg-unicycle-blue/10 p-3 rounded-lg border border-unicycle-blue/30">
+                        <ShieldCheck className="w-5 h-5 text-unicycle-blue" />
+                        <div>
+                            <p className="font-medium text-gray-900 text-sm">{selectedUni.name}</p>
+                            <p className="text-xs text-gray-600">Email must end with @{selectedUni.domain}</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                    onClick={handleSubmit}
+                    disabled={loading || (!isLogin && (!selectedUniversity || !email || !name || !password)) || (isLogin && (!email || !password))}
+                    className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                    {loading ? (
+                        <>
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            {isLogin ? 'Signing in...' : 'Creating account...'}
+                        </>
+                    ) : (
+                        isLogin ? 'Sign In' : 'Create Account'
+                    )}
+                </button>
+
+                {/* Toggle between Login/Signup */}
+                <div className="text-center pt-2">
+                    <p className="text-sm text-gray-600">
+                        {isLogin ? "Don't have an account?" : "Already have an account?"}
+                        <button
+                            onClick={toggleMode}
+                            className="ml-2 text-unicycle-blue font-semibold hover:underline"
+                        >
+                            {isLogin ? 'Sign Up' : 'Sign In'}
+                        </button>
+                    </p>
+                </div>
             </div>
+
+            {/* Footer */}
+            <p className="text-xs text-gray-500 mt-6 text-center max-w-md">
+                By continuing, you agree to UniCycle's Terms of Service and Privacy Policy.
+                Only verified students can access the marketplace.
+            </p>
         </div>
     );
 }

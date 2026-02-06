@@ -1,18 +1,17 @@
 import apiClient from './client';
 
-// ═══════════════════════════════════════════════════════════════════
-// REQUEST ENDPOINTS
-// ═══════════════════════════════════════════════════════════════════
-
 export const getAllRequests = async (filters = {}) => {
     const params = new URLSearchParams();
 
     if (filters.category) params.append('category', filters.category);
+    if (filters.urgent !== undefined) params.append('urgent', filters.urgent);
     if (filters.search) params.append('search', filters.search);
     if (filters.university) params.append('university', filters.university);
-    if (filters.urgent !== undefined) params.append('urgent', filters.urgent);
 
-    const response = await apiClient.get(`/requests?${params.toString()}`);
+    const queryString = params.toString();
+    const url = queryString ? `/requests/?${queryString}` : '/requests/';
+
+    const response = await apiClient.get(url);
     return response.data;
 };
 
@@ -27,7 +26,7 @@ export const getMyRequests = async () => {
 };
 
 export const createRequest = async (requestData) => {
-    const response = await apiClient.post('/requests', requestData);
+    const response = await apiClient.post('/requests/', requestData);
     return response.data;
 };
 
@@ -37,16 +36,20 @@ export const updateRequest = async (id, requestData) => {
 };
 
 export const deleteRequest = async (id) => {
-    await apiClient.delete(`/requests/${id}`);
+    const response = await apiClient.delete(`/requests/${id}`);
+    return response.data;
 };
 
-// REPLY ENDPOINTS
-
-export const createReply = async (requestId, text) => {
-    const response = await apiClient.post(`/requests/${requestId}/replies`, { text });
+// Reply endpoints - now supports nested replies
+export const createReply = async (requestId, text, parentReplyId = null) => {
+    const response = await apiClient.post(`/requests/${requestId}/replies`, {
+        text,
+        parent_reply_id: parentReplyId
+    });
     return response.data;
 };
 
 export const deleteReply = async (requestId, replyId) => {
-    await apiClient.delete(`/requests/${requestId}/replies/${replyId}`);
+    const response = await apiClient.delete(`/requests/${requestId}/replies/${replyId}`);
+    return response.data;
 };

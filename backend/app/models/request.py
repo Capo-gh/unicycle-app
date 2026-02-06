@@ -1,36 +1,38 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..database import Base
 
 
 class Request(Base):
-    """ISO/WTB Request model - users looking for items"""
+    """User request for items they're looking for"""
     __tablename__ = "requests"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False, index=True)
+    title = Column(String, nullable=False)
     description = Column(Text, nullable=False)
-    category = Column(String, nullable=False, index=True)
+    category = Column(String, nullable=False)
     urgent = Column(Boolean, default=False)
     budget_min = Column(Float, nullable=True)
     budget_max = Column(Float, nullable=True)
-    is_active = Column(Boolean, default=True, index=True)
     
-    # Foreign key to user (author)
+    # Status
+    is_active = Column(Boolean, default=True)
+    
+    # Foreign keys
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
     author = relationship("User", backref="requests")
-    replies = relationship("Reply", back_populates="request", cascade="all, delete-orphan", order_by="Reply.created_at")
+    replies = relationship("Reply", back_populates="request", cascade="all, delete-orphan")
 
 
 class Reply(Base):
-    """Reply to a request"""
+    """Reply to a request - supports nested replies"""
     __tablename__ = "replies"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -40,9 +42,15 @@ class Reply(Base):
     request_id = Column(Integer, ForeignKey("requests.id", ondelete="CASCADE"), nullable=False)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
+    # For nested replies - parent_reply_id is null for top-level replies
+    parent_reply_id = Column(Integer, ForeignKey("replies.id", ondelete="CASCADE"), nullable=True)
+    
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
     request = relationship("Request", back_populates="replies")
     author = relationship("User", backref="replies")
+    
+    # Self-referential relationship for nested replies
+    parent_reply = relationship("Reply", remote_side=[id], backref="child_replies")

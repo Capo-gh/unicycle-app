@@ -15,11 +15,10 @@ function App() {
   const [currentPage, setCurrentPage] = useState('loading');
   const [selectedItem, setSelectedItem] = useState(null);
   const [editingListing, setEditingListing] = useState(null);
-  const [messageRequest, setMessageRequest] = useState(null); // For starting conversations
+  const [messageRequest, setMessageRequest] = useState(null);
   const [user, setUser] = useState(null);
   const [currentMarketplace, setCurrentMarketplace] = useState('');
 
-  // Check if user is already logged in on app load
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
@@ -27,13 +26,12 @@ function App() {
 
       if (token && storedUser) {
         try {
-          // Verify token is still valid
           const userData = await getCurrentUser();
           setUser(userData);
+          // Default to user's university marketplace
           setCurrentMarketplace(userData.university);
           setCurrentPage('listings');
         } catch (error) {
-          // Token invalid, clear storage
           console.error('Auth check failed:', error);
           localStorage.removeItem('token');
           localStorage.removeItem('user');
@@ -49,11 +47,11 @@ function App() {
 
   const handleSignup = (userData) => {
     setUser(userData);
+    // Default to user's university marketplace
     setCurrentMarketplace(userData.university);
     setCurrentPage('listings');
   };
 
-  // Updated navigation handler to support passing data
   const handleNavigate = (page, data = null) => {
     if (page === 'edit-listing' && data) {
       setEditingListing(data);
@@ -72,13 +70,11 @@ function App() {
     }
   };
 
-  // Handle contact seller from ItemDetail
   const handleContactSeller = (request) => {
     setMessageRequest(request);
     setCurrentPage('messages');
   };
 
-  // Show loading while checking auth
   if (currentPage === 'loading') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -90,7 +86,6 @@ function App() {
     );
   }
 
-  // Signup is standalone (no Layout)
   if (currentPage === 'signup') {
     return (
       <div className="animate-fadeIn">
@@ -99,7 +94,6 @@ function App() {
     );
   }
 
-  // Everything else wraps in Layout
   return (
     <Layout currentPage={currentPage} onNavigate={handleNavigate} currentMarketplace={currentMarketplace} onMarketplaceChange={setCurrentMarketplace}>
       <div key={currentPage} className="animate-fadeIn">
@@ -121,6 +115,7 @@ function App() {
             item={selectedItem}
             onBack={() => setCurrentPage('listings')}
             onContactSeller={handleContactSeller}
+            onNavigate={handleNavigate}
           />
         )}
 
@@ -145,7 +140,10 @@ function App() {
             user={user}
             onBack={() => setCurrentPage('profile')}
             onLogout={() => {
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
               setUser(null);
+              setCurrentMarketplace('');
               setCurrentPage('signup');
             }}
           />
