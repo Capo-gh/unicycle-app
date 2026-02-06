@@ -14,3 +14,8 @@ export const getCurrentUser = async () => {
     const response = await apiClient.get('/auth/me');
     return response.data;
 };
+
+export const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+};
