@@ -3,7 +3,7 @@ import { Mail, User, Building2, ShieldCheck, Eye, EyeOff, Lock } from 'lucide-re
 import { signup, login } from '../api/auth';
 
 // Import logo
-import logo from '../assets/logo.svg';
+import logo from '../assets/unicycle-icon.png';
 
 export default function Signup({ onSignup }) {
     const [isLogin, setIsLogin] = useState(false);
