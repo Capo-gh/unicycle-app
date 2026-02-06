@@ -9,7 +9,7 @@ export const uploadImage = async (file) => {
             'Content-Type': 'multipart/form-data',
         },
     });
-    return response.data;
+    return response.data.url;
 };
 
 export const uploadImages = async (files) => {
