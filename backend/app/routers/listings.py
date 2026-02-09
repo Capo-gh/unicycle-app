@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import asc, desc
 from typing import List, Optional
@@ -6,60 +6,9 @@ from ..database import get_db
 from ..models.listing import Listing
 from ..models.user import User
 from ..schemas.listing import ListingCreate, ListingUpdate, ListingResponse
-from ..utils.auth import verify_token
+from ..utils.dependencies import get_current_user_optional, get_current_user_required
 
 router = APIRouter(prefix="/listings", tags=["Listings"])
-
-
-def get_current_user_optional(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    """Get current user if token provided, otherwise None"""
-    if not authorization:
-        return None
-    
-    try:
-        token = authorization.split(" ")[1]
-    except IndexError:
-        return None
-    
-    email = verify_token(token)
-    if not email:
-        return None
-    
-    user = db.query(User).filter(User.email == email).first()
-    return user
-
-
-def get_current_user_required(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    """Require authenticated user"""
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
-        )
-    
-    try:
-        token = authorization.split(" ")[1]
-    except IndexError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authorization header"
-        )
-    
-    email = verify_token(token)
-    if not email:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
-        )
-    
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    return user
 
 
 @router.post("/", response_model=ListingResponse, status_code=status.HTTP_201_CREATED)

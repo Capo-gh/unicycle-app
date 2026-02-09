@@ -12,10 +12,12 @@ class User(Base):
     university = Column(String, nullable=False)
     hashed_password = Column(String, nullable=True)  # Added for password auth
     is_verified = Column(Boolean, default=False)
-    
+    verification_token = Column(String, nullable=True)
+    token_created_at = Column(DateTime(timezone=True), nullable=True)
+
     # Review stats (will be updated when reviews are added)
     avg_rating = Column(Float, default=0.0)
     review_count = Column(Integer, default=0)
-    
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
-from typing import List, Optional
+from typing import List
 from ..database import get_db
 from ..models.request import Request, Reply
 from ..models.user import User
@@ -9,42 +9,9 @@ from ..schemas.request import (
     RequestCreate, RequestUpdate, RequestResponse, RequestListResponse,
     ReplyCreate, ReplyResponse
 )
-from ..utils.auth import verify_token
+from ..utils.dependencies import get_current_user_required
 
 router = APIRouter(prefix="/requests", tags=["Requests"])
-
-
-def get_current_user_from_token(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    """Helper to get current user from token"""
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
-        )
-    
-    try:
-        token = authorization.split(" ")[1]
-    except IndexError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authorization header"
-        )
-    
-    email = verify_token(token)
-    if not email:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
-        )
-    
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    return user
 
 
 def build_reply_tree(replies: List[Reply]) -> List[dict]:
@@ -87,7 +54,7 @@ def build_reply_tree(replies: List[Reply]) -> List[dict]:
 def create_request(
     request_data: RequestCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token)
+    current_user: User = Depends(get_current_user_required)
 ):
     """Create a new request"""
     db_request = Request(
@@ -183,7 +150,7 @@ def get_requests(
 @router.get("/my", response_model=List[RequestListResponse])
 def get_my_requests(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token)
+    current_user: User = Depends(get_current_user_required)
 ):
     """Get current user's requests"""
     # Get requests
@@ -268,7 +235,7 @@ def update_request(
     request_id: int,
     request_update: RequestUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token)
+    current_user: User = Depends(get_current_user_required)
 ):
     """Update a request (only author can update)"""
     db_request = db.query(Request).filter(Request.id == request_id).first()
@@ -299,7 +266,7 @@ def update_request(
 def delete_request(
     request_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token)
+    current_user: User = Depends(get_current_user_required)
 ):
     """Delete a request (soft delete - only author can delete)"""
     db_request = db.query(Request).filter(Request.id == request_id).first()
@@ -331,7 +298,7 @@ def create_reply(
     request_id: int,
     reply_data: ReplyCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token)
+    current_user: User = Depends(get_current_user_required)
 ):
     """Add a reply to a request (can be nested by providing parent_reply_id)"""
     # Check request exists
@@ -387,7 +354,7 @@ def delete_reply(
     request_id: int,
     reply_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token)
+    current_user: User = Depends(get_current_user_required)
 ):
     """Delete a reply (reply author or request author can delete)"""
     reply = db.query(Reply).filter(

@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_, func, desc
-from typing import List, Optional
+from typing import List
 from ..database import get_db
 from ..models.message import Conversation, Message
 from ..models.listing import Listing
@@ -10,49 +10,16 @@ from ..schemas.message import (
     ConversationCreate, ConversationResponse, ConversationListResponse,
     MessageCreate, MessageResponse
 )
-from ..utils.auth import verify_token
+from ..utils.dependencies import get_current_user_required
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
-
-
-def get_current_user_from_token(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    """Helper to get current user from token"""
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
-        )
-    
-    try:
-        token = authorization.split(" ")[1]
-    except IndexError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authorization header"
-        )
-    
-    email = verify_token(token)
-    if not email:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
-        )
-    
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    return user
 
 
 # CONVERSATION ENDPOINTS
 @router.get("/conversations", response_model=List[ConversationListResponse])
 def get_conversations(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token)
+    current_user: User = Depends(get_current_user_required)
 ):
     """Get all conversations for the current user"""
     # Get conversations where user is buyer or seller, not archived
@@ -100,7 +67,7 @@ def get_conversations(
 def create_conversation(
     conv_data: ConversationCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token)
+    current_user: User = Depends(get_current_user_required)
 ):
     """Create a new conversation (when contacting a seller)"""
     # Get the listing
@@ -165,7 +132,7 @@ def create_conversation(
 def get_conversation(
     conversation_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token)
+    current_user: User = Depends(get_current_user_required)
 ):
     """Get a single conversation with all messages"""
     conversation = db.query(Conversation).options(
@@ -201,7 +168,7 @@ def get_conversation(
 def archive_conversation(
     conversation_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token)
+    current_user: User = Depends(get_current_user_required)
 ):
     """Archive a conversation (soft delete for the user)"""
     conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
@@ -233,7 +200,7 @@ def send_message(
     conversation_id: int,
     message_data: MessageCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token)
+    current_user: User = Depends(get_current_user_required)
 ):
     """Send a message in a conversation"""
     conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
@@ -272,7 +239,7 @@ def send_message(
 @router.get("/unread-count")
 def get_unread_count(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token)
+    current_user: User = Depends(get_current_user_required)
 ):
     """Get total unread message count for the user"""
     # Get all conversations where user is participant

@@ -1,47 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
-from typing import List, Optional
+from typing import List
 from ..database import get_db
 from ..models.review import Review
 from ..models.user import User
 from ..schemas.review import ReviewCreate, ReviewResponse, UserReviewStats
-from ..utils.auth import verify_token
+from ..utils.dependencies import get_current_user_required
 
 router = APIRouter(prefix="/reviews", tags=["Reviews"])
-
-
-def get_current_user_from_token(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    """Helper to get current user from token"""
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
-        )
-    
-    try:
-        token = authorization.split(" ")[1]
-    except IndexError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authorization header"
-        )
-    
-    email = verify_token(token)
-    if not email:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
-        )
-    
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    return user
 
 
 def update_user_rating(db: Session, user_id: int):
@@ -62,7 +29,7 @@ def update_user_rating(db: Session, user_id: int):
 def create_review(
     review_data: ReviewCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token)
+    current_user: User = Depends(get_current_user_required)
 ):
     """Create a review for another user"""
     # Can't review yourself
@@ -147,7 +114,7 @@ def get_user_reviews(
 def delete_review(
     review_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token)
+    current_user: User = Depends(get_current_user_required)
 ):
     """Delete a review (only reviewer can delete)"""
     review = db.query(Review).filter(Review.id == review_id).first()
