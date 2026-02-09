@@ -145,6 +145,19 @@ def get_listings(
     return query.all()
 
 
+@router.get("/my", response_model=List[ListingResponse])
+def get_my_listings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Get current user's listings"""
+    listings = db.query(Listing).options(
+        joinedload(Listing.seller)
+    ).filter(Listing.seller_id == current_user.id).order_by(desc(Listing.created_at)).all()
+    
+    return listings
+
+
 @router.get("/user/{user_id}", response_model=List[ListingResponse])
 def get_user_listings(
     user_id: int,
