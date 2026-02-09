@@ -250,57 +250,6 @@ export default function Profile({ user: signupUser, onNavigate }) {
                         )}
                     </div>
 
-                    {/* Recent Reviews */}
-                    <div>
-                        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                            <Star className="w-5 h-5" />
-                            Recent Reviews
-                        </h3>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {/* Review 1 */}
-                            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-8 h-8 bg-unicycle-green rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                                        S
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="font-medium text-sm text-gray-900">Sarah Chen</p>
-                                        <div className="flex items-center gap-1">
-                                            {[1, 2, 3, 4, 5].map(i => (
-                                                <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <span className="text-xs text-gray-500">2 days ago</span>
-                                </div>
-                                <p className="text-sm text-gray-700">
-                                    "Great seller! Item exactly as described. Met at McConnell Library, very smooth transaction."
-                                </p>
-                            </div>
-
-                            {/* Review 2 */}
-                            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-8 h-8 bg-unicycle-blue rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                                        M
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="font-medium text-sm text-gray-900">Mike Johnson</p>
-                                        <div className="flex items-center gap-1">
-                                            {[1, 2, 3, 4, 5].map(i => (
-                                                <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <span className="text-xs text-gray-500">1 week ago</span>
-                                </div>
-                                <p className="text-sm text-gray-700">
-                                    "Quick response, honest about condition. Highly recommend!"
-                                </p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
