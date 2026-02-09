@@ -5,7 +5,7 @@ import { signup, login } from '../api/auth';
 // Import logo
 import logo from '../assets/unicycle-icon.png';
 
-export default function Signup({ onSignup }) {
+export default function Signup({ onSignup, onNavigate }) {
     const [isLogin, setIsLogin] = useState(false);
     const [selectedUniversity, setSelectedUniversity] = useState('');
     const [email, setEmail] = useState('');

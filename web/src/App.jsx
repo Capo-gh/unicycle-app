@@ -111,7 +111,7 @@ function App() {
   if (currentPage === 'signup') {
     return (
       <div className="animate-fadeIn">
-        <Signup onSignup={handleSignup} />
+        <Signup onSignup={handleSignup} onNavigate={handleNavigate} />
       </div>
     );
   }
