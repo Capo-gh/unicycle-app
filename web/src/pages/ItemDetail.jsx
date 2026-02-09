@@ -11,6 +11,8 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isSold, setIsSold] = useState(item?.is_sold || false);
     const [updating, setUpdating] = useState(false);
+    const [touchStart, setTouchStart] = useState(null);
+    const [touchEnd, setTouchEnd] = useState(null);
 
     // Get current user from localStorage
     useEffect(() => {
@@ -97,6 +99,32 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
         }
     };
 
+    // Touch swipe handlers for image navigation
+    const minSwipeDistance = 50;
+
+    const onTouchStart = (e) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const onTouchMove = (e) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        if (isLeftSwipe && currentImageIndex < images.length - 1) {
+            setCurrentImageIndex(currentImageIndex + 1);
+        }
+        if (isRightSwipe && currentImageIndex > 0) {
+            setCurrentImageIndex(currentImageIndex - 1);
+        }
+    };
+
     // Get images from comma-separated list
     const getImages = () => {
         if (!item.images) return ['https://via.placeholder.com/400x400?text=No+Image'];
@@ -147,11 +175,16 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
 
                 {/* Left: Image Gallery */}
                 <div className="lg:flex-1">
-                    <div className="relative h-80 lg:h-auto lg:aspect-square lg:rounded-xl overflow-hidden">
+                    <div
+                        className="relative h-80 lg:h-auto lg:aspect-square lg:rounded-xl overflow-hidden touch-pan-y"
+                        onTouchStart={onTouchStart}
+                        onTouchMove={onTouchMove}
+                        onTouchEnd={onTouchEnd}
+                    >
                         <img
                             src={images[currentImageIndex]}
                             alt={item.title}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover select-none"
                         />
 
                         {/* Image counter / navigation */}
