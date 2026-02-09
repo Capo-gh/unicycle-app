@@ -79,7 +79,8 @@ def get_requests(
     urgent: Optional[bool] = None,
     search: Optional[str] = None,
     university: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
 ):
     """Get all active requests with optional filters"""
     # First, get reply counts using a subquery
@@ -196,7 +197,8 @@ def get_my_requests(
 @router.get("/{request_id}")
 def get_request(
     request_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
 ):
     """Get a single request with all replies (nested)"""
     db_request = db.query(Request).options(

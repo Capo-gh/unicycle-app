@@ -44,7 +44,8 @@ def get_listings(
     max_price: Optional[float] = None,
     condition: Optional[str] = None,
     sort: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
 ):
     """Get all listings with optional filters"""
     query = db.query(Listing).options(joinedload(Listing.seller))
@@ -111,7 +112,8 @@ def get_my_listings(
 def get_user_listings(
     user_id: int,
     include_sold: bool = True,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
 ):
     """Get all listings for a specific user"""
     query = db.query(Listing).options(
@@ -125,7 +127,11 @@ def get_user_listings(
 
 
 @router.get("/{listing_id}", response_model=ListingResponse)
-def get_listing(listing_id: int, db: Session = Depends(get_db)):
+def get_listing(
+    listing_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
     """Get a single listing by ID"""
     listing = db.query(Listing).options(
         joinedload(Listing.seller)
