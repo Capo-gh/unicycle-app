@@ -54,3 +54,8 @@ export const getUserListings = async (userId, includeSold = true) => {
     const response = await apiClient.get(url);
     return response.data;
 };
+
+export const getMyListings = async () => {
+    const response = await apiClient.get('/listings/my');
+    return response.data;
+};
