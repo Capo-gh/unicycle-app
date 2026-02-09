@@ -99,7 +99,11 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
             setListings(data);
         } catch (err) {
             console.error('Error fetching listings:', err);
-            setError('Failed to load listings');
+            if (err.response?.status === 403) {
+                setError('Please verify your email to browse listings. Check your inbox for the verification link!');
+            } else {
+                setError('Failed to load listings');
+            }
         } finally {
             setLoading(false);
         }
