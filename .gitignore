@@ -27,3 +27,4 @@ backend/.env
 web/.env
 __pycache__/
 venv/
+backend/migrations/

@@ -10,6 +10,7 @@ import UserProfile from './pages/UserProfile';
 import Messages from './pages/Messages';
 import Requests from './pages/Requests';
 import Signup from './pages/Signup';
+import VerifyEmail from './pages/VerifyEmail';
 import { getCurrentUser } from './api/auth';
 
 function App() {
@@ -23,6 +24,16 @@ function App() {
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Check if URL has verification token
+      const params = new URLSearchParams(window.location.search);
+      const verificationToken = params.get('token');
+
+      if (verificationToken) {
+        // Show verification page
+        setCurrentPage('verify-email');
+        return;
+      }
+
       const token = localStorage.getItem('token');
       const storedUser = localStorage.getItem('user');
 
@@ -100,6 +111,14 @@ function App() {
     return (
       <div className="animate-fadeIn">
         <Signup onSignup={handleSignup} />
+      </div>
+    );
+  }
+
+  if (currentPage === 'verify-email') {
+    return (
+      <div className="animate-fadeIn">
+        <VerifyEmail onNavigate={handleNavigate} />
       </div>
     );
   }
