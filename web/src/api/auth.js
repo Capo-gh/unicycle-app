@@ -19,3 +19,8 @@ export const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
 };
+
+export const resendVerification = async () => {
+    const response = await apiClient.post('/auth/resend-verification');
+    return response.data;
+};
