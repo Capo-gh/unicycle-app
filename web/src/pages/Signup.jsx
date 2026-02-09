@@ -75,7 +75,14 @@ export default function Signup({ onSignup }) {
 
             localStorage.setItem('token', response.access_token);
             localStorage.setItem('user', JSON.stringify(response.user));
-            onSignup(response.user);
+
+            // If signup (not login), redirect to check email page
+            if (!isLogin) {
+                localStorage.setItem('pendingVerificationEmail', email);
+                onNavigate('check-email');
+            } else {
+                onSignup(response.user);
+            }
 
         } catch (err) {
             console.error('Auth error:', err);

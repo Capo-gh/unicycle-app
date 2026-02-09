@@ -11,6 +11,7 @@ import Messages from './pages/Messages';
 import Requests from './pages/Requests';
 import Signup from './pages/Signup';
 import VerifyEmail from './pages/VerifyEmail';
+import CheckEmail from './pages/CheckEmail';
 import { getCurrentUser } from './api/auth';
 
 function App() {
@@ -111,6 +112,15 @@ function App() {
     return (
       <div className="animate-fadeIn">
         <Signup onSignup={handleSignup} />
+      </div>
+    );
+  }
+
+  if (currentPage === 'check-email') {
+    const pendingEmail = localStorage.getItem('pendingVerificationEmail') || user?.email || '';
+    return (
+      <div className="animate-fadeIn">
+        <CheckEmail userEmail={pendingEmail} onNavigate={handleNavigate} />
       </div>
     );
   }
