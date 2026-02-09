@@ -27,6 +27,15 @@ def send_verification_email(email: str, name: str, token: str):
     """
     verification_link = f"{FRONTEND_URL}/verify-email?token={token}"
 
+    print("=" * 50)
+    print("📧 SENDING VERIFICATION EMAIL")
+    print(f"To: {email}")
+    print(f"Name: {name}")
+    print(f"Token: {token[:10]}...")
+    print(f"Link: {verification_link}")
+    print(f"Resend API Key set: {bool(resend.api_key)}")
+    print("=" * 50)
+
     try:
         params = {
             "from": "UniCycle <onboarding@resend.dev>",  # Change to your domain once verified
@@ -82,10 +91,16 @@ def send_verification_email(email: str, name: str, token: str):
         }
 
         response = resend.Emails.send(params)
+        print("✅ RESEND SUCCESS")
+        print(f"Response: {response}")
+        print("=" * 50)
         return response
 
     except Exception as e:
-        print(f"Error sending verification email: {str(e)}")
+        print("❌ RESEND ERROR")
+        print(f"Error: {str(e)}")
+        print(f"Error type: {type(e).__name__}")
+        print("=" * 50)
         raise Exception(f"Failed to send verification email: {str(e)}")
 
 
