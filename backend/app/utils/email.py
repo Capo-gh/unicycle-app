@@ -1,7 +1,7 @@
 import resend
 import os
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # Initialize Resend
 resend.api_key = os.getenv("RESEND_API_KEY")
@@ -109,4 +109,4 @@ def is_token_expired(token_created_at: datetime) -> bool:
     if not token_created_at:
         return True
     expiry_time = token_created_at + timedelta(hours=24)
-    return datetime.now() > expiry_time
+    return datetime.now(timezone.utc) > expiry_time
