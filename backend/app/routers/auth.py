@@ -22,22 +22,23 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
             detail="Email already registered"
         )
 
+    # TEMPORARY: Disabled for testing with Resend test mode
     # Validate university email domain
-    email_domain = user_data.email.split('@')[1] if '@' in user_data.email else ''
-    valid_domains = {
-        'McGill University': 'mail.mcgill.ca',
-        'Concordia University': 'concordia.ca',
-        'Université de Montréal': 'umontreal.ca',
-        'UQAM': 'uqam.ca',
-        'HEC Montréal': 'hec.ca'
-    }
-
-    expected_domain = valid_domains.get(user_data.university)
-    if expected_domain and email_domain != expected_domain:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Email must end with @{expected_domain} for {user_data.university}"
-        )
+    # email_domain = user_data.email.split('@')[1] if '@' in user_data.email else ''
+    # valid_domains = {
+    #     'McGill University': 'mail.mcgill.ca',
+    #     'Concordia University': 'concordia.ca',
+    #     'Université de Montréal': 'umontreal.ca',
+    #     'UQAM': 'uqam.ca',
+    #     'HEC Montréal': 'hec.ca'
+    # }
+    #
+    # expected_domain = valid_domains.get(user_data.university)
+    # if expected_domain and email_domain != expected_domain:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail=f"Email must end with @{expected_domain} for {user_data.university}"
+    #     )
 
     # Hash the password
     hashed_password = get_password_hash(user_data.password)
