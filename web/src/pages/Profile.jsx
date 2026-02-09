@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Settings, ShieldCheck, Package, Star, Pencil, Trash2, Plus } from 'lucide-react';
 import { getMyListings, deleteListing } from '../api/listings';
+import { getMyStats } from '../api/transactions';
 
 export default function Profile({ user: signupUser, onNavigate }) {
     const [myListings, setMyListings] = useState([]);
+    const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [deleteConfirm, setDeleteConfirm] = useState(null); // listing id to delete
@@ -13,35 +15,45 @@ export default function Profile({ user: signupUser, onNavigate }) {
         name: signupUser?.name || 'User',
         email: signupUser?.email || '',
         university: signupUser?.university || '',
-        verified: true,
-        memberSince: "February 2025",
-        rating: 4.8,
-        totalReviews: 15,
-        itemsSold: 8,
-        itemsBought: 12
+        verified: signupUser?.is_verified || false,
+        memberSince: signupUser?.created_at
+            ? new Date(signupUser.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+            : "Recently",
+        rating: signupUser?.avg_rating || 0,
+        totalReviews: signupUser?.review_count || 0,
+        itemsSold: stats?.items_sold || 0,
+        itemsBought: stats?.items_bought || 0,
+        activeListings: stats?.active_listings || 0
     };
 
-    // Fetch user's listings from backend
+    // Fetch user's listings and stats from backend
     useEffect(() => {
-        const fetchMyListings = async () => {
+        const fetchData = async () => {
             setLoading(true);
             setError(null);
             try {
-                const data = await getMyListings();
-                setMyListings(data);
+                // Fetch listings and stats in parallel
+                const [listingsData, statsData] = await Promise.all([
+                    getMyListings(),
+                    getMyStats()
+                ]);
+                setMyListings(listingsData);
+                setStats(statsData);
             } catch (err) {
-                console.error('Error fetching my listings:', err);
+                console.error('Error fetching profile data:', err);
                 if (err.response?.status === 401) {
-                    setError('Please log in to view your listings');
+                    setError('Please log in to view your profile');
+                } else if (err.response?.status === 403) {
+                    setError('Please verify your email to view your profile');
                 } else {
-                    setError('Failed to load your listings');
+                    setError('Failed to load your profile');
                 }
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchMyListings();
+        fetchData();
     }, []);
 
     // Handle delete listing
