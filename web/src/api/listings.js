@@ -1,17 +1,18 @@
 import apiClient from './client';
 
-export const getListings = async (filters = {}) => {
-    const params = new URLSearchParams();
+export const getListings = async (params = {}) => {
+    const queryParams = new URLSearchParams();
 
-    if (filters.category) params.append('category', filters.category);
-    if (filters.condition) params.append('condition', filters.condition);
-    if (filters.minPrice) params.append('min_price', filters.minPrice);
-    if (filters.maxPrice) params.append('max_price', filters.maxPrice);
-    if (filters.search) params.append('search', filters.search);
-    if (filters.university) params.append('university', filters.university);
-    if (filters.includeSold) params.append('include_sold', 'true');
+    if (params.category) queryParams.append('category', params.category);
+    if (params.search) queryParams.append('search', params.search);
+    if (params.university) queryParams.append('university', params.university);
+    if (params.include_sold) queryParams.append('include_sold', 'true');
+    if (params.min_price) queryParams.append('min_price', params.min_price);
+    if (params.max_price) queryParams.append('max_price', params.max_price);
+    if (params.condition) queryParams.append('condition', params.condition);
+    if (params.sort) queryParams.append('sort', params.sort);
 
-    const queryString = params.toString();
+    const queryString = queryParams.toString();
     const url = queryString ? `/listings/?${queryString}` : '/listings/';
 
     const response = await apiClient.get(url);
@@ -20,16 +21,6 @@ export const getListings = async (filters = {}) => {
 
 export const getListing = async (id) => {
     const response = await apiClient.get(`/listings/${id}`);
-    return response.data;
-};
-
-export const getMyListings = async () => {
-    const response = await apiClient.get('/listings/my');
-    return response.data;
-};
-
-export const getUserListings = async (userId) => {
-    const response = await apiClient.get(`/listings/user/${userId}`);
     return response.data;
 };
 
@@ -49,11 +40,17 @@ export const deleteListing = async (id) => {
 };
 
 export const markAsSold = async (id) => {
-    const response = await apiClient.patch(`/listings/${id}/sold`);
+    const response = await apiClient.post(`/listings/${id}/sold`);
     return response.data;
 };
 
 export const markAsUnsold = async (id) => {
-    const response = await apiClient.patch(`/listings/${id}/unsold`);
+    const response = await apiClient.post(`/listings/${id}/unsold`);
+    return response.data;
+};
+
+export const getUserListings = async (userId, includeSold = true) => {
+    const url = `/listings/user/${userId}?include_sold=${includeSold}`;
+    const response = await apiClient.get(url);
     return response.data;
 };
