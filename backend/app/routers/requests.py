@@ -79,7 +79,10 @@ def build_reply_tree(replies: List[Reply]) -> List[dict]:
     return root_replies
 
 
+# ═══════════════════════════════════════════════════════════════════════
 # REQUEST ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════
+
 @router.post("/", response_model=RequestResponse, status_code=status.HTTP_201_CREATED)
 def create_request(
     request_data: RequestCreate,
@@ -112,12 +115,16 @@ def get_requests(
     db: Session = Depends(get_db)
 ):
     """Get all active requests with optional filters"""
-    query = db.query(
-        Request,
+    # First, get reply counts using a subquery
+    reply_counts = db.query(
+        Reply.request_id,
         func.count(Reply.id).label('reply_count')
-    ).outerjoin(Reply).options(
+    ).group_by(Reply.request_id).subquery()
+    
+    # Main query - fetch requests with authors
+    query = db.query(Request).options(
         joinedload(Request.author)
-    ).filter(Request.is_active == True).group_by(Request.id)
+    ).filter(Request.is_active == True)
     
     if category and category != 'All':
         if category == 'Urgent':
@@ -138,11 +145,21 @@ def get_requests(
     if university:
         query = query.join(User, Request.author_id == User.id).filter(User.university == university)
     
-    results = query.order_by(Request.created_at.desc()).all()
+    requests = query.order_by(Request.created_at.desc()).all()
+    
+    # Get reply counts separately
+    reply_count_map = {}
+    reply_count_results = db.query(
+        Reply.request_id,
+        func.count(Reply.id).label('count')
+    ).group_by(Reply.request_id).all()
+    
+    for request_id, count in reply_count_results:
+        reply_count_map[request_id] = count
     
     # Convert to response format
     response = []
-    for request, reply_count in results:
+    for request in requests:
         request_dict = {
             "id": request.id,
             "title": request.title,
@@ -154,7 +171,7 @@ def get_requests(
             "is_active": request.is_active,
             "author_id": request.author_id,
             "author": request.author,
-            "reply_count": reply_count,
+            "reply_count": reply_count_map.get(request.id, 0),
             "created_at": request.created_at,
             "updated_at": request.updated_at
         }
@@ -169,20 +186,26 @@ def get_my_requests(
     current_user: User = Depends(get_current_user_from_token)
 ):
     """Get current user's requests"""
-    query = db.query(
-        Request,
-        func.count(Reply.id).label('reply_count')
-    ).outerjoin(Reply).options(
+    # Get requests
+    requests = db.query(Request).options(
         joinedload(Request.author)
     ).filter(
         Request.author_id == current_user.id,
         Request.is_active == True
-    ).group_by(Request.id)
+    ).order_by(Request.created_at.desc()).all()
     
-    results = query.order_by(Request.created_at.desc()).all()
+    # Get reply counts separately
+    reply_count_map = {}
+    reply_count_results = db.query(
+        Reply.request_id,
+        func.count(Reply.id).label('count')
+    ).group_by(Reply.request_id).all()
+    
+    for request_id, count in reply_count_results:
+        reply_count_map[request_id] = count
     
     response = []
-    for request, reply_count in results:
+    for request in requests:
         request_dict = {
             "id": request.id,
             "title": request.title,
@@ -194,7 +217,7 @@ def get_my_requests(
             "is_active": request.is_active,
             "author_id": request.author_id,
             "author": request.author,
-            "reply_count": reply_count,
+            "reply_count": reply_count_map.get(request.id, 0),
             "created_at": request.created_at,
             "updated_at": request.updated_at
         }
@@ -299,7 +322,10 @@ def delete_request(
     return None
 
 
+# ═══════════════════════════════════════════════════════════════════════
 # REPLY ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════
+
 @router.post("/{request_id}/replies", response_model=ReplyResponse, status_code=status.HTTP_201_CREATED)
 def create_reply(
     request_id: int,
