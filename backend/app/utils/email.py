@@ -4,7 +4,7 @@ import secrets
 from datetime import datetime, timedelta
 
 # Initialize Resend
-resend.api_key = os.getenv("RESEND_API_KEY", "re_ACkvjdmT_Kq7cwm3VQdoSinRPzQzKrf4o")
+resend.api_key = os.getenv("RESEND_API_KEY", "re_YX7Bfp3i_AnUak1G45NTqS7KMQXfAdTAi")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
