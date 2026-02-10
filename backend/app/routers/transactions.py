@@ -163,13 +163,13 @@ def get_user_stats_by_id(
     # Count completed transactions as buyer
     items_bought = db.query(func.count(Transaction.id)).filter(
         Transaction.buyer_id == user_id,
-        Transaction.status == TransactionStatus.COMPLETED
+        Transaction.status == "completed"
     ).scalar()
 
     # Count completed transactions as seller
     items_sold = db.query(func.count(Transaction.id)).filter(
         Transaction.seller_id == user_id,
-        Transaction.status == TransactionStatus.COMPLETED
+        Transaction.status == "completed"
     ).scalar()
 
     # Count active listings
