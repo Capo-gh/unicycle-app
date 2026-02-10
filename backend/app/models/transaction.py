@@ -19,7 +19,7 @@ class Transaction(Base):
     listing_id = Column(Integer, ForeignKey("listings.id"), nullable=False)
     buyer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     seller_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    status = Column(Enum(TransactionStatus), default=TransactionStatus.INTERESTED)
+    status = Column(Enum(TransactionStatus, values_callable=lambda x: [e.value for e in x]), default=TransactionStatus.INTERESTED)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
