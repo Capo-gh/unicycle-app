@@ -16,15 +16,18 @@ export default function VerifyEmail({ onNavigate, onSignup }) {
 
     useEffect(() => {
         const verifyToken = async () => {
-            // Get token from URL
+            // Get token from URL and clean it
             const params = new URLSearchParams(window.location.search);
-            const token = params.get('token');
+            let token = params.get('token');
 
             if (!token) {
                 setStatus('error');
                 setMessage('Invalid verification link. Please check your email for the correct link.');
                 return;
             }
+
+            // Clean token: trim whitespace and decode if needed
+            token = decodeURIComponent(token.trim());
 
             try {
                 const response = await client.post('/auth/verify-email', null, {

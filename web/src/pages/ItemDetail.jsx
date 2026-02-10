@@ -176,7 +176,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                 {/* Left: Image Gallery */}
                 <div className="lg:flex-1">
                     <div
-                        className="relative h-80 lg:h-auto lg:aspect-square lg:rounded-xl overflow-hidden touch-pan-y"
+                        className="relative h-80 lg:h-auto lg:aspect-square lg:rounded-xl overflow-hidden bg-gray-100 touch-pan-y"
                         onTouchStart={onTouchStart}
                         onTouchMove={onTouchMove}
                         onTouchEnd={onTouchEnd}
@@ -184,7 +184,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                         <img
                             src={images[currentImageIndex]}
                             alt={item.title}
-                            className="w-full h-full object-cover select-none"
+                            className="w-full h-full object-contain select-none"
                         />
 
                         {/* Image counter / navigation */}

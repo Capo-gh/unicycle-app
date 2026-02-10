@@ -35,7 +35,10 @@ function App() {
           setUser(userData);
           // Default to user's university marketplace
           setCurrentMarketplace(userData.university);
-          setCurrentPage('listings');
+
+          // Restore the last page user was on, or default to listings
+          const lastPage = localStorage.getItem('currentPage') || 'listings';
+          setCurrentPage(lastPage);
 
           // Clear any verification token from URL after successful login
           const params = new URLSearchParams(window.location.search);
@@ -48,6 +51,7 @@ function App() {
           console.error('Auth check failed:', error);
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          localStorage.removeItem('currentPage');
           // Fall through to check verification token
         }
       }
@@ -74,14 +78,20 @@ function App() {
     // Default to user's university marketplace
     setCurrentMarketplace(userData.university);
     setCurrentPage('listings');
+    localStorage.setItem('currentPage', 'listings');
   };
 
   const handleNavigate = (page, data = null) => {
     if (page === 'edit-listing' && data) {
       setEditingListing(data);
       setCurrentPage('edit-listing');
+      localStorage.setItem('currentPage', 'edit-listing');
     } else {
       setCurrentPage(page);
+      // Save current page to localStorage for persistence after refresh
+      if (page !== 'loading' && page !== 'signup' && page !== 'verify-email' && page !== 'check-email') {
+        localStorage.setItem('currentPage', page);
+      }
       if (page !== 'detail') {
         setSelectedItem(null);
       }
