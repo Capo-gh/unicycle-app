@@ -219,10 +219,10 @@ export default function Profile({ user: signupUser, onNavigate }) {
                                                 <h4 className="font-semibold text-gray-900 text-sm mb-1 truncate">{listing.title}</h4>
                                                 <p className="text-lg font-bold text-unicycle-green">${listing.price}</p>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
+                                                    <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full flex-shrink-0">
                                                         Active
                                                     </span>
-                                                    <span className="text-xs text-gray-500">{listing.category}</span>
+                                                    <span className="text-xs text-gray-500 truncate">{listing.category}</span>
                                                 </div>
                                             </div>
                                         </div>
