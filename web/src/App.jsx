@@ -25,7 +25,34 @@ function App() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      // Check if URL has verification token
+      const token = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+
+      // If user is already logged in, stay logged in
+      if (token && storedUser) {
+        try {
+          const userData = await getCurrentUser();
+          setUser(userData);
+          // Default to user's university marketplace
+          setCurrentMarketplace(userData.university);
+          setCurrentPage('listings');
+
+          // Clear any verification token from URL after successful login
+          const params = new URLSearchParams(window.location.search);
+          if (params.get('token')) {
+            window.history.replaceState({}, '', window.location.pathname);
+          }
+
+          return;
+        } catch (error) {
+          console.error('Auth check failed:', error);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          // Fall through to check verification token
+        }
+      }
+
+      // Check if URL has verification token (only if not logged in)
       const params = new URLSearchParams(window.location.search);
       const verificationToken = params.get('token');
 
@@ -35,25 +62,8 @@ function App() {
         return;
       }
 
-      const token = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
-
-      if (token && storedUser) {
-        try {
-          const userData = await getCurrentUser();
-          setUser(userData);
-          // Default to user's university marketplace
-          setCurrentMarketplace(userData.university);
-          setCurrentPage('listings');
-        } catch (error) {
-          console.error('Auth check failed:', error);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setCurrentPage('signup');
-        }
-      } else {
-        setCurrentPage('signup');
-      }
+      // Not logged in and no verification token
+      setCurrentPage('signup');
     };
 
     checkAuth();

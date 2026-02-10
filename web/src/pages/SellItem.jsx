@@ -186,9 +186,14 @@ export default function SellItem({ onBack }) {
 
                     {/* Image Upload */}
                     <div className="bg-white rounded-lg p-6 shadow-sm">
-                        <label className="block text-sm font-semibold text-gray-900 mb-3">
-                            Photos * <span className="font-normal text-gray-500">(up to 5)</span>
-                        </label>
+                        <div className="flex items-center justify-between mb-3">
+                            <label className="text-sm font-semibold text-gray-900">
+                                Photos *
+                            </label>
+                            <span className={`text-sm font-medium ${images.length >= 5 ? 'text-red-600' : 'text-gray-500'}`}>
+                                {images.length}/5 images
+                            </span>
+                        </div>
 
                         {/* Image Preview Grid */}
                         <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-4">
@@ -228,8 +233,10 @@ export default function SellItem({ onBack }) {
                             )}
                         </div>
 
-                        {images.length === 0 && (
+                        {images.length === 0 ? (
                             <p className="text-xs text-gray-500 text-center">Add photos to attract more buyers</p>
+                        ) : images.length >= 5 && (
+                            <p className="text-xs text-amber-600 text-center font-medium">Maximum limit reached (5 images)</p>
                         )}
                     </div>
 
