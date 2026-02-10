@@ -109,10 +109,6 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
         }
     };
 
-    const handleMarketplaceChange = (e) => {
-        onMarketplaceChange(e.target.value);
-    };
-
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
     };
@@ -148,23 +144,8 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
             <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4">
                     {/* Title Row */}
-                    <div className="py-4 flex items-center justify-between">
+                    <div className="py-4">
                         <h1 className="text-xl font-bold text-gray-900">Browse Marketplace</h1>
-
-                        {/* Marketplace Selector */}
-                        <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-unicycle-green" />
-                            <select
-                                value={currentMarketplace}
-                                onChange={handleMarketplaceChange}
-                                className="text-sm font-medium text-gray-700 bg-transparent border-none focus:outline-none focus:ring-0 cursor-pointer"
-                            >
-                                <option value="">All Marketplaces</option>
-                                {universities.map(uni => (
-                                    <option key={uni} value={uni}>{uni}</option>
-                                ))}
-                            </select>
-                        </div>
                     </div>
 
                     {/* Search Bar */}
