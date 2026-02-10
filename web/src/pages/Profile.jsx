@@ -203,7 +203,7 @@ export default function Profile({ user: signupUser, onNavigate }) {
 
                         {/* Listings Grid */}
                         {!loading && !error && myListings.length > 0 && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-3">
                                 {myListings.map((listing) => (
                                     <div
                                         key={listing.id}
