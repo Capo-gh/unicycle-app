@@ -43,11 +43,10 @@ export default function Signup({ onSignup, onNavigate }) {
                 setError('Please fill in all fields');
                 return;
             }
-            // TEMPORARY: Disabled for testing with Resend test mode
-            // if (!validateEmail()) {
-            //     setError(`Email must end with @${selectedUni.domain}`);
-            //     return;
-            // }
+            if (!validateEmail()) {
+                setError(`Email must end with @${selectedUni.domain}`);
+                return;
+            }
             if (password.length < 6) {
                 setError('Password must be at least 6 characters');
                 return;
