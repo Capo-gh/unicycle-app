@@ -39,16 +39,12 @@ export default function Signup({ onSignup, onNavigate }) {
                 return;
             }
         } else {
-            if (!selectedUniversity || !email || !name || !password) {
+            if (!selectedUniversity || !email || !name) {
                 setError('Please fill in all fields');
                 return;
             }
             if (!validateEmail()) {
                 setError(`Email must end with @${selectedUni.domain}`);
-                return;
-            }
-            if (password.length < 6) {
-                setError('Password must be at least 6 characters');
                 return;
             }
         }
@@ -67,19 +63,18 @@ export default function Signup({ onSignup, onNavigate }) {
                 response = await signup({
                     email: email,
                     name: name,
-                    university: selectedUniversity,
-                    password: password
+                    university: selectedUniversity
                 });
             }
 
-            localStorage.setItem('token', response.access_token);
-            localStorage.setItem('user', JSON.stringify(response.user));
-
-            // If signup (not login), redirect to check email page
+            // Handle signup response (no token yet)
             if (!isLogin) {
                 localStorage.setItem('pendingVerificationEmail', email);
                 onNavigate('check-email');
             } else {
+                // Login response has token and user
+                localStorage.setItem('token', response.access_token);
+                localStorage.setItem('user', JSON.stringify(response.user));
                 onSignup(response.user);
             }
 
@@ -182,29 +177,31 @@ export default function Signup({ onSignup, onNavigate }) {
                     </div>
                 )}
 
-                {/* Password */}
-                <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                        <Lock className="w-4 h-4" />
-                        Password
-                    </label>
-                    <div className="relative">
-                        <input
-                            type={showPassword ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder={isLogin ? "Enter your password" : "Create a password (min 6 characters)"}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green pr-12"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                        >
-                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                        </button>
+                {/* Password (Login only) */}
+                {isLogin && (
+                    <div>
+                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                            <Lock className="w-4 h-4" />
+                            Password
+                        </label>
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Enter your password"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green pr-12"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            >
+                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Error Message */}
                 {error && (
@@ -227,7 +224,7 @@ export default function Signup({ onSignup, onNavigate }) {
                 {/* Submit Button */}
                 <button
                     onClick={handleSubmit}
-                    disabled={loading || (!isLogin && (!selectedUniversity || !email || !name || !password)) || (isLogin && (!email || !password))}
+                    disabled={loading || (!isLogin && (!selectedUniversity || !email || !name)) || (isLogin && (!email || !password))}
                     className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {loading ? (

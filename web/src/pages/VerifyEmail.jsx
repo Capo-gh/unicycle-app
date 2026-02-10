@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Mail, Loader } from 'lucide-react';
+import { CheckCircle, XCircle, Mail, Loader, Lock, Eye, EyeOff } from 'lucide-react';
 import client from '../api/client';
+import { setPassword } from '../api/auth';
 
-export default function VerifyEmail({ onNavigate }) {
-    const [status, setStatus] = useState('verifying'); // verifying, success, error, expired
+export default function VerifyEmail({ onNavigate, onSignup }) {
+    const [status, setStatus] = useState('verifying'); // verifying, success, error, expired, set_password
     const [message, setMessage] = useState('');
     const [resending, setResending] = useState(false);
+    const [verificationToken, setVerificationToken] = useState('');
+    const [password, setPasswordInput] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [settingPassword, setSettingPassword] = useState(false);
+    const [passwordError, setPasswordError] = useState('');
 
     useEffect(() => {
         const verifyToken = async () => {
@@ -24,22 +31,29 @@ export default function VerifyEmail({ onNavigate }) {
                     params: { token }
                 });
 
-                setStatus('success');
-                setMessage(response.data.message || 'Email verified successfully!');
+                // Check if user needs to set password
+                if (response.data.needs_password) {
+                    setStatus('set_password');
+                    setMessage(response.data.message || 'Email verified! Now set your password.');
+                    setVerificationToken(response.data.token);
+                } else {
+                    setStatus('success');
+                    setMessage(response.data.message || 'Email verified successfully!');
 
-                // Update user in localStorage
-                if (response.data.user) {
-                    const existingUser = JSON.parse(localStorage.getItem('user') || '{}');
-                    localStorage.setItem('user', JSON.stringify({
-                        ...existingUser,
-                        is_verified: true
-                    }));
+                    // Update user in localStorage
+                    if (response.data.user) {
+                        const existingUser = JSON.parse(localStorage.getItem('user') || '{}');
+                        localStorage.setItem('user', JSON.stringify({
+                            ...existingUser,
+                            is_verified: true
+                        }));
+                    }
+
+                    // Redirect to listings after 2 seconds
+                    setTimeout(() => {
+                        onNavigate('listings');
+                    }, 2000);
                 }
-
-                // Redirect to listings after 2 seconds
-                setTimeout(() => {
-                    onNavigate('listings');
-                }, 2000);
 
             } catch (err) {
                 console.error('Verification error:', err);
@@ -67,6 +81,45 @@ export default function VerifyEmail({ onNavigate }) {
             setMessage(err.response?.data?.detail || 'Failed to resend email. Please try again.');
         } finally {
             setResending(false);
+        }
+    };
+
+    const handleSetPassword = async () => {
+        setPasswordError('');
+
+        // Validate password
+        if (!password || password.length < 6) {
+            setPasswordError('Password must be at least 6 characters');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setPasswordError('Passwords do not match');
+            return;
+        }
+
+        setSettingPassword(true);
+
+        try {
+            const response = await setPassword(verificationToken, password);
+
+            // Save token and user
+            localStorage.setItem('token', response.access_token);
+            localStorage.setItem('user', JSON.stringify(response.user));
+
+            // Show success and login
+            setStatus('success');
+            setMessage('Password set successfully! Logging you in...');
+
+            setTimeout(() => {
+                onSignup(response.user);
+            }, 1500);
+
+        } catch (err) {
+            console.error('Set password error:', err);
+            setPasswordError(err.response?.data?.detail || 'Failed to set password. Please try again.');
+        } finally {
+            setSettingPassword(false);
         }
     };
 
@@ -125,6 +178,82 @@ export default function VerifyEmail({ onNavigate }) {
                         >
                             Back to Login
                         </button>
+                    </div>
+                )}
+
+                {/* Set Password State */}
+                {status === 'set_password' && (
+                    <div>
+                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <CheckCircle className="w-8 h-8 text-green-600" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">
+                            Email Verified!
+                        </h2>
+                        <p className="text-gray-600 mb-6 text-center">
+                            {message}
+                        </p>
+
+                        {/* Password Form */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                                    <Lock className="w-4 h-4" />
+                                    Create Password
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        value={password}
+                                        onChange={(e) => setPasswordInput(e.target.value)}
+                                        placeholder="Min 6 characters"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green pr-12"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                    >
+                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                                    <Lock className="w-4 h-4" />
+                                    Confirm Password
+                                </label>
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="Re-enter your password"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
+                                />
+                            </div>
+
+                            {passwordError && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                    <p className="text-red-600 text-sm">{passwordError}</p>
+                                </div>
+                            )}
+
+                            <button
+                                onClick={handleSetPassword}
+                                disabled={settingPassword || !password || !confirmPassword}
+                                className="w-full py-3 bg-unicycle-green text-white rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {settingPassword ? (
+                                    <>
+                                        <Loader className="w-5 h-5 animate-spin" />
+                                        Setting Password...
+                                    </>
+                                ) : (
+                                    'Set Password & Continue'
+                                )}
+                            </button>
+                        </div>
                     </div>
                 )}
 

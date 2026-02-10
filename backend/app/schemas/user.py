@@ -7,7 +7,6 @@ class UserCreate(BaseModel):
     email: str
     name: str
     university: str
-    password: str  # Added password field
 
 
 class UserLogin(BaseModel):
@@ -27,6 +26,11 @@ class UserResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+class SetPassword(BaseModel):
+    token: str
+    password: str
 
 
 class Token(BaseModel):

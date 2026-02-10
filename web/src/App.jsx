@@ -128,7 +128,7 @@ function App() {
   if (currentPage === 'verify-email') {
     return (
       <div className="animate-fadeIn">
-        <VerifyEmail onNavigate={handleNavigate} />
+        <VerifyEmail onNavigate={handleNavigate} onSignup={handleSignup} />
       </div>
     );
   }

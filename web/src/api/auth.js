@@ -24,3 +24,8 @@ export const resendVerification = async () => {
     const response = await apiClient.post('/auth/resend-verification');
     return response.data;
 };
+
+export const setPassword = async (token, password) => {
+    const response = await apiClient.post('/auth/set-password', { token, password });
+    return response.data;
+};
