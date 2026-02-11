@@ -261,7 +261,7 @@ export default function Profile({ user: signupUser, onNavigate }) {
                                 My Interests
                             </h3>
                             <span className="text-sm text-gray-500">
-                                {loading ? '...' : `${myInterests.length} items`}
+                                {loading ? '...' : `${myInterests.length} item${myInterests.length === 1 ? '' : 's'}`}
                             </span>
                         </div>
 
