@@ -40,6 +40,9 @@ function App() {
         if (event.state.viewingUserId) {
           setViewingUserId(event.state.viewingUserId);
         }
+        if (event.state.messageRequest) {
+          setMessageRequest(event.state.messageRequest);
+        }
       } else if (navigationHistory.length > 1) {
         // Go back to previous page in our history
         const newHistory = [...navigationHistory];
@@ -199,6 +202,16 @@ function App() {
   const handleContactSeller = (request) => {
     setMessageRequest(request);
     setCurrentPage('messages');
+
+    // Push to browser history with message request
+    window.history.pushState(
+      { page: 'messages', messageRequest: request },
+      '',
+      window.location.pathname
+    );
+
+    // Update navigation history
+    setNavigationHistory(prev => [...prev, 'messages']);
   };
 
   const handleViewSellerProfile = (userId) => {
