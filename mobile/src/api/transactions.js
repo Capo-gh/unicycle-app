@@ -7,7 +7,7 @@ export const createTransaction = async (listingId) => {
 
 export const getMyTransactions = async (asBuyer = true) => {
     const response = await api.get('/transactions/my', {
-        params: { as_buyer: asBuyer }
+        params: { as_buyer: String(asBuyer) }
     });
     return response.data;
 };

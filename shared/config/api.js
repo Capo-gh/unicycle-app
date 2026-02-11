@@ -2,7 +2,8 @@
 const API_CONFIG = {
     // Update this based on your environment
     development: {
-        baseURL: 'http://localhost:8000',
+        baseURL: 'http://10.122.228.1:8000',
+        // 'https://unicycle-api.onrender.com',
         // For mobile testing, use your computer's local IP instead of localhost
         // Example: baseURL: 'http://192.168.1.100:8000'
     },

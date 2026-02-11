@@ -1,4 +1,6 @@
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
+from typing import Optional
 
 class Settings(BaseSettings):
     database_url: str
@@ -6,7 +8,14 @@ class Settings(BaseSettings):
     algorithm: str
     access_token_expire_minutes: int
 
-    class Config:
-        env_file = ".env"
+    # Optional settings
+    cloudinary_cloud_name: Optional[str] = None
+    cloudinary_api_key: Optional[str] = None
+    cloudinary_api_secret: Optional[str] = None
+    frontend_url: Optional[str] = None
+    sendgrid_api_key: Optional[str] = None
+    sendgrid_from_email: Optional[str] = None
+
+    model_config = ConfigDict(env_file=".env", extra='ignore')
 
 settings = Settings()

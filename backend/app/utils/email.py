@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 # Initialize SendGrid
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 if not SENDGRID_API_KEY:
-    raise ValueError("SENDGRID_API_KEY environment variable is not set")
+    print("⚠️  WARNING: SENDGRID_API_KEY not set - email verification will be printed to console only")
 
 SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "noreply@yourdomain.com")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
@@ -85,6 +85,13 @@ def send_verification_email(email: str, name: str, token: str):
         </body>
         </html>
     """
+
+    # If SendGrid is not configured, just print the verification link
+    if not SENDGRID_API_KEY:
+        print("⚠️  SendGrid not configured - Verification link (copy this):")
+        print(f"🔗 {verification_link}")
+        print("=" * 50)
+        return None
 
     try:
         message = Mail(
