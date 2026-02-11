@@ -1,11 +1,11 @@
-import { Search, ShoppingBag, MessageCircle, User } from 'lucide-react';
+import { Search, ClipboardList, MessageCircle, User } from 'lucide-react';
 import icon from '../assets/unicycle-icon.png';
 import MarketplacePicker from './MarketplacePicker';
 
 export default function Layout({ currentPage, onNavigate, currentMarketplace, onMarketplaceChange, children }) {
     const navItems = [
         { id: 'listings', label: 'Browse', Icon: Search },
-        { id: 'transactions', label: 'Transactions', Icon: ShoppingBag },
+        { id: 'requests', label: 'Requests', Icon: ClipboardList },
         { id: 'sell', label: 'Sell', Icon: null, isPlus: true },
         { id: 'messages', label: 'Messages', Icon: MessageCircle, badge: true },
         { id: 'profile', label: 'Profile', Icon: User },

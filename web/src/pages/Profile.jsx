@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Settings, ShieldCheck, Package, Star, Pencil, Trash2, Plus } from 'lucide-react';
+import { Settings, ShieldCheck, Package, Star, Pencil, Trash2, Plus, Heart, MessageCircle } from 'lucide-react';
 import { getMyListings, deleteListing } from '../api/listings';
-import { getMyStats } from '../api/transactions';
+import { getMyStats, getMyTransactions } from '../api/transactions';
 
 export default function Profile({ user: signupUser, onNavigate }) {
     const [myListings, setMyListings] = useState([]);
+    const [myInterests, setMyInterests] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -26,18 +27,20 @@ export default function Profile({ user: signupUser, onNavigate }) {
         activeListings: stats?.active_listings || 0
     };
 
-    // Fetch user's listings and stats from backend
+    // Fetch user's listings, interests, and stats from backend
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             setError(null);
             try {
-                // Fetch listings and stats in parallel
-                const [listingsData, statsData] = await Promise.all([
+                // Fetch listings, interests, and stats in parallel
+                const [listingsData, interestsData, statsData] = await Promise.all([
                     getMyListings(),
+                    getMyTransactions(true), // as_buyer = true for interests
                     getMyStats()
                 ]);
                 setMyListings(listingsData);
+                setMyInterests(interestsData);
                 setStats(statsData);
             } catch (err) {
                 console.error('Error fetching profile data:', err);
@@ -244,6 +247,107 @@ export default function Profile({ user: signupUser, onNavigate }) {
                                                 Delete
                                             </button>
                                         </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* My Interests */}
+                    <div>
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                                <Heart className="w-5 h-5" />
+                                My Interests
+                            </h3>
+                            <span className="text-sm text-gray-500">
+                                {loading ? '...' : `${myInterests.length} items`}
+                            </span>
+                        </div>
+
+                        {/* Loading State */}
+                        {loading && (
+                            <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200 text-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-unicycle-green mx-auto"></div>
+                                <p className="text-gray-500 text-sm mt-2">Loading your interests...</p>
+                            </div>
+                        )}
+
+                        {/* Error State */}
+                        {error && !loading && (
+                            <div className="bg-red-50 rounded-lg p-4 border border-red-200 text-center">
+                                <p className="text-red-600 text-sm">{error}</p>
+                            </div>
+                        )}
+
+                        {/* Empty State */}
+                        {!loading && !error && myInterests.length === 0 && (
+                            <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200 text-center">
+                                <div className="text-4xl mb-3">❤️</div>
+                                <h4 className="font-semibold text-gray-900 mb-1">No interests yet</h4>
+                                <p className="text-sm text-gray-600 mb-4">Click "I'm Interested" on items you want to buy!</p>
+                                <button
+                                    onClick={() => onNavigate('listings')}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 text-sm font-medium"
+                                >
+                                    Browse Listings
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Interests Grid */}
+                        {!loading && !error && myInterests.length > 0 && (
+                            <div className="grid grid-cols-1 gap-3">
+                                {myInterests.map((transaction) => (
+                                    <div
+                                        key={transaction.id}
+                                        className="bg-white rounded-lg p-3 shadow-sm border border-gray-200"
+                                    >
+                                        <div className="flex gap-3">
+                                            <img
+                                                src={transaction.listing?.images ? transaction.listing.images.split(',')[0] : 'https://via.placeholder.com/80'}
+                                                alt={transaction.listing?.title}
+                                                className="w-20 h-20 object-cover rounded-lg flex-shrink-0 cursor-pointer hover:opacity-75 transition-opacity"
+                                                onClick={() => onNavigate('detail', transaction.listing)}
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <h4
+                                                    className="font-semibold text-gray-900 text-sm mb-1 truncate cursor-pointer hover:text-unicycle-green"
+                                                    onClick={() => onNavigate('detail', transaction.listing)}
+                                                >
+                                                    {transaction.listing?.title}
+                                                </h4>
+                                                <p className="text-lg font-bold text-unicycle-green">${transaction.listing?.price}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                                                        transaction.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                                        transaction.status === 'cancelled' ? 'bg-gray-100 text-gray-700' :
+                                                        transaction.status === 'agreed' ? 'bg-purple-100 text-purple-700' :
+                                                        'bg-blue-100 text-blue-700'
+                                                    }`}>
+                                                        {transaction.status === 'completed' ? 'Completed' :
+                                                         transaction.status === 'cancelled' ? 'Cancelled' :
+                                                         transaction.status === 'agreed' ? 'Agreed' : 'Interested'}
+                                                    </span>
+                                                    <span className="text-xs text-gray-500 truncate">
+                                                        Seller: {transaction.seller?.name}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        {transaction.status !== 'completed' && transaction.status !== 'cancelled' && (
+                                            <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                                                <button
+                                                    onClick={() => onNavigate('detail', transaction.listing)}
+                                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 transition-colors text-sm font-medium"
+                                                >
+                                                    <MessageCircle className="w-4 h-4" />
+                                                    Message Seller
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

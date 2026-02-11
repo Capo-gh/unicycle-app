@@ -3,7 +3,7 @@ import { ArrowLeft, MapPin, ShieldCheck, MessageCircle, Share2, Edit, Star, Chec
 import SecurePayModal from './SecurePayModal';
 import { getUserReviews } from '../api/reviews';
 import { markAsSold, markAsUnsold } from '../api/listings';
-import { createTransaction } from '../api/transactions';
+import { createTransaction, getMyTransactions } from '../api/transactions';
 
 export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, onViewSellerProfile }) {
     const [showSecurePayModal, setShowSecurePayModal] = useState(false);
@@ -40,6 +40,25 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
     useEffect(() => {
         setIsSold(item?.is_sold || false);
     }, [item?.is_sold]);
+
+    // Check if user has already expressed interest in this item
+    useEffect(() => {
+        const checkInterestStatus = async () => {
+            if (currentUser && item?.id) {
+                try {
+                    const myInterests = await getMyTransactions(true); // as_buyer = true
+                    const existingInterest = myInterests.find(t => t.listing_id === item.id);
+                    if (existingInterest) {
+                        setAlreadyInterested(true);
+                    }
+                } catch (err) {
+                    console.error('Error checking interest status:', err);
+                }
+            }
+        };
+
+        checkInterestStatus();
+    }, [currentUser, item?.id]);
 
     const fetchSellerReviews = async () => {
         try {
@@ -112,26 +131,14 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
         try {
             await createTransaction(item.id);
             setAlreadyInterested(true);
-            // Navigate to transactions page after expressing interest
-            setTimeout(() => {
-                if (onNavigate) {
-                    onNavigate('transactions');
-                }
-            }, 1000);
+            // Interest successfully expressed - button will now show "Message Seller"
         } catch (err) {
             console.error('Error expressing interest:', err);
-            if (err.response?.data?.detail) {
-                // If already interested, just mark as interested and navigate
-                if (err.response.data.detail.includes('already')) {
-                    setAlreadyInterested(true);
-                    if (onNavigate) {
-                        onNavigate('transactions');
-                    }
-                } else {
-                    alert(err.response.data.detail);
-                }
+            if (err.response?.data?.detail && err.response.data.detail.includes('already')) {
+                // Already interested - just mark as interested
+                setAlreadyInterested(true);
             } else {
-                alert('Failed to express interest. Please try again.');
+                alert(err.response?.data?.detail || 'Failed to express interest. Please try again.');
             }
         } finally {
             setExpressingInterest(false);
@@ -416,15 +423,29 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                         </div>
                     )}
 
-                    {/* I'm Interested Button - Desktop (only if not owner and not sold) */}
+                    {/* I'm Interested / Message Seller Button - Desktop (only if not owner and not sold) */}
                     {!isOwner && !isSold && (
                         <button
-                            onClick={handleExpressInterest}
-                            disabled={expressingInterest || alreadyInterested}
+                            onClick={alreadyInterested ? handleContactSeller : handleExpressInterest}
+                            disabled={expressingInterest}
                             className="hidden lg:flex w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            <Heart className="w-5 h-5" />
-                            {alreadyInterested ? 'Already Interested' : expressingInterest ? 'Expressing Interest...' : "I'm Interested"}
+                            {alreadyInterested ? (
+                                <>
+                                    <MessageCircle className="w-5 h-5" />
+                                    Message Seller
+                                </>
+                            ) : expressingInterest ? (
+                                <>
+                                    <Heart className="w-5 h-5" />
+                                    Expressing Interest...
+                                </>
+                            ) : (
+                                <>
+                                    <Heart className="w-5 h-5" />
+                                    I'm Interested
+                                </>
+                            )}
                         </button>
                     )}
                 </div>
@@ -460,12 +481,26 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                         </div>
                     ) : (
                         <button
-                            onClick={handleExpressInterest}
-                            disabled={expressingInterest || alreadyInterested}
+                            onClick={alreadyInterested ? handleContactSeller : handleExpressInterest}
+                            disabled={expressingInterest}
                             className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            <Heart className="w-5 h-5" />
-                            {alreadyInterested ? 'Already Interested' : expressingInterest ? 'Expressing...' : "I'm Interested"}
+                            {alreadyInterested ? (
+                                <>
+                                    <MessageCircle className="w-5 h-5" />
+                                    Message Seller
+                                </>
+                            ) : expressingInterest ? (
+                                <>
+                                    <Heart className="w-5 h-5" />
+                                    Expressing...
+                                </>
+                            ) : (
+                                <>
+                                    <Heart className="w-5 h-5" />
+                                    I'm Interested
+                                </>
+                            )}
                         </button>
                     )}
                 </div>

@@ -8,7 +8,7 @@ import EditListing from './pages/EditListing';
 import Profile from './pages/Profile';
 import UserProfile from './pages/UserProfile';
 import Messages from './pages/Messages';
-import Transactions from './pages/Transactions';
+import Requests from './pages/Requests';
 import Signup from './pages/Signup';
 import VerifyEmail from './pages/VerifyEmail';
 import CheckEmail from './pages/CheckEmail';
@@ -22,6 +22,48 @@ function App() {
   const [user, setUser] = useState(null);
   const [currentMarketplace, setCurrentMarketplace] = useState('');
   const [viewingUserId, setViewingUserId] = useState(null);
+  const [navigationHistory, setNavigationHistory] = useState(['listings']);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = (event) => {
+      if (event.state && event.state.page) {
+        // Restore page from history state
+        setCurrentPage(event.state.page);
+        if (event.state.selectedItem) {
+          setSelectedItem(event.state.selectedItem);
+        }
+        if (event.state.editingListing) {
+          setEditingListing(event.state.editingListing);
+        }
+        if (event.state.viewingUserId) {
+          setViewingUserId(event.state.viewingUserId);
+        }
+      } else if (navigationHistory.length > 1) {
+        // Go back to previous page in our history
+        const newHistory = [...navigationHistory];
+        newHistory.pop();
+        const previousPage = newHistory[newHistory.length - 1];
+        setNavigationHistory(newHistory);
+        setCurrentPage(previousPage);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    // Initialize history state on mount
+    if (currentPage && currentPage !== 'loading') {
+      window.history.replaceState(
+        { page: currentPage },
+        '',
+        window.location.pathname
+      );
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [currentPage, navigationHistory]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -86,6 +128,42 @@ function App() {
       setEditingListing(data);
       setCurrentPage('edit-listing');
       localStorage.setItem('currentPage', 'edit-listing');
+
+      // Push to browser history
+      window.history.pushState(
+        { page: 'edit-listing', editingListing: data },
+        '',
+        window.location.pathname
+      );
+
+      // Update navigation history
+      setNavigationHistory(prev => [...prev, 'edit-listing']);
+    } else if (page === 'detail' && data) {
+      setSelectedItem(data);
+      setCurrentPage('detail');
+
+      // Push to browser history
+      window.history.pushState(
+        { page: 'detail', selectedItem: data },
+        '',
+        window.location.pathname
+      );
+
+      // Update navigation history
+      setNavigationHistory(prev => [...prev, 'detail']);
+    } else if (page === 'user-profile' && data) {
+      setViewingUserId(data);
+      setCurrentPage('user-profile');
+
+      // Push to browser history
+      window.history.pushState(
+        { page: 'user-profile', viewingUserId: data },
+        '',
+        window.location.pathname
+      );
+
+      // Update navigation history
+      setNavigationHistory(prev => [...prev, 'user-profile']);
     } else {
       setCurrentPage(page);
       // Save current page to localStorage for persistence after refresh
@@ -104,6 +182,16 @@ function App() {
       if (page !== 'user-profile') {
         setViewingUserId(null);
       }
+
+      // Push to browser history
+      window.history.pushState(
+        { page },
+        '',
+        window.location.pathname
+      );
+
+      // Update navigation history
+      setNavigationHistory(prev => [...prev, page]);
     }
   };
 
@@ -234,8 +322,8 @@ function App() {
           />
         )}
 
-        {currentPage === 'transactions' && (
-          <Transactions onNavigate={handleNavigate} />
+        {currentPage === 'requests' && (
+          <Requests user={user} />
         )}
 
       </div>

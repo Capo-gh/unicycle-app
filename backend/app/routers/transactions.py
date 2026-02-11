@@ -43,7 +43,16 @@ def create_transaction(
     ).first()
 
     if existing:
-        return existing  # Return existing transaction
+        # Reload with relationships
+        existing = db.query(Transaction).options(
+            joinedload(Transaction.listing),
+            joinedload(Transaction.seller),
+            joinedload(Transaction.buyer)
+        ).filter(Transaction.id == existing.id).first()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You have already expressed interest in this item"
+        )
 
     # Create transaction
     transaction = Transaction(
@@ -56,6 +65,13 @@ def create_transaction(
     db.add(transaction)
     db.commit()
     db.refresh(transaction)
+
+    # Reload with relationships
+    transaction = db.query(Transaction).options(
+        joinedload(Transaction.listing),
+        joinedload(Transaction.seller),
+        joinedload(Transaction.buyer)
+    ).filter(Transaction.id == transaction.id).first()
 
     return transaction
 
@@ -117,7 +133,13 @@ def update_transaction(
             listing.is_sold = True
 
     db.commit()
-    db.refresh(transaction)
+
+    # Reload with relationships
+    transaction = db.query(Transaction).options(
+        joinedload(Transaction.listing),
+        joinedload(Transaction.seller),
+        joinedload(Transaction.buyer)
+    ).filter(Transaction.id == transaction.id).first()
 
     return transaction
 
