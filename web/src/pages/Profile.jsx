@@ -337,11 +337,11 @@ export default function Profile({ user: signupUser, onNavigate }) {
                                 {/* View All Button */}
                                 <button
                                     onClick={() => onNavigate('my-interests')}
-                                    className="w-full py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm flex items-center justify-center gap-2"
+                                    className="w-full py-2.5 bg-unicycle-green text-white rounded-lg font-medium hover:bg-unicycle-green/90 transition-colors text-sm flex items-center justify-center gap-2"
                                 >
                                     View All Interests
                                     {myInterests.length > 3 && (
-                                        <span className="px-2 py-0.5 bg-unicycle-green text-white text-xs rounded-full">
+                                        <span className="px-2 py-0.5 bg-white text-unicycle-green text-xs rounded-full font-semibold">
                                             +{myInterests.length - 3}
                                         </span>
                                     )}

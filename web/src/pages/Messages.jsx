@@ -261,8 +261,8 @@ export default function Messages({ incomingRequest, user }) {
                         </div>
 
                         {/* Message Suggestions */}
-                        <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
-                            <div className="max-w-md mx-auto">
+                        <div className="flex-1 overflow-y-auto bg-gray-50 flex items-center justify-center py-6">
+                            <div className="max-w-md w-full px-4">
                                 <h3 className="text-sm font-medium text-gray-900 mb-3">Quick replies:</h3>
                                 <div className="space-y-2">
                                     {[
