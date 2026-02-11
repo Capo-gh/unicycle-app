@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 from ..models.transaction import TransactionStatus
+from .listing import ListingResponse, SellerInfo
 
 
 class TransactionCreate(BaseModel):
@@ -21,6 +22,11 @@ class TransactionResponse(BaseModel):
     created_at: datetime
     completed_at: Optional[datetime]
     updated_at: datetime
+
+    # Nested objects (loaded with joinedload)
+    listing: Optional[ListingResponse] = None
+    seller: Optional[SellerInfo] = None
+    buyer: Optional[SellerInfo] = None
 
     class Config:
         from_attributes = True
