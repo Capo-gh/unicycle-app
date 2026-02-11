@@ -18,6 +18,7 @@ export default function LoginScreen({ navigation }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const { login } = useAuth();
 
     const handleLogin = async () => {
@@ -67,14 +68,22 @@ export default function LoginScreen({ navigation }) {
                             autoComplete="email"
                         />
 
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Password"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
-                            autoComplete="password"
-                        />
+                        <View style={styles.passwordContainer}>
+                            <TextInput
+                                style={styles.passwordInput}
+                                placeholder="Password"
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry={!showPassword}
+                                autoComplete="password"
+                            />
+                            <TouchableOpacity
+                                style={styles.eyeIcon}
+                                onPress={() => setShowPassword(!showPassword)}
+                            >
+                                <Text style={styles.eyeText}>{showPassword ? 'Hide' : 'Show'}</Text>
+                            </TouchableOpacity>
+                        </View>
 
                         <TouchableOpacity
                             style={[styles.button, loading && styles.buttonDisabled]}
@@ -141,6 +150,27 @@ const styles = StyleSheet.create({
         padding: 16,
         fontSize: 16,
         marginBottom: 16,
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.lightGray,
+        borderRadius: 12,
+        marginBottom: 16,
+        paddingRight: 12,
+    },
+    passwordInput: {
+        flex: 1,
+        padding: 16,
+        fontSize: 16,
+    },
+    eyeIcon: {
+        padding: 8,
+    },
+    eyeText: {
+        fontSize: 14,
+        color: COLORS.green,
+        fontWeight: '600',
     },
     button: {
         backgroundColor: COLORS.green,

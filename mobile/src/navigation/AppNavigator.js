@@ -11,6 +11,7 @@ import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import BrowseScreen from '../screens/BrowseScreen';
 import MessagesScreen from '../screens/MessagesScreen';
+import RequestsScreen from '../screens/RequestsScreen';
 import SellScreen from '../screens/SellScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ItemDetailScreen from '../screens/ItemDetailScreen';
@@ -41,6 +42,8 @@ function MainTabs() {
                         iconName = focused ? 'search' : 'search-outline';
                     } else if (route.name === 'Messages') {
                         iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+                    } else if (route.name === 'Requests') {
+                        iconName = focused ? 'megaphone' : 'megaphone-outline';
                     } else if (route.name === 'Sell') {
                         iconName = focused ? 'add-circle' : 'add-circle-outline';
                     } else if (route.name === 'Profile') {
@@ -56,6 +59,7 @@ function MainTabs() {
         >
             <Tab.Screen name="Browse" component={BrowseStack} />
             <Tab.Screen name="Messages" component={MessagesScreen} />
+            <Tab.Screen name="Requests" component={RequestsScreen} />
             <Tab.Screen name="Sell" component={SellScreen} />
             <Tab.Screen name="Profile" component={ProfileStack} />
         </Tab.Navigator>
