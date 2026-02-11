@@ -328,7 +328,7 @@ function App() {
         )}
 
         {currentPage === 'my-interests' && (
-          <MyInterests onNavigate={handleNavigate} />
+          <MyInterests onNavigate={handleNavigate} onContactSeller={handleContactSeller} />
         )}
 
       </div>

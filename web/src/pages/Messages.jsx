@@ -10,6 +10,7 @@ export default function Messages({ incomingRequest, user }) {
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const [error, setError] = useState(null);
+    const [newConversationRequest, setNewConversationRequest] = useState(null);
     const messagesEndRef = useRef(null);
 
     // Get current user ID
@@ -20,8 +21,11 @@ export default function Messages({ incomingRequest, user }) {
     }, []);
 
     useEffect(() => {
-        if (incomingRequest?.listingId && incomingRequest?.initialMessage !== undefined) {
-            handleStartConversation(incomingRequest.listingId, incomingRequest.initialMessage || "Hi, is this still available?");
+        if (incomingRequest?.listingId) {
+            // Store the request but don't auto-send - show message suggestions instead
+            setNewConversationRequest(incomingRequest);
+            setSelectedConvId('new');
+            setActiveConversation(null);
         }
     }, [incomingRequest]);
 
@@ -68,25 +72,36 @@ export default function Messages({ incomingRequest, user }) {
         }
     };
 
-    const handleSendMessage = async () => {
-        if (!messageText.trim() || !selectedConvId || sending) return;
+    const handleSendMessage = async (messageToSend = null) => {
+        const textToSend = messageToSend || messageText.trim();
+        if (!textToSend || sending) return;
 
         setSending(true);
         try {
-            const newMessage = await sendMessage(selectedConvId, messageText.trim());
+            // If starting a new conversation
+            if (selectedConvId === 'new' && newConversationRequest?.listingId) {
+                const conv = await createConversation(newConversationRequest.listingId, textToSend);
+                await fetchConversations();
+                setNewConversationRequest(null);
+                setMessageText('');
+                handleSelectConversation(conv.id);
+            } else if (selectedConvId && selectedConvId !== 'new') {
+                // Existing conversation
+                const newMessage = await sendMessage(selectedConvId, textToSend);
 
-            setActiveConversation(prev => ({
-                ...prev,
-                messages: [...prev.messages, newMessage]
-            }));
+                setActiveConversation(prev => ({
+                    ...prev,
+                    messages: [...prev.messages, newMessage]
+                }));
 
-            setConversations(prev => prev.map(c =>
-                c.id === selectedConvId
-                    ? { ...c, last_message: newMessage, updated_at: newMessage.created_at }
-                    : c
-            ));
+                setConversations(prev => prev.map(c =>
+                    c.id === selectedConvId
+                        ? { ...c, last_message: newMessage, updated_at: newMessage.created_at }
+                        : c
+                ));
 
-            setMessageText('');
+                setMessageText('');
+            }
         } catch (err) {
             console.error('Error sending message:', err);
             alert('Failed to send message');
@@ -223,7 +238,77 @@ export default function Messages({ incomingRequest, user }) {
 
             {/* RIGHT: Chat Interface */}
             <div className={`flex-1 flex flex-col bg-white ${selectedConvId ? 'flex' : 'hidden lg:flex'}`}>
-                {activeConversation ? (
+                {selectedConvId === 'new' && newConversationRequest ? (
+                    <>
+                        {/* New Conversation Header */}
+                        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 flex-shrink-0">
+                            <button
+                                onClick={() => {
+                                    setSelectedConvId(null);
+                                    setNewConversationRequest(null);
+                                }}
+                                className="lg:hidden p-2 -ml-2 hover:bg-gray-100 rounded-full"
+                            >
+                                <ArrowLeft className="w-5 h-5 text-gray-700" />
+                            </button>
+                            <MessageCircle className="w-10 h-10 text-unicycle-green" />
+                            <div className="flex-1">
+                                <h3 className="font-semibold text-gray-900">New Conversation</h3>
+                                <p className="text-xs text-gray-500">
+                                    Re: {newConversationRequest.listingTitle || 'Item'} • ${newConversationRequest.listingPrice || 0}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Message Suggestions */}
+                        <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                            <div className="max-w-md mx-auto">
+                                <h3 className="text-sm font-medium text-gray-900 mb-3">Quick replies:</h3>
+                                <div className="space-y-2">
+                                    {[
+                                        "Hi, is this still available?",
+                                        "Hi! I'm interested in this item. Can we meet on campus?",
+                                        "Hello! What condition is this in?",
+                                        "Hi! Is the price negotiable?",
+                                        "Hi! When would you be available to meet?"
+                                    ].map((suggestion, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => handleSendMessage(suggestion)}
+                                            disabled={sending}
+                                            className="w-full text-left px-4 py-3 bg-white border-2 border-gray-200 rounded-lg hover:border-unicycle-green hover:bg-unicycle-green/5 transition-colors text-sm disabled:opacity-50"
+                                        >
+                                            {suggestion}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-4 text-center">Or type your own message below</p>
+                            </div>
+                        </div>
+
+                        {/* Input */}
+                        <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
+                            <div className="flex gap-2 items-end">
+                                <input
+                                    type="text"
+                                    value={messageText}
+                                    onChange={(e) => setMessageText(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && !sending && handleSendMessage()}
+                                    placeholder="Type a message..."
+                                    className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green resize-none"
+                                    disabled={sending}
+                                />
+                                <button
+                                    onClick={() => handleSendMessage()}
+                                    disabled={!messageText.trim() || sending}
+                                    className="p-2.5 bg-unicycle-green text-white rounded-full hover:bg-unicycle-green/90 disabled:opacity-50 flex-shrink-0"
+                                >
+                                    <Send className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+                    </>
+                ) : activeConversation ? (
                     <>
                         {/* Header */}
                         <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 flex-shrink-0">

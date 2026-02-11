@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Heart, MessageCircle, Clock, CheckCircle, X } from 'lucide-react';
 import { getMyTransactions } from '../api/transactions';
 
-export default function MyInterests({ onNavigate }) {
+export default function MyInterests({ onNavigate, onContactSeller }) {
     const [interests, setInterests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -128,7 +128,11 @@ export default function MyInterests({ onNavigate }) {
                                 {transaction.status !== 'completed' && transaction.status !== 'cancelled' && (
                                     <div className="pt-3 border-t border-gray-100">
                                         <button
-                                            onClick={() => onNavigate('detail', transaction.listing)}
+                                            onClick={() => onContactSeller({
+                                                listingId: transaction.listing?.id,
+                                                listingTitle: transaction.listing?.title,
+                                                listingPrice: transaction.listing?.price
+                                            })}
                                             className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 transition-colors text-sm font-medium"
                                         >
                                             <MessageCircle className="w-4 h-4" />
