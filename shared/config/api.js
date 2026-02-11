@@ -2,13 +2,13 @@
 const API_CONFIG = {
     // Update this based on your environment
     development: {
-        baseURL: 'https://unicycle-api.onrender.com', // Using production for mobile testing
+        baseURL: 'https://unicycle-app.onrender.com', // Using production for mobile testing
         // For local testing: 'http://10.122.228.1:8000'
         // For mobile testing, use your computer's local IP instead of localhost
         // Example: baseURL: 'http://192.168.1.100:8000'
     },
     production: {
-        baseURL: 'https://unicycle-api.onrender.com',
+        baseURL: 'https://unicycle-app.onrender.com',
     }
 };
 
