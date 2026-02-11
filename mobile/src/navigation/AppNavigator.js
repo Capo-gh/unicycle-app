@@ -41,7 +41,7 @@ function MainTabs() {
                     if (route.name === 'Browse') {
                         iconName = focused ? 'search' : 'search-outline';
                     } else if (route.name === 'Requests') {
-                        iconName = focused ? 'clipboard' : 'clipboard-outline';
+                        iconName = focused ? 'megaphone' : 'megaphone-outline';
                     } else if (route.name === 'Sell') {
                         iconName = focused ? 'add-circle' : 'add-circle-outline';
                     } else if (route.name === 'Messages') {
