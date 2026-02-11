@@ -9,6 +9,7 @@ import Profile from './pages/Profile';
 import UserProfile from './pages/UserProfile';
 import Messages from './pages/Messages';
 import Requests from './pages/Requests';
+import MyInterests from './pages/MyInterests';
 import Signup from './pages/Signup';
 import VerifyEmail from './pages/VerifyEmail';
 import CheckEmail from './pages/CheckEmail';
@@ -324,6 +325,10 @@ function App() {
 
         {currentPage === 'requests' && (
           <Requests user={user} />
+        )}
+
+        {currentPage === 'my-interests' && (
+          <MyInterests onNavigate={handleNavigate} />
         )}
 
       </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, ShieldCheck, Package, Star, Pencil, Trash2, Plus, Heart, MessageCircle } from 'lucide-react';
+import { Settings, ShieldCheck, Package, Star, Pencil, Trash2, Plus, Heart } from 'lucide-react';
 import { getMyListings, deleteListing } from '../api/listings';
 import { getMyStats, getMyTransactions } from '../api/transactions';
 
@@ -295,29 +295,28 @@ export default function Profile({ user: signupUser, onNavigate }) {
                             </div>
                         )}
 
-                        {/* Interests Grid */}
+                        {/* Interests Preview (max 3) */}
                         {!loading && !error && myInterests.length > 0 && (
-                            <div className="grid grid-cols-1 gap-3">
-                                {myInterests.map((transaction) => (
+                            <div className="space-y-3">
+                                {myInterests.slice(0, 3).map((transaction) => (
                                     <div
                                         key={transaction.id}
-                                        className="bg-white rounded-lg p-3 shadow-sm border border-gray-200"
+                                        className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 cursor-pointer hover:border-unicycle-green transition-colors"
+                                        onClick={() => onNavigate('my-interests')}
                                     >
                                         <div className="flex gap-3">
                                             <img
                                                 src={transaction.listing?.images ? transaction.listing.images.split(',')[0] : 'https://via.placeholder.com/80'}
-                                                alt={transaction.listing?.title}
-                                                className="w-20 h-20 object-cover rounded-lg flex-shrink-0 cursor-pointer hover:opacity-75 transition-opacity"
-                                                onClick={() => onNavigate('detail', transaction.listing)}
+                                                alt={transaction.listing?.title || 'Item'}
+                                                className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                                             />
                                             <div className="flex-1 min-w-0">
-                                                <h4
-                                                    className="font-semibold text-gray-900 text-sm mb-1 truncate cursor-pointer hover:text-unicycle-green"
-                                                    onClick={() => onNavigate('detail', transaction.listing)}
-                                                >
-                                                    {transaction.listing?.title}
+                                                <h4 className="font-semibold text-gray-900 text-sm mb-1 truncate">
+                                                    {transaction.listing?.title || 'Untitled'}
                                                 </h4>
-                                                <p className="text-lg font-bold text-unicycle-green">${transaction.listing?.price}</p>
+                                                <p className="text-base font-bold text-unicycle-green">
+                                                    ${transaction.listing?.price || '0'}
+                                                </p>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
                                                         transaction.status === 'completed' ? 'bg-green-100 text-green-700' :
@@ -329,27 +328,24 @@ export default function Profile({ user: signupUser, onNavigate }) {
                                                          transaction.status === 'cancelled' ? 'Cancelled' :
                                                          transaction.status === 'agreed' ? 'Agreed' : 'Interested'}
                                                     </span>
-                                                    <span className="text-xs text-gray-500 truncate">
-                                                        Seller: {transaction.seller?.name}
-                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
-
-                                        {/* Action Buttons */}
-                                        {transaction.status !== 'completed' && transaction.status !== 'cancelled' && (
-                                            <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                                                <button
-                                                    onClick={() => onNavigate('detail', transaction.listing)}
-                                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 transition-colors text-sm font-medium"
-                                                >
-                                                    <MessageCircle className="w-4 h-4" />
-                                                    Message Seller
-                                                </button>
-                                            </div>
-                                        )}
                                     </div>
                                 ))}
+
+                                {/* View All Button */}
+                                <button
+                                    onClick={() => onNavigate('my-interests')}
+                                    className="w-full py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm flex items-center justify-center gap-2"
+                                >
+                                    View All Interests
+                                    {myInterests.length > 3 && (
+                                        <span className="px-2 py-0.5 bg-unicycle-green text-white text-xs rounded-full">
+                                            +{myInterests.length - 3}
+                                        </span>
+                                    )}
+                                </button>
                             </div>
                         )}
                     </div>
