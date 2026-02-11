@@ -40,12 +40,12 @@ function MainTabs() {
 
                     if (route.name === 'Browse') {
                         iconName = focused ? 'search' : 'search-outline';
-                    } else if (route.name === 'Messages') {
-                        iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
                     } else if (route.name === 'Requests') {
-                        iconName = focused ? 'megaphone' : 'megaphone-outline';
+                        iconName = focused ? 'clipboard' : 'clipboard-outline';
                     } else if (route.name === 'Sell') {
                         iconName = focused ? 'add-circle' : 'add-circle-outline';
+                    } else if (route.name === 'Messages') {
+                        iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
                     } else if (route.name === 'Profile') {
                         iconName = focused ? 'person' : 'person-outline';
                     }
@@ -58,9 +58,9 @@ function MainTabs() {
             })}
         >
             <Tab.Screen name="Browse" component={BrowseStack} />
-            <Tab.Screen name="Messages" component={MessagesScreen} />
             <Tab.Screen name="Requests" component={RequestsScreen} />
             <Tab.Screen name="Sell" component={SellScreen} />
+            <Tab.Screen name="Messages" component={MessagesScreen} />
             <Tab.Screen name="Profile" component={ProfileStack} />
         </Tab.Navigator>
     );
