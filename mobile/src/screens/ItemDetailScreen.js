@@ -176,7 +176,7 @@ export default function ItemDetailScreen({ route, navigation }) {
                                 key={idx}
                                 source={{ uri: img }}
                                 style={styles.image}
-                                resizeMode="cover"
+                                resizeMode="contain"
                             />
                         ))}
                     </ScrollView>
