@@ -8,11 +8,16 @@ import {
     SafeAreaView,
     ActivityIndicator,
     Image,
-    Modal
+    Modal,
+    TextInput,
+    Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getListings } from '../api/listings';
 import { COLORS } from '../../../shared/constants/colors';
+
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = (width - 48) / 2; // Account for padding and gaps
 
 const marketplaces = [
     { fullName: 'McGill University', shortName: 'McGill' },
@@ -30,15 +35,20 @@ export default function BrowseScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [showMarketplacePicker, setShowMarketplacePicker] = useState(false);
     const [currentMarketplace, setCurrentMarketplace] = useState('McGill University');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         fetchListings();
-    }, [currentMarketplace]);
+    }, [currentMarketplace, searchQuery]);
 
     const fetchListings = async () => {
         setLoading(true);
         try {
-            const data = await getListings({ university: currentMarketplace });
+            const params = { university: currentMarketplace };
+            if (searchQuery.trim()) {
+                params.search = searchQuery.trim();
+            }
+            const data = await getListings(params);
             setListings(data);
         } catch (error) {
             console.error('Error fetching listings:', error);
@@ -80,15 +90,33 @@ export default function BrowseScreen({ navigation }) {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>🚲 UniCycle</Text>
-                <TouchableOpacity
-                    style={styles.marketplaceButton}
-                    onPress={() => setShowMarketplacePicker(true)}
-                >
-                    <Ionicons name="location" size={16} color={COLORS.green} />
-                    <Text style={styles.marketplaceButtonText}>{currentMarketplaceShortName}</Text>
-                    <Ionicons name="chevron-down" size={16} color="#666" />
-                </TouchableOpacity>
+                <View style={styles.headerTop}>
+                    <Text style={styles.headerTitle}>🚲 UniCycle</Text>
+                    <TouchableOpacity
+                        style={styles.marketplaceButton}
+                        onPress={() => setShowMarketplacePicker(true)}
+                    >
+                        <Ionicons name="location" size={16} color={COLORS.green} />
+                        <Text style={styles.marketplaceButtonText}>{currentMarketplaceShortName}</Text>
+                        <Ionicons name="chevron-down" size={16} color="#666" />
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.searchContainer}>
+                    <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search listings..."
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        returnKeyType="search"
+                    />
+                    {searchQuery.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+                            <Ionicons name="close-circle" size={20} color="#999" />
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
 
             {loading ? (
@@ -177,12 +205,17 @@ const styles = StyleSheet.create({
     },
     header: {
         backgroundColor: '#fff',
-        padding: 16,
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#e0e0e0',
+    },
+    headerTop: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        marginBottom: 12,
     },
     headerTitle: {
         fontSize: 24,
@@ -205,11 +238,29 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: COLORS.dark,
     },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.lightGray,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+    },
+    searchIcon: {
+        marginRight: 8,
+    },
+    searchInput: {
+        flex: 1,
+        paddingVertical: 10,
+        fontSize: 15,
+    },
+    clearButton: {
+        padding: 4,
+    },
     list: {
         padding: 8,
     },
     card: {
-        flex: 1,
+        width: CARD_WIDTH,
         margin: 8,
         backgroundColor: '#fff',
         borderRadius: 12,

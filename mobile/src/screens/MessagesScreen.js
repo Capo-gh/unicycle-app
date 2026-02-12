@@ -18,9 +18,11 @@ import { getConversations, getConversation, sendMessage, archiveConversation } f
 
 export default function MessagesScreen() {
     const [conversations, setConversations] = useState([]);
+    const [filteredConversations, setFilteredConversations] = useState([]);
     const [selectedConvId, setSelectedConvId] = useState(null);
     const [activeConversation, setActiveConversation] = useState(null);
     const [messageText, setMessageText] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const { user } = useAuth();
@@ -43,6 +45,7 @@ export default function MessagesScreen() {
         try {
             const data = await getConversations();
             setConversations(data);
+            setFilteredConversations(data);
         } catch (error) {
             console.error('Error fetching conversations:', error);
             Alert.alert('Error', 'Failed to load conversations');
@@ -50,6 +53,21 @@ export default function MessagesScreen() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (searchQuery.trim()) {
+            const filtered = conversations.filter(conv => {
+                const otherPerson = getOtherPerson(conv);
+                const listing = conv.listing?.title || '';
+                const name = otherPerson?.name || '';
+                const query = searchQuery.toLowerCase();
+                return name.toLowerCase().includes(query) || listing.toLowerCase().includes(query);
+            });
+            setFilteredConversations(filtered);
+        } else {
+            setFilteredConversations(conversations);
+        }
+    }, [searchQuery, conversations]);
 
     const handleSelectConversation = async (convId) => {
         setSelectedConvId(convId);
@@ -273,6 +291,21 @@ export default function MessagesScreen() {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Messages</Text>
+                <View style={styles.searchContainer}>
+                    <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search conversations..."
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        returnKeyType="search"
+                    />
+                    {searchQuery.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+                            <Ionicons name="close-circle" size={20} color="#999" />
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
 
             {loading ? (
@@ -287,7 +320,7 @@ export default function MessagesScreen() {
                 </View>
             ) : (
                 <FlatList
-                    data={conversations}
+                    data={filteredConversations}
                     renderItem={renderConversationItem}
                     keyExtractor={(item) => item.id.toString()}
                     contentContainerStyle={styles.listContent}
@@ -303,7 +336,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     header: {
-        padding: 16,
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#e0e0e0',
         backgroundColor: '#fff',
@@ -312,6 +347,25 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
         color: COLORS.dark,
+        marginBottom: 12,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.lightGray,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+    },
+    searchIcon: {
+        marginRight: 8,
+    },
+    searchInput: {
+        flex: 1,
+        paddingVertical: 10,
+        fontSize: 15,
+    },
+    clearButton: {
+        padding: 4,
     },
     centerContainer: {
         flex: 1,
