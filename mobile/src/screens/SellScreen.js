@@ -32,6 +32,7 @@ export default function SellScreen({ navigation }) {
     const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [showSafeZonePicker, setShowSafeZonePicker] = useState(false);
+    const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
     const categories = [
         'Textbooks & Course Materials',
@@ -213,25 +214,21 @@ export default function SellScreen({ navigation }) {
                 {/* Category */}
                 <View style={styles.section}>
                     <Text style={styles.label}>Category *</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionsContainer}>
-                        {categories.map((cat) => (
-                            <TouchableOpacity
-                                key={cat}
-                                style={[
-                                    styles.optionChip,
-                                    formData.category === cat && styles.optionChipActive
-                                ]}
-                                onPress={() => setFormData({ ...formData, category: cat })}
-                            >
-                                <Text style={[
-                                    styles.optionChipText,
-                                    formData.category === cat && styles.optionChipTextActive
-                                ]}>
-                                    {cat}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+                    <TouchableOpacity
+                        style={styles.dropdownButton}
+                        onPress={() => setShowCategoryPicker(true)}
+                    >
+                        <View style={styles.dropdownButtonContent}>
+                            <Ionicons name="grid" size={18} color={formData.category ? COLORS.green : '#999'} />
+                            <Text style={[
+                                styles.dropdownButtonText,
+                                !formData.category && styles.dropdownPlaceholder
+                            ]}>
+                                {formData.category || 'Select a category'}
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-down" size={20} color="#999" />
+                    </TouchableOpacity>
                 </View>
 
                 {/* Condition */}
@@ -333,6 +330,56 @@ export default function SellScreen({ navigation }) {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
+
+            {/* Category Picker Modal */}
+            <Modal
+                visible={showCategoryPicker}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setShowCategoryPicker(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowCategoryPicker(false)}
+                >
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHandle} />
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Select Category</Text>
+                            <TouchableOpacity onPress={() => setShowCategoryPicker(false)}>
+                                <Ionicons name="close" size={24} color={COLORS.dark} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView style={styles.categoryList}>
+                            {categories.map((cat) => (
+                                <TouchableOpacity
+                                    key={cat}
+                                    style={[
+                                        styles.categoryItem,
+                                        formData.category === cat && styles.categoryItemActive
+                                    ]}
+                                    onPress={() => {
+                                        setFormData({ ...formData, category: cat });
+                                        setShowCategoryPicker(false);
+                                    }}
+                                >
+                                    <Text style={[
+                                        styles.categoryItemText,
+                                        formData.category === cat && styles.categoryItemTextActive
+                                    ]}>
+                                        {cat}
+                                    </Text>
+                                    {formData.category === cat && (
+                                        <Ionicons name="checkmark-circle" size={24} color={COLORS.green} />
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
 
             {/* Safe Zone Picker Modal */}
             <Modal
@@ -641,6 +688,30 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '600',
         color: COLORS.dark,
+    },
+    categoryList: {
+        paddingVertical: 8,
+    },
+    categoryItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+    },
+    categoryItemActive: {
+        backgroundColor: 'rgba(76, 175, 80, 0.05)',
+    },
+    categoryItemText: {
+        fontSize: 15,
+        fontWeight: '500',
+        color: COLORS.dark,
+    },
+    categoryItemTextActive: {
+        color: COLORS.green,
+        fontWeight: '600',
     },
     safeZoneList: {
         paddingVertical: 8,
