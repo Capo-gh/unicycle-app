@@ -16,6 +16,7 @@ import SellScreen from '../screens/SellScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ItemDetailScreen from '../screens/ItemDetailScreen';
 import MyInterestsScreen from '../screens/MyInterestsScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -105,6 +106,11 @@ function ProfileStack() {
                     title: 'My Interests',
                     headerBackTitle: 'Back'
                 }}
+            />
+            <Stack.Screen
+                name="Settings"
+                component={SettingsScreen}
+                options={{ headerShown: false }}
             />
         </Stack.Navigator>
     );

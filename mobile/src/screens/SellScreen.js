@@ -30,6 +30,7 @@ export default function SellScreen({ navigation }) {
     const [images, setImages] = useState([]);
     const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [showSafeZonePicker, setShowSafeZonePicker] = useState(false);
 
     const categories = [
         'Textbooks & Course Materials',
@@ -290,34 +291,21 @@ export default function SellScreen({ navigation }) {
                 <View style={styles.section}>
                     <Text style={styles.label}>Meetup Location *</Text>
                     <Text style={styles.labelSubtext}>Choose a public safe zone on campus</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionsContainer}>
-                        {safeZones.map((zone) => (
-                            <TouchableOpacity
-                                key={zone.name}
-                                style={[
-                                    styles.safeZoneChip,
-                                    formData.safeZone === zone.name && styles.safeZoneChipActive
-                                ]}
-                                onPress={() => setFormData({
-                                    ...formData,
-                                    safeZone: zone.name,
-                                    safeZoneAddress: zone.address
-                                })}
-                            >
-                                <Ionicons
-                                    name="location"
-                                    size={16}
-                                    color={formData.safeZone === zone.name ? '#fff' : COLORS.green}
-                                />
-                                <Text style={[
-                                    styles.safeZoneChipText,
-                                    formData.safeZone === zone.name && styles.safeZoneChipTextActive
-                                ]}>
-                                    {zone.name}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+                    <TouchableOpacity
+                        style={styles.dropdownButton}
+                        onPress={() => setShowSafeZonePicker(true)}
+                    >
+                        <View style={styles.dropdownButtonContent}>
+                            <Ionicons name="location" size={18} color={formData.safeZone ? COLORS.green : '#999'} />
+                            <Text style={[
+                                styles.dropdownButtonText,
+                                !formData.safeZone && styles.dropdownPlaceholder
+                            ]}>
+                                {formData.safeZone || 'Select a safe zone'}
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-down" size={20} color="#999" />
+                    </TouchableOpacity>
                     {formData.safeZoneAddress && (
                         <View style={styles.addressBox}>
                             <Ionicons name="location-outline" size={16} color="#666" />
@@ -344,6 +332,70 @@ export default function SellScreen({ navigation }) {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
+
+            {/* Safe Zone Picker Modal */}
+            <Modal
+                visible={showSafeZonePicker}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setShowSafeZonePicker(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowSafeZonePicker(false)}
+                >
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHandle} />
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Select Safe Zone</Text>
+                            <TouchableOpacity onPress={() => setShowSafeZonePicker(false)}>
+                                <Ionicons name="close" size={24} color={COLORS.dark} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView style={styles.safeZoneList}>
+                            {safeZones.map((zone) => (
+                                <TouchableOpacity
+                                    key={zone.name}
+                                    style={[
+                                        styles.safeZoneItem,
+                                        formData.safeZone === zone.name && styles.safeZoneItemActive
+                                    ]}
+                                    onPress={() => {
+                                        setFormData({
+                                            ...formData,
+                                            safeZone: zone.name,
+                                            safeZoneAddress: zone.address
+                                        });
+                                        setShowSafeZonePicker(false);
+                                    }}
+                                >
+                                    <View style={styles.safeZoneItemContent}>
+                                        <View style={styles.safeZoneItemHeader}>
+                                            <Ionicons
+                                                name="location"
+                                                size={18}
+                                                color={formData.safeZone === zone.name ? COLORS.green : '#666'}
+                                            />
+                                            <Text style={[
+                                                styles.safeZoneItemTitle,
+                                                formData.safeZone === zone.name && styles.safeZoneItemTitleActive
+                                            ]}>
+                                                {zone.name}
+                                            </Text>
+                                        </View>
+                                        <Text style={styles.safeZoneItemSubtitle}>{zone.address}</Text>
+                                    </View>
+                                    {formData.safeZone === zone.name && (
+                                        <Ionicons name="checkmark-circle" size={24} color={COLORS.green} />
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -498,26 +550,27 @@ const styles = StyleSheet.create({
         padding: 12,
         fontSize: 15,
     },
-    safeZoneChip: {
+    dropdownButton: {
+        backgroundColor: COLORS.lightGray,
+        borderRadius: 12,
+        padding: 12,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#d1fae5',
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        borderRadius: 20,
-        marginRight: 8,
-        gap: 6,
+        justifyContent: 'space-between',
+        marginTop: 8,
     },
-    safeZoneChipActive: {
-        backgroundColor: COLORS.green,
+    dropdownButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        flex: 1,
     },
-    safeZoneChipText: {
-        fontSize: 13,
-        fontWeight: '500',
-        color: '#065f46',
+    dropdownButtonText: {
+        fontSize: 15,
+        color: COLORS.dark,
     },
-    safeZoneChipTextActive: {
-        color: '#fff',
+    dropdownPlaceholder: {
+        color: '#999',
     },
     addressBox: {
         flexDirection: 'row',
@@ -551,5 +604,78 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: '600',
+    },
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        paddingBottom: 40,
+        maxHeight: '70%',
+    },
+    modalHandle: {
+        width: 40,
+        height: 4,
+        backgroundColor: '#d1d5db',
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginTop: 12,
+        marginBottom: 20,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: COLORS.dark,
+    },
+    safeZoneList: {
+        paddingVertical: 8,
+    },
+    safeZoneItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+    },
+    safeZoneItemActive: {
+        backgroundColor: 'rgba(76, 175, 80, 0.05)',
+    },
+    safeZoneItemContent: {
+        flex: 1,
+    },
+    safeZoneItemHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 4,
+    },
+    safeZoneItemTitle: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: COLORS.dark,
+    },
+    safeZoneItemTitleActive: {
+        color: COLORS.green,
+    },
+    safeZoneItemSubtitle: {
+        fontSize: 12,
+        color: '#999',
+        marginLeft: 26,
     },
 });
