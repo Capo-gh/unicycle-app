@@ -6,12 +6,13 @@ import {
     StyleSheet,
     SafeAreaView,
     ActivityIndicator,
-    Image
+    Image,
+    TouchableOpacity
 } from 'react-native';
 import { getMyTransactions } from '../api/transactions';
 import { COLORS } from '../../../shared/constants/colors';
 
-export default function MyInterestsScreen() {
+export default function MyInterestsScreen({ navigation }) {
     const [interests, setInterests] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -31,7 +32,10 @@ export default function MyInterestsScreen() {
     };
 
     const renderItem = ({ item }) => (
-        <View style={styles.card}>
+        <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('ItemDetail', { listing: item.listing })}
+        >
             <Image
                 source={{ uri: item.listing?.images?.split(',')[0] || 'https://via.placeholder.com/80' }}
                 style={styles.image}
@@ -43,7 +47,7 @@ export default function MyInterestsScreen() {
                 <Text style={styles.price}>${item.listing?.price || '0'}</Text>
                 <Text style={styles.status}>{item.status}</Text>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 
     if (loading) {
