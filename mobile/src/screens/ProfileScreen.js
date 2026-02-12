@@ -192,8 +192,11 @@ export default function ProfileScreen({ navigation }) {
                     ) : (
                         myListings.map((listing) => (
                             <View key={listing.id} style={styles.listingCard}>
-                                {listing.images && listing.images[0] ? (
-                                    <Image source={{ uri: listing.images[0] }} style={styles.listingImage} />
+                                {listing.images ? (
+                                    <Image
+                                        source={{ uri: typeof listing.images === 'string' ? listing.images.split(',')[0] : listing.images[0] }}
+                                        style={styles.listingImage}
+                                    />
                                 ) : (
                                     <View style={[styles.listingImage, styles.listingImagePlaceholder]}>
                                         <Ionicons name="image-outline" size={32} color="#d1d5db" />
@@ -216,7 +219,7 @@ export default function ProfileScreen({ navigation }) {
                                 <View style={styles.listingActions}>
                                     <TouchableOpacity
                                         style={styles.actionButton}
-                                        onPress={() => navigation.navigate('EditListing', { listingId: listing.id })}
+                                        onPress={() => navigation.navigate('ItemDetail', { listing })}
                                     >
                                         <Ionicons name="create-outline" size={20} color={COLORS.green} />
                                     </TouchableOpacity>

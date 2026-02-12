@@ -112,6 +112,15 @@ function ProfileStack() {
                 component={SettingsScreen}
                 options={{ headerShown: false }}
             />
+            <Stack.Screen
+                name="ItemDetail"
+                component={ItemDetailScreen}
+                options={{
+                    headerShown: true,
+                    title: 'Item Details',
+                    headerBackTitle: 'Back'
+                }}
+            />
         </Stack.Navigator>
     );
 }
