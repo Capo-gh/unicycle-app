@@ -81,6 +81,25 @@ export default function RequestsScreen({ navigation }) {
         }
     };
 
+    const handleDeleteReply = async (replyId) => {
+        Alert.alert('Delete Reply', 'Are you sure?', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Delete', style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await deleteReply(selectedRequest.id, replyId);
+                        const data = await getRequest(selectedRequest.id);
+                        setSelectedRequest(data);
+                    } catch (error) {
+                        console.error('Error deleting reply:', error);
+                        Alert.alert('Error', 'Failed to delete reply');
+                    }
+                }
+            }
+        ]);
+    };
+
     const handleDeleteRequest = async (requestId) => {
         Alert.alert(
             'Delete Request',
@@ -129,6 +148,7 @@ export default function RequestsScreen({ navigation }) {
                 onBack={() => setSelectedRequest(null)}
                 onAddReply={handleAddReply}
                 onDelete={handleDeleteRequest}
+                onDeleteReply={handleDeleteReply}
                 formatTimeAgo={formatTimeAgo}
             />
         );
@@ -242,24 +262,110 @@ export default function RequestsScreen({ navigation }) {
     );
 }
 
+// Recursive Reply Component
+function ReplyItem({ reply, request, user, depth, onReplyTo, onDeleteReply, formatTimeAgo, maxDepth = 3 }) {
+    const isOP = reply.author_id === request.author_id;
+    const canReply = depth < maxDepth;
+    const canDelete = user?.id === reply.author_id || user?.id === request.author_id;
+
+    return (
+        <View style={[styles.replyItem, { marginLeft: depth > 0 ? 16 : 0 }]}>
+            {depth > 0 && <View style={styles.replyNestLine} />}
+            <View style={styles.replyHeader}>
+                <View style={[styles.replyAvatar, depth > 0 && { width: 28, height: 28, borderRadius: 14 }]}>
+                    <Text style={[styles.replyAvatarText, depth > 0 && { fontSize: 12 }]}>
+                        {reply.author?.name?.charAt(0) || '?'}
+                    </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={styles.replyAuthor}>{reply.author?.name}</Text>
+                        {isOP && (
+                            <View style={styles.opBadge}>
+                                <Text style={styles.opBadgeText}>OP</Text>
+                            </View>
+                        )}
+                    </View>
+                    <Text style={styles.replyTime}>{formatTimeAgo(reply.created_at)}</Text>
+                </View>
+                {canDelete && (
+                    <TouchableOpacity onPress={() => onDeleteReply(reply.id)} style={{ padding: 4 }}>
+                        <Ionicons name="trash-outline" size={16} color="#999" />
+                    </TouchableOpacity>
+                )}
+            </View>
+            <Text style={styles.replyText}>{reply.text}</Text>
+
+            {/* Reply action */}
+            {canReply && (
+                <TouchableOpacity
+                    style={styles.replyActionButton}
+                    onPress={() => onReplyTo(reply)}
+                >
+                    <Ionicons name="arrow-undo-outline" size={14} color="#999" />
+                    <Text style={styles.replyActionText}>Reply</Text>
+                </TouchableOpacity>
+            )}
+
+            {/* Nested replies */}
+            {reply.child_replies && reply.child_replies.length > 0 && (
+                <View style={styles.nestedReplies}>
+                    {reply.child_replies.map((childReply) => (
+                        <ReplyItem
+                            key={childReply.id}
+                            reply={childReply}
+                            request={request}
+                            user={user}
+                            depth={depth + 1}
+                            onReplyTo={onReplyTo}
+                            onDeleteReply={onDeleteReply}
+                            formatTimeAgo={formatTimeAgo}
+                            maxDepth={maxDepth}
+                        />
+                    ))}
+                </View>
+            )}
+        </View>
+    );
+}
+
+// Count all replies recursively
+function countAllReplies(replies) {
+    if (!replies) return 0;
+    let count = replies.length;
+    for (const reply of replies) {
+        if (reply.child_replies) {
+            count += countAllReplies(reply.child_replies);
+        }
+    }
+    return count;
+}
+
 // Request Detail Component
-function RequestDetail({ request, user, onBack, onAddReply, onDelete, formatTimeAgo }) {
+function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteReply, formatTimeAgo }) {
     const [replyText, setReplyText] = useState('');
     const [sending, setSending] = useState(false);
+    const [replyingTo, setReplyingTo] = useState(null);
 
     const handleSend = async () => {
         if (!replyText.trim()) return;
 
         setSending(true);
         try {
-            await onAddReply(request.id, replyText.trim());
+            await onAddReply(request.id, replyText.trim(), replyingTo?.id || null);
             setReplyText('');
+            setReplyingTo(null);
         } finally {
             setSending(false);
         }
     };
 
+    const handleReplyTo = (reply) => {
+        setReplyingTo(reply);
+    };
+
     const isOwner = user?.id === request.author_id;
+    const totalReplies = countAllReplies(request.replies);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -317,7 +423,7 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, formatTime
 
                     <View style={styles.repliesSection}>
                         <Text style={styles.repliesTitle}>
-                            Replies ({request.replies?.length || 0})
+                            Replies ({totalReplies})
                         </Text>
 
                         {(!request.replies || request.replies.length === 0) ? (
@@ -326,46 +432,50 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, formatTime
                             </View>
                         ) : (
                             request.replies.map((reply) => (
-                                <View key={reply.id} style={styles.replyItem}>
-                                    <View style={styles.replyHeader}>
-                                        <View style={styles.replyAvatar}>
-                                            <Text style={styles.replyAvatarText}>{reply.author?.name?.charAt(0) || '?'}</Text>
-                                        </View>
-                                        <View style={{ flex: 1 }}>
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                                <Text style={styles.replyAuthor}>{reply.author?.name}</Text>
-                                                {reply.author_id === request.author_id && (
-                                                    <View style={styles.opBadge}>
-                                                        <Text style={styles.opBadgeText}>OP</Text>
-                                                    </View>
-                                                )}
-                                            </View>
-                                            <Text style={styles.replyTime}>{formatTimeAgo(reply.created_at)}</Text>
-                                        </View>
-                                    </View>
-                                    <Text style={styles.replyText}>{reply.text}</Text>
-                                </View>
+                                <ReplyItem
+                                    key={reply.id}
+                                    reply={reply}
+                                    request={request}
+                                    user={user}
+                                    depth={0}
+                                    onReplyTo={handleReplyTo}
+                                    onDeleteReply={onDeleteReply}
+                                    formatTimeAgo={formatTimeAgo}
+                                />
                             ))
                         )}
                     </View>
                 </ScrollView>
 
-                <View style={styles.replyInput}>
-                    <TextInput
-                        style={styles.replyTextInput}
-                        placeholder="Write a reply..."
-                        value={replyText}
-                        onChangeText={setReplyText}
-                        multiline
-                        maxLength={500}
-                    />
-                    <TouchableOpacity
-                        style={[styles.sendButton, !replyText.trim() && styles.sendButtonDisabled]}
-                        onPress={handleSend}
-                        disabled={!replyText.trim() || sending}
-                    >
-                        <Ionicons name="send" size={20} color="#fff" />
-                    </TouchableOpacity>
+                {/* Reply Input */}
+                <View style={styles.replyInputContainer}>
+                    {replyingTo && (
+                        <View style={styles.replyingToBar}>
+                            <Text style={styles.replyingToText}>
+                                Replying to {replyingTo.author?.name}
+                            </Text>
+                            <TouchableOpacity onPress={() => setReplyingTo(null)}>
+                                <Ionicons name="close-circle" size={18} color="#999" />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                    <View style={styles.replyInput}>
+                        <TextInput
+                            style={styles.replyTextInput}
+                            placeholder={replyingTo ? `Reply to ${replyingTo.author?.name}...` : 'Write a reply...'}
+                            value={replyText}
+                            onChangeText={setReplyText}
+                            multiline
+                            maxLength={500}
+                        />
+                        <TouchableOpacity
+                            style={[styles.sendButton, !replyText.trim() && styles.sendButtonDisabled]}
+                            onPress={handleSend}
+                            disabled={!replyText.trim() || sending}
+                        >
+                            <Ionicons name="send" size={20} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -849,6 +959,48 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666',
         lineHeight: 18,
+    },
+    replyActionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        marginTop: 8,
+        alignSelf: 'flex-start',
+    },
+    replyActionText: {
+        fontSize: 12,
+        color: '#999',
+        fontWeight: '500',
+    },
+    replyNestLine: {
+        position: 'absolute',
+        left: -8,
+        top: 0,
+        bottom: 0,
+        width: 2,
+        backgroundColor: '#e0e0e0',
+        borderRadius: 1,
+    },
+    nestedReplies: {
+        marginTop: 8,
+    },
+    replyInputContainer: {
+        borderTopWidth: 1,
+        borderTopColor: '#e0e0e0',
+        backgroundColor: '#fff',
+    },
+    replyingToBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingTop: 8,
+        paddingBottom: 4,
+    },
+    replyingToText: {
+        fontSize: 12,
+        color: COLORS.green,
+        fontWeight: '500',
     },
     replyInput: {
         flexDirection: 'row',

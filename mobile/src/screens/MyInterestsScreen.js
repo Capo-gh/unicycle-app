@@ -246,7 +246,7 @@ export default function MyInterestsScreen({ navigation }) {
                         color={activeTab === 'seller' ? COLORS.green : '#999'}
                     />
                     <Text style={[styles.tabText, activeTab === 'seller' && styles.tabTextActive]}>
-                        Buyer Requests
+                        Incoming
                     </Text>
                 </TouchableOpacity>
             </View>
