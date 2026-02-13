@@ -202,21 +202,40 @@ export default function MessagesScreen() {
                             const isMe = item.sender_id === user?.id;
                             return (
                                 <View style={[
-                                    styles.messageBubble,
-                                    isMe ? styles.myMessage : styles.theirMessage
+                                    styles.messageRow,
+                                    isMe ? styles.myMessageRow : styles.theirMessageRow
                                 ]}>
-                                    <Text style={[
-                                        styles.messageText,
-                                        isMe ? styles.myMessageText : styles.theirMessageText
+                                    {!isMe && (
+                                        <View style={styles.msgAvatar}>
+                                            <Text style={styles.msgAvatarText}>
+                                                {otherPerson?.name?.charAt(0) || '?'}
+                                            </Text>
+                                        </View>
+                                    )}
+                                    <View style={[
+                                        styles.messageBubble,
+                                        isMe ? styles.myMessage : styles.theirMessage
                                     ]}>
-                                        {item.text}
-                                    </Text>
-                                    <Text style={[
-                                        styles.messageTime,
-                                        isMe ? styles.myMessageTime : styles.theirMessageTime
-                                    ]}>
-                                        {formatTimeAgo(item.created_at)}
-                                    </Text>
+                                        <Text style={[
+                                            styles.messageText,
+                                            isMe ? styles.myMessageText : styles.theirMessageText
+                                        ]}>
+                                            {item.text}
+                                        </Text>
+                                        <Text style={[
+                                            styles.messageTime,
+                                            isMe ? styles.myMessageTime : styles.theirMessageTime
+                                        ]}>
+                                            {formatTimeAgo(item.created_at)}
+                                        </Text>
+                                    </View>
+                                    {isMe && (
+                                        <View style={[styles.msgAvatar, styles.msgAvatarMe]}>
+                                            <Text style={styles.msgAvatarText}>
+                                                {user?.name?.charAt(0) || '?'}
+                                            </Text>
+                                        </View>
+                                    )}
                                 </View>
                             );
                         }}
@@ -510,19 +529,46 @@ const styles = StyleSheet.create({
         padding: 16,
         flexGrow: 1,
     },
-    messageBubble: {
-        maxWidth: '75%',
-        padding: 12,
-        borderRadius: 16,
+    messageRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
         marginBottom: 8,
     },
+    myMessageRow: {
+        justifyContent: 'flex-end',
+    },
+    theirMessageRow: {
+        justifyContent: 'flex-start',
+    },
+    msgAvatar: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: '#9ca3af',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+    },
+    msgAvatarMe: {
+        backgroundColor: COLORS.green,
+        marginRight: 0,
+        marginLeft: 8,
+    },
+    msgAvatarText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    messageBubble: {
+        maxWidth: '70%',
+        padding: 12,
+        borderRadius: 16,
+    },
     myMessage: {
-        alignSelf: 'flex-end',
         backgroundColor: COLORS.green,
         borderBottomRightRadius: 4,
     },
     theirMessage: {
-        alignSelf: 'flex-start',
         backgroundColor: COLORS.lightGray,
         borderBottomLeftRadius: 4,
     },
