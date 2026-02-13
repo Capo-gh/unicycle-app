@@ -21,6 +21,7 @@ export default function ProfileScreen({ navigation }) {
     const { user, logout } = useAuth();
     const [myListings, setMyListings] = useState([]);
     const [myInterests, setMyInterests] = useState([]);
+    const [incomingTransactions, setIncomingTransactions] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -32,13 +33,15 @@ export default function ProfileScreen({ navigation }) {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [listingsData, interestsData, statsData] = await Promise.all([
+            const [listingsData, interestsData, incomingData, statsData] = await Promise.all([
                 getMyListings(),
-                getMyTransactions(true), // as_buyer = true
+                getMyTransactions(true),  // as_buyer = true
+                getMyTransactions(false), // as_seller (incoming)
                 getMyStats()
             ]);
             setMyListings(listingsData);
             setMyInterests(interestsData);
+            setIncomingTransactions(incomingData);
             setStats(statsData);
         } catch (error) {
             console.error('Error fetching profile data:', error);
@@ -242,11 +245,11 @@ export default function ProfileScreen({ navigation }) {
                         onPress={() => navigation.navigate('MyInterests')}
                     >
                         <View style={styles.menuItemLeft}>
-                            <Ionicons name="heart-outline" size={22} color={COLORS.dark} />
-                            <Text style={styles.menuText}>My Interests</Text>
+                            <Ionicons name="swap-horizontal-outline" size={22} color={COLORS.dark} />
+                            <Text style={styles.menuText}>Transactions</Text>
                         </View>
                         <View style={styles.menuItemRight}>
-                            <Text style={styles.menuCount}>{myInterests.length}</Text>
+                            <Text style={styles.menuCount}>{myInterests.length + incomingTransactions.length}</Text>
                             <Ionicons name="chevron-forward" size={20} color="#999" />
                         </View>
                     </TouchableOpacity>

@@ -89,6 +89,7 @@ export default function Transactions({ onNavigate }) {
                             <ShoppingBag className="w-4 h-4" />
                             My Interests
                         </button>
+
                         <button
                             onClick={() => setActiveTab('seller')}
                             className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
@@ -147,20 +148,19 @@ export default function Transactions({ onNavigate }) {
                 {!loading && !error && transactions.length > 0 && (
                     <div className="space-y-3">
                         {transactions.map((transaction) => (
-                            <div key={transaction.id} className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                                {/* Item Info */}
-                                <div className="flex gap-3 mb-3">
+                            <div key={transaction.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                {/* Item Info - Clickable */}
+                                <div
+                                    className="flex gap-3 p-4 pb-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                                    onClick={() => onNavigate('detail', transaction.listing)}
+                                >
                                     <img
                                         src={transaction.listing?.images?.split(',')[0] || 'https://via.placeholder.com/80'}
                                         alt={transaction.listing?.title}
-                                        className="w-16 h-16 object-cover rounded-lg flex-shrink-0 cursor-pointer hover:opacity-75 transition-opacity"
-                                        onClick={() => onNavigate('item-detail', transaction.listing)}
+                                        className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                                     />
                                     <div className="flex-1 min-w-0">
-                                        <h4
-                                            className="font-semibold text-gray-900 text-sm mb-1 truncate cursor-pointer hover:text-unicycle-green"
-                                            onClick={() => onNavigate('item-detail', transaction.listing)}
-                                        >
+                                        <h4 className="font-semibold text-gray-900 text-sm mb-1 truncate">
                                             {transaction.listing?.title}
                                         </h4>
                                         <p className="text-lg font-bold text-unicycle-green">${transaction.listing?.price}</p>
@@ -178,7 +178,7 @@ export default function Transactions({ onNavigate }) {
 
                                 {/* Actions (only if not completed or cancelled) */}
                                 {transaction.status !== 'completed' && transaction.status !== 'cancelled' && (
-                                    <div className="flex gap-2 pt-3 border-t border-gray-100">
+                                    <div className="flex gap-2 px-4 pb-4 pt-3 border-t border-gray-100">
                                         <button
                                             onClick={() => handleUpdateStatus(transaction.id, 'completed')}
                                             disabled={updating === transaction.id}
@@ -200,7 +200,7 @@ export default function Transactions({ onNavigate }) {
 
                                 {/* Completed info */}
                                 {transaction.status === 'completed' && transaction.completed_at && (
-                                    <div className="pt-3 border-t border-gray-100">
+                                    <div className="px-4 pb-4 pt-3 border-t border-gray-100">
                                         <p className="text-xs text-gray-500">
                                             Completed on {new Date(transaction.completed_at).toLocaleDateString()}
                                         </p>

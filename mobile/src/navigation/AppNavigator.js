@@ -89,7 +89,7 @@ function BrowseStack() {
     );
 }
 
-// Profile Stack (for My Interests, Settings, etc.)
+// Profile Stack (for Transactions, Settings, etc.)
 function ProfileStack() {
     return (
         <Stack.Navigator>
@@ -103,7 +103,7 @@ function ProfileStack() {
                 component={MyInterestsScreen}
                 options={{
                     headerShown: true,
-                    title: 'My Interests',
+                    title: 'Transactions',
                     headerBackTitle: 'Back'
                 }}
             />

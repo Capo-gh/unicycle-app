@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Settings, ShieldCheck, Package, Star, Pencil, Trash2, Plus, Heart } from 'lucide-react';
+import { Settings, ShieldCheck, Package, Star, Pencil, Trash2, Plus, ArrowLeftRight } from 'lucide-react';
 import { getMyListings, deleteListing } from '../api/listings';
 import { getMyStats, getMyTransactions } from '../api/transactions';
 
 export default function Profile({ user: signupUser, onNavigate }) {
     const [myListings, setMyListings] = useState([]);
     const [myInterests, setMyInterests] = useState([]);
+    const [incomingTransactions, setIncomingTransactions] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -34,13 +35,15 @@ export default function Profile({ user: signupUser, onNavigate }) {
             setError(null);
             try {
                 // Fetch listings, interests, and stats in parallel
-                const [listingsData, interestsData, statsData] = await Promise.all([
+                const [listingsData, interestsData, incomingData, statsData] = await Promise.all([
                     getMyListings(),
-                    getMyTransactions(true), // as_buyer = true for interests
+                    getMyTransactions(true),  // as_buyer = true
+                    getMyTransactions(false), // as_seller = false (incoming)
                     getMyStats()
                 ]);
                 setMyListings(listingsData);
                 setMyInterests(interestsData);
+                setIncomingTransactions(incomingData);
                 setStats(statsData);
             } catch (err) {
                 console.error('Error fetching profile data:', err);
@@ -253,15 +256,15 @@ export default function Profile({ user: signupUser, onNavigate }) {
                         )}
                     </div>
 
-                    {/* My Interests */}
+                    {/* Transactions */}
                     <div>
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                                <Heart className="w-5 h-5" />
-                                My Interests
+                                <ArrowLeftRight className="w-5 h-5" />
+                                Transactions
                             </h3>
                             <span className="text-sm text-gray-500">
-                                {loading ? '...' : `${myInterests.length} item${myInterests.length === 1 ? '' : 's'}`}
+                                {loading ? '...' : `${myInterests.length + incomingTransactions.length} total`}
                             </span>
                         </div>
 
@@ -269,7 +272,7 @@ export default function Profile({ user: signupUser, onNavigate }) {
                         {loading && (
                             <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200 text-center">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-unicycle-green mx-auto"></div>
-                                <p className="text-gray-500 text-sm mt-2">Loading your interests...</p>
+                                <p className="text-gray-500 text-sm mt-2">Loading transactions...</p>
                             </div>
                         )}
 
@@ -281,11 +284,11 @@ export default function Profile({ user: signupUser, onNavigate }) {
                         )}
 
                         {/* Empty State */}
-                        {!loading && !error && myInterests.length === 0 && (
+                        {!loading && !error && myInterests.length === 0 && incomingTransactions.length === 0 && (
                             <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200 text-center">
-                                <div className="text-4xl mb-3">❤️</div>
-                                <h4 className="font-semibold text-gray-900 mb-1">No interests yet</h4>
-                                <p className="text-sm text-gray-600 mb-4">Click "I'm Interested" on items you want to buy!</p>
+                                <div className="text-4xl mb-3">📦</div>
+                                <h4 className="font-semibold text-gray-900 mb-1">No transactions yet</h4>
+                                <p className="text-sm text-gray-600 mb-4">Express interest in items or wait for buyers to find yours!</p>
                                 <button
                                     onClick={() => onNavigate('listings')}
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 text-sm font-medium"
@@ -295,12 +298,18 @@ export default function Profile({ user: signupUser, onNavigate }) {
                             </div>
                         )}
 
-                        {/* Interests Preview (max 3) */}
-                        {!loading && !error && myInterests.length > 0 && (
+                        {/* Transactions Preview (max 3) */}
+                        {!loading && !error && (myInterests.length > 0 || incomingTransactions.length > 0) && (
                             <div className="space-y-3">
-                                {myInterests.slice(0, 3).map((transaction) => (
+                                {[
+                                    ...myInterests.map(t => ({ ...t, _type: 'buyer' })),
+                                    ...incomingTransactions.map(t => ({ ...t, _type: 'seller' }))
+                                ]
+                                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                                    .slice(0, 3)
+                                    .map((transaction) => (
                                     <div
-                                        key={transaction.id}
+                                        key={`${transaction._type}-${transaction.id}`}
                                         className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 cursor-pointer hover:border-unicycle-green transition-colors"
                                         onClick={() => onNavigate('my-interests')}
                                     >
@@ -319,12 +328,14 @@ export default function Profile({ user: signupUser, onNavigate }) {
                                                 </p>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                                                        transaction._type === 'seller' ? 'bg-orange-100 text-orange-700' :
                                                         transaction.status === 'completed' ? 'bg-green-100 text-green-700' :
                                                         transaction.status === 'cancelled' ? 'bg-gray-100 text-gray-700' :
                                                         transaction.status === 'agreed' ? 'bg-purple-100 text-purple-700' :
                                                         'bg-blue-100 text-blue-700'
                                                     }`}>
-                                                        {transaction.status === 'completed' ? 'Completed' :
+                                                        {transaction._type === 'seller' ? 'Incoming' :
+                                                         transaction.status === 'completed' ? 'Completed' :
                                                          transaction.status === 'cancelled' ? 'Cancelled' :
                                                          transaction.status === 'agreed' ? 'Agreed' : 'Interested'}
                                                     </span>
@@ -339,10 +350,10 @@ export default function Profile({ user: signupUser, onNavigate }) {
                                     onClick={() => onNavigate('my-interests')}
                                     className="w-full py-2.5 bg-unicycle-green text-white rounded-lg font-medium hover:bg-unicycle-green/90 transition-colors text-sm flex items-center justify-center gap-2"
                                 >
-                                    View All Interests
-                                    {myInterests.length > 3 && (
+                                    View All Transactions
+                                    {(myInterests.length + incomingTransactions.length) > 3 && (
                                         <span className="px-2 py-0.5 bg-white text-unicycle-green text-xs rounded-full font-semibold">
-                                            +{myInterests.length - 3}
+                                            +{(myInterests.length + incomingTransactions.length) - 3}
                                         </span>
                                     )}
                                 </button>
