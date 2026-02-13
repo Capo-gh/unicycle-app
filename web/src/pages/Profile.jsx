@@ -328,17 +328,20 @@ export default function Profile({ user: signupUser, onNavigate }) {
                                                 </p>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
-                                                        transaction._type === 'seller' ? 'bg-orange-100 text-orange-700' :
                                                         transaction.status === 'completed' ? 'bg-green-100 text-green-700' :
                                                         transaction.status === 'cancelled' ? 'bg-gray-100 text-gray-700' :
                                                         transaction.status === 'agreed' ? 'bg-purple-100 text-purple-700' :
                                                         'bg-blue-100 text-blue-700'
                                                     }`}>
-                                                        {transaction._type === 'seller' ? 'Incoming' :
-                                                         transaction.status === 'completed' ? 'Completed' :
+                                                        {transaction.status === 'completed' ? 'Completed' :
                                                          transaction.status === 'cancelled' ? 'Cancelled' :
                                                          transaction.status === 'agreed' ? 'Agreed' : 'Interested'}
                                                     </span>
+                                                    {transaction._type === 'seller' && (
+                                                        <span className="text-xs text-gray-400">
+                                                            (Incoming)
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
