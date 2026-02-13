@@ -98,7 +98,7 @@ export default function Transactions({ onNavigate }) {
                             }`}
                         >
                             <Package className="w-4 h-4" />
-                            Requests
+                            Incoming
                         </button>
                     </div>
                 </div>

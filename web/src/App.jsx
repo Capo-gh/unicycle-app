@@ -9,7 +9,7 @@ import Profile from './pages/Profile';
 import UserProfile from './pages/UserProfile';
 import Messages from './pages/Messages';
 import Requests from './pages/Requests';
-import MyInterests from './pages/MyInterests';
+import Transactions from './pages/Transactions';
 import Signup from './pages/Signup';
 import VerifyEmail from './pages/VerifyEmail';
 import CheckEmail from './pages/CheckEmail';
@@ -341,7 +341,7 @@ function App() {
         )}
 
         {currentPage === 'my-interests' && (
-          <MyInterests onNavigate={handleNavigate} onContactSeller={handleContactSeller} />
+          <Transactions onNavigate={handleNavigate} />
         )}
 
       </div>
