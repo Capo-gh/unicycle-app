@@ -5,8 +5,10 @@ export const getAdminStats = async () => {
     return response.data;
 };
 
-export const getAdminUsers = async (search = '') => {
-    const params = search ? { search } : {};
+export const getAdminUsers = async (search = '', university = '') => {
+    const params = {};
+    if (search) params.search = search;
+    if (university) params.university = university;
     const response = await apiClient.get('/admin/users', { params });
     return response.data;
 };
@@ -21,8 +23,10 @@ export const toggleUserSuspend = async (userId) => {
     return response.data;
 };
 
-export const getAdminListings = async (search = '') => {
-    const params = search ? { search } : {};
+export const getAdminListings = async (search = '', university = '') => {
+    const params = {};
+    if (search) params.search = search;
+    if (university) params.university = university;
     const response = await apiClient.get('/admin/listings', { params });
     return response.data;
 };
@@ -39,5 +43,10 @@ export const adminDeleteListing = async (listingId) => {
 
 export const getAdminTransactions = async () => {
     const response = await apiClient.get('/admin/transactions');
+    return response.data;
+};
+
+export const getUniversities = async () => {
+    const response = await apiClient.get('/admin/universities');
     return response.data;
 };

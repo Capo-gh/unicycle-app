@@ -16,6 +16,7 @@ class User(Base):
     token_created_at = Column(DateTime(timezone=True), nullable=True)
 
     is_admin = Column(Boolean, default=False)
+    is_super_admin = Column(Boolean, default=False)
     is_suspended = Column(Boolean, default=False)
 
     # Review stats (will be updated when reviews are added)

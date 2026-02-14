@@ -18,6 +18,8 @@ import ItemDetailScreen from '../screens/ItemDetailScreen';
 import MyInterestsScreen from '../screens/MyInterestsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import MyListingsScreen from '../screens/MyListingsScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
+import AnnouncementModal from '../components/AnnouncementModal';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -109,6 +111,11 @@ function ProfileStack() {
                 }}
             />
             <Stack.Screen
+                name="Notifications"
+                component={NotificationsScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
                 name="Settings"
                 component={SettingsScreen}
                 options={{ headerShown: false }}
@@ -146,7 +153,12 @@ export default function AppNavigator() {
 
     return (
         <NavigationContainer>
-            {isAuthenticated ? <MainTabs /> : <AuthStack />}
+            {isAuthenticated ? (
+                <>
+                    <MainTabs />
+                    <AnnouncementModal />
+                </>
+            ) : <AuthStack />}
         </NavigationContainer>
     );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, Megaphone, MessageCircle, User, Shield } from 'lucide-react';
 import icon from '../assets/unicycle-icon.png';
 import MarketplacePicker from './MarketplacePicker';
+import NotificationBell from './NotificationBell';
 
 export default function Layout({ currentPage, onNavigate, currentMarketplace, onMarketplaceChange, children }) {
     const [isAdmin, setIsAdmin] = useState(false);
@@ -42,7 +43,8 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                 <div className="p-6 border-b border-gray-200">
                     <div className="flex items-center gap-3 mb-3">
                         <img src={icon} alt="UniCycle" className="w-10 h-10 object-contain" />
-                        <h1 className="text-xl font-bold text-gray-900">UniCycle</h1>
+                        <h1 className="text-xl font-bold text-gray-900 flex-1">UniCycle</h1>
+                        <NotificationBell />
                     </div>
                     <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} />
                 </div>

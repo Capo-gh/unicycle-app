@@ -16,6 +16,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../../../shared/constants/colors';
 import { getMyListings } from '../api/listings';
 import { getMyStats, getMyTransactions } from '../api/transactions';
+import NotificationBell from '../components/NotificationBell';
 
 export default function ProfileScreen({ navigation }) {
     const { user, logout } = useAuth();
@@ -98,12 +99,15 @@ export default function ProfileScreen({ navigation }) {
                 >
                     <View style={styles.headerTop}>
                         <Text style={styles.headerTitle}>Profile</Text>
-                        <TouchableOpacity
-                            style={styles.settingsButton}
-                            onPress={() => navigation.navigate('Settings')}
-                        >
-                            <Ionicons name="settings-outline" size={24} color="#fff" />
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <NotificationBell onPress={() => navigation.navigate('Notifications')} color="#fff" />
+                            <TouchableOpacity
+                                style={styles.settingsButton}
+                                onPress={() => navigation.navigate('Settings')}
+                            >
+                                <Ionicons name="settings-outline" size={24} color="#fff" />
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     <View style={styles.profileInfo}>

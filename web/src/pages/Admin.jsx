@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Package, ArrowLeftRight, BarChart3, Search, Shield, ShieldOff, Ban, CheckCircle, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Users, Package, ArrowLeftRight, BarChart3, Search, Shield, ShieldOff, Ban, CheckCircle, Trash2, Eye, EyeOff, Bell, Megaphone, Send, Star } from 'lucide-react';
 import {
     getAdminStats,
     getAdminUsers,
@@ -8,14 +8,27 @@ import {
     getAdminListings,
     toggleListingActive,
     adminDeleteListing,
-    getAdminTransactions
+    getAdminTransactions,
+    getUniversities
 } from '../api/admin';
+import {
+    sendBroadcast,
+    getAdminNotifications
+} from '../api/notifications';
+import {
+    createAnnouncement,
+    getAdminAnnouncements,
+    toggleAnnouncement,
+    deleteAnnouncement
+} from '../api/announcements';
 
 const TABS = [
     { id: 'stats', label: 'Stats', Icon: BarChart3 },
     { id: 'users', label: 'Users', Icon: Users },
     { id: 'listings', label: 'Listings', Icon: Package },
     { id: 'transactions', label: 'Transactions', Icon: ArrowLeftRight },
+    { id: 'notifications', label: 'Notifications', Icon: Bell },
+    { id: 'announcements', label: 'Announcements', Icon: Megaphone },
 ];
 
 export default function Admin() {
@@ -28,9 +41,41 @@ export default function Admin() {
     const [loading, setLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState(null);
 
+    // Super admin check
+    const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+    // University filter
+    const [universities, setUniversities] = useState([]);
+    const [selectedUniversity, setSelectedUniversity] = useState('');
+
+    // Notifications
+    const [sentNotifications, setSentNotifications] = useState([]);
+    const [notifForm, setNotifForm] = useState({ title: '', message: '', target_university: '' });
+    const [sendingNotif, setSendingNotif] = useState(false);
+
+    // Announcements
+    const [announcements, setAnnouncements] = useState([]);
+    const [announcementForm, setAnnouncementForm] = useState({
+        title: '', message: '', image_url: '', action_text: '', action_type: '', target_university: '', expires_at: ''
+    });
+    const [creatingAnnouncement, setCreatingAnnouncement] = useState(false);
+
+    useEffect(() => {
+        try {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const userData = JSON.parse(userStr);
+                setIsSuperAdmin(userData.is_super_admin === true);
+            }
+        } catch (e) {}
+
+        // Load universities
+        getUniversities().then(setUniversities).catch(() => {});
+    }, []);
+
     useEffect(() => {
         loadTabData();
-    }, [activeTab]);
+    }, [activeTab, selectedUniversity]);
 
     const loadTabData = async () => {
         setLoading(true);
@@ -41,13 +86,19 @@ export default function Admin() {
                     setStats(await getAdminStats());
                     break;
                 case 'users':
-                    setUsers(await getAdminUsers());
+                    setUsers(await getAdminUsers('', selectedUniversity));
                     break;
                 case 'listings':
-                    setListings(await getAdminListings());
+                    setListings(await getAdminListings('', selectedUniversity));
                     break;
                 case 'transactions':
                     setTransactions(await getAdminTransactions());
+                    break;
+                case 'notifications':
+                    setSentNotifications(await getAdminNotifications());
+                    break;
+                case 'announcements':
+                    setAnnouncements(await getAdminAnnouncements());
                     break;
             }
         } catch (err) {
@@ -61,9 +112,9 @@ export default function Admin() {
         setLoading(true);
         try {
             if (activeTab === 'users') {
-                setUsers(await getAdminUsers(searchQuery));
+                setUsers(await getAdminUsers(searchQuery, selectedUniversity));
             } else if (activeTab === 'listings') {
-                setListings(await getAdminListings(searchQuery));
+                setListings(await getAdminListings(searchQuery, selectedUniversity));
             }
         } catch (err) {
             console.error('Search error:', err);
@@ -72,7 +123,9 @@ export default function Admin() {
         }
     };
 
-    const handleToggleAdmin = async (userId) => {
+    const handleToggleAdmin = async (userId, userName, currentlyAdmin) => {
+        const action = currentlyAdmin ? 'remove admin access from' : 'grant admin access to';
+        if (!confirm(`Are you sure you want to ${action} ${userName}?`)) return;
         setActionLoading(userId);
         try {
             await toggleUserAdmin(userId);
@@ -127,6 +180,71 @@ export default function Admin() {
         }
     };
 
+    const handleSendNotification = async (e) => {
+        e.preventDefault();
+        if (!notifForm.title.trim() || !notifForm.message.trim()) return;
+        setSendingNotif(true);
+        try {
+            await sendBroadcast({
+                title: notifForm.title,
+                message: notifForm.message,
+                target_university: notifForm.target_university || null
+            });
+            setNotifForm({ title: '', message: '', target_university: '' });
+            setSentNotifications(await getAdminNotifications());
+            alert('Notification sent!');
+        } catch (err) {
+            alert('Failed to send notification');
+        } finally {
+            setSendingNotif(false);
+        }
+    };
+
+    const handleCreateAnnouncement = async (e) => {
+        e.preventDefault();
+        if (!announcementForm.title.trim() || !announcementForm.message.trim()) return;
+        setCreatingAnnouncement(true);
+        try {
+            await createAnnouncement({
+                title: announcementForm.title,
+                message: announcementForm.message,
+                image_url: announcementForm.image_url || null,
+                action_text: announcementForm.action_text || null,
+                action_type: announcementForm.action_type || null,
+                target_university: announcementForm.target_university || null,
+                expires_at: announcementForm.expires_at || null
+            });
+            setAnnouncementForm({ title: '', message: '', image_url: '', action_text: '', action_type: '', target_university: '', expires_at: '' });
+            setAnnouncements(await getAdminAnnouncements());
+            alert('Announcement created!');
+        } catch (err) {
+            alert('Failed to create announcement');
+        } finally {
+            setCreatingAnnouncement(false);
+        }
+    };
+
+    const handleToggleAnnouncement = async (id) => {
+        try {
+            await toggleAnnouncement(id);
+            setAnnouncements(prev => prev.map(a =>
+                a.id === id ? { ...a, is_active: !a.is_active } : a
+            ));
+        } catch (err) {
+            alert('Failed to toggle announcement');
+        }
+    };
+
+    const handleDeleteAnnouncement = async (id) => {
+        if (!confirm('Delete this announcement?')) return;
+        try {
+            await deleteAnnouncement(id);
+            setAnnouncements(prev => prev.filter(a => a.id !== id));
+        } catch (err) {
+            alert('Failed to delete announcement');
+        }
+    };
+
     const formatDate = (dateStr) => {
         if (!dateStr) return '-';
         return new Date(dateStr).toLocaleDateString('en-US', {
@@ -144,12 +262,33 @@ export default function Admin() {
         }
     };
 
+    const inputClass = "w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green";
+
+    // University filter dropdown (reused in Users and Listings tabs)
+    const UniversityFilter = () => (
+        <select
+            value={selectedUniversity}
+            onChange={(e) => setSelectedUniversity(e.target.value)}
+            className="px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
+        >
+            <option value="">All Universities</option>
+            {universities.map(u => <option key={u} value={u}>{u}</option>)}
+        </select>
+    );
+
     return (
         <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
             {/* Header */}
             <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
                 <div className="max-w-6xl mx-auto px-4 py-4">
-                    <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
+                        {isSuperAdmin && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 font-medium flex items-center gap-1">
+                                <Star className="w-3 h-3" /> Super Admin
+                            </span>
+                        )}
+                    </div>
                 </div>
                 {/* Tabs */}
                 <div className="max-w-6xl mx-auto px-4 flex gap-1 overflow-x-auto">
@@ -199,8 +338,9 @@ export default function Admin() {
                 {/* Users Tab */}
                 {!loading && activeTab === 'users' && (
                     <div>
-                        <div className="mb-4 flex gap-2">
-                            <div className="relative flex-1">
+                        <div className="mb-4 flex gap-2 flex-wrap">
+                            <UniversityFilter />
+                            <div className="relative flex-1 min-w-[200px]">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
                                     type="text"
@@ -239,7 +379,10 @@ export default function Admin() {
                                                         {u.is_verified && (
                                                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">Verified</span>
                                                         )}
-                                                        {u.is_admin && (
+                                                        {u.is_super_admin && (
+                                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 font-medium">Super Admin</span>
+                                                        )}
+                                                        {u.is_admin && !u.is_super_admin && (
                                                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">Admin</span>
                                                         )}
                                                         {u.is_suspended && (
@@ -250,14 +393,16 @@ export default function Admin() {
                                                 <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(u.created_at)}</td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex justify-end gap-1">
-                                                        <button
-                                                            onClick={() => handleToggleAdmin(u.id)}
-                                                            disabled={actionLoading === u.id}
-                                                            title={u.is_admin ? 'Remove admin' : 'Make admin'}
-                                                            className={`p-1.5 rounded-lg transition-colors ${u.is_admin ? 'text-blue-600 hover:bg-blue-50' : 'text-gray-400 hover:bg-gray-100'}`}
-                                                        >
-                                                            {u.is_admin ? <Shield className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
-                                                        </button>
+                                                        {isSuperAdmin && !u.is_super_admin && (
+                                                            <button
+                                                                onClick={() => handleToggleAdmin(u.id, u.name, u.is_admin)}
+                                                                disabled={actionLoading === u.id}
+                                                                title={u.is_admin ? 'Remove admin' : 'Make admin'}
+                                                                className={`p-1.5 rounded-lg transition-colors ${u.is_admin ? 'text-blue-600 hover:bg-blue-50' : 'text-gray-400 hover:bg-gray-100'}`}
+                                                            >
+                                                                {u.is_admin ? <Shield className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
+                                                            </button>
+                                                        )}
                                                         <button
                                                             onClick={() => handleToggleSuspend(u.id)}
                                                             disabled={actionLoading === u.id}
@@ -283,8 +428,9 @@ export default function Admin() {
                 {/* Listings Tab */}
                 {!loading && activeTab === 'listings' && (
                     <div>
-                        <div className="mb-4 flex gap-2">
-                            <div className="relative flex-1">
+                        <div className="mb-4 flex gap-2 flex-wrap">
+                            <UniversityFilter />
+                            <div className="relative flex-1 min-w-[200px]">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
                                     type="text"
@@ -400,6 +546,205 @@ export default function Admin() {
                         {transactions.length === 0 && (
                             <div className="text-center py-8 text-gray-500 text-sm">No transactions found</div>
                         )}
+                    </div>
+                )}
+
+                {/* Notifications Tab */}
+                {!loading && activeTab === 'notifications' && (
+                    <div className="space-y-6">
+                        {/* Send Broadcast Form */}
+                        <div className="bg-white rounded-xl border border-gray-200 p-6">
+                            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                <Send className="w-4 h-4" /> Send Broadcast Notification
+                            </h3>
+                            <form onSubmit={handleSendNotification} className="space-y-3">
+                                <input
+                                    type="text"
+                                    placeholder="Notification title..."
+                                    value={notifForm.title}
+                                    onChange={(e) => setNotifForm(prev => ({ ...prev, title: e.target.value }))}
+                                    className={inputClass}
+                                    required
+                                />
+                                <textarea
+                                    placeholder="Notification message..."
+                                    value={notifForm.message}
+                                    onChange={(e) => setNotifForm(prev => ({ ...prev, message: e.target.value }))}
+                                    rows={3}
+                                    className={inputClass}
+                                    required
+                                />
+                                <div className="flex gap-3">
+                                    <select
+                                        value={notifForm.target_university}
+                                        onChange={(e) => setNotifForm(prev => ({ ...prev, target_university: e.target.value }))}
+                                        className={inputClass}
+                                    >
+                                        <option value="">All Universities</option>
+                                        {universities.map(u => <option key={u} value={u}>{u}</option>)}
+                                    </select>
+                                    <button
+                                        type="submit"
+                                        disabled={sendingNotif}
+                                        className="px-6 py-2.5 bg-unicycle-green text-white rounded-lg text-sm font-medium hover:bg-unicycle-green/90 disabled:opacity-50 whitespace-nowrap"
+                                    >
+                                        {sendingNotif ? 'Sending...' : 'Send Notification'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Sent Notifications List */}
+                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                            <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                                <h3 className="font-medium text-gray-700 text-sm">Sent Notifications ({sentNotifications.length})</h3>
+                            </div>
+                            {sentNotifications.map(n => (
+                                <div key={n.id} className="px-4 py-3 border-b border-gray-100 last:border-0">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p className="font-medium text-gray-900 text-sm">{n.title}</p>
+                                            <p className="text-gray-600 text-sm mt-0.5">{n.message}</p>
+                                            <div className="flex gap-2 mt-1">
+                                                <span className="text-[10px] text-gray-400">{formatDate(n.created_at)}</span>
+                                                {n.target_university && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">{n.target_university}</span>
+                                                )}
+                                                {!n.target_university && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-50 text-gray-500">All Universities</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {sentNotifications.length === 0 && (
+                                <div className="text-center py-8 text-gray-500 text-sm">No notifications sent yet</div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Announcements Tab */}
+                {!loading && activeTab === 'announcements' && (
+                    <div className="space-y-6">
+                        {/* Create Announcement Form */}
+                        <div className="bg-white rounded-xl border border-gray-200 p-6">
+                            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                <Megaphone className="w-4 h-4" /> Create Announcement
+                            </h3>
+                            <form onSubmit={handleCreateAnnouncement} className="space-y-3">
+                                <input
+                                    type="text"
+                                    placeholder="Announcement title..."
+                                    value={announcementForm.title}
+                                    onChange={(e) => setAnnouncementForm(prev => ({ ...prev, title: e.target.value }))}
+                                    className={inputClass}
+                                    required
+                                />
+                                <textarea
+                                    placeholder="Announcement message..."
+                                    value={announcementForm.message}
+                                    onChange={(e) => setAnnouncementForm(prev => ({ ...prev, message: e.target.value }))}
+                                    rows={3}
+                                    className={inputClass}
+                                    required
+                                />
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <input
+                                        type="text"
+                                        placeholder="Image URL (optional)"
+                                        value={announcementForm.image_url}
+                                        onChange={(e) => setAnnouncementForm(prev => ({ ...prev, image_url: e.target.value }))}
+                                        className={inputClass}
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Action button text (e.g. Boost Now)"
+                                        value={announcementForm.action_text}
+                                        onChange={(e) => setAnnouncementForm(prev => ({ ...prev, action_text: e.target.value }))}
+                                        className={inputClass}
+                                    />
+                                    <select
+                                        value={announcementForm.target_university}
+                                        onChange={(e) => setAnnouncementForm(prev => ({ ...prev, target_university: e.target.value }))}
+                                        className={inputClass}
+                                    >
+                                        <option value="">All Universities</option>
+                                        {universities.map(u => <option key={u} value={u}>{u}</option>)}
+                                    </select>
+                                    <input
+                                        type="datetime-local"
+                                        value={announcementForm.expires_at}
+                                        onChange={(e) => setAnnouncementForm(prev => ({ ...prev, expires_at: e.target.value }))}
+                                        className={inputClass}
+                                        placeholder="Expires at (optional)"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={creatingAnnouncement}
+                                    className="px-6 py-2.5 bg-unicycle-green text-white rounded-lg text-sm font-medium hover:bg-unicycle-green/90 disabled:opacity-50"
+                                >
+                                    {creatingAnnouncement ? 'Creating...' : 'Create Announcement'}
+                                </button>
+                            </form>
+                        </div>
+
+                        {/* Announcements List */}
+                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                            <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                                <h3 className="font-medium text-gray-700 text-sm">All Announcements ({announcements.length})</h3>
+                            </div>
+                            {announcements.map(a => (
+                                <div key={a.id} className="px-4 py-3 border-b border-gray-100 last:border-0">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-medium text-gray-900 text-sm">{a.title}</p>
+                                                {a.is_active ? (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">Active</span>
+                                                ) : (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-medium">Inactive</span>
+                                                )}
+                                            </div>
+                                            <p className="text-gray-600 text-sm mt-0.5 truncate">{a.message}</p>
+                                            <div className="flex gap-2 mt-1 flex-wrap">
+                                                <span className="text-[10px] text-gray-400">{formatDate(a.created_at)}</span>
+                                                {a.target_university && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">{a.target_university}</span>
+                                                )}
+                                                {a.action_text && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600">Button: {a.action_text}</span>
+                                                )}
+                                                {a.expires_at && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-50 text-orange-600">Expires: {formatDate(a.expires_at)}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-1">
+                                            <button
+                                                onClick={() => handleToggleAnnouncement(a.id)}
+                                                title={a.is_active ? 'Deactivate' : 'Activate'}
+                                                className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"
+                                            >
+                                                {a.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteAnnouncement(a.id)}
+                                                title="Delete"
+                                                className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {announcements.length === 0 && (
+                                <div className="text-center py-8 text-gray-500 text-sm">No announcements created yet</div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>

@@ -6,7 +6,7 @@ from ..database import get_db
 from ..models.user import User
 from ..models.listing import Listing
 from ..models.transaction import Transaction, TransactionStatus
-from ..utils.dependencies import get_admin_required
+from ..utils.dependencies import get_admin_required, get_super_admin_required
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -45,14 +45,27 @@ def get_admin_stats(
     }
 
 
-@router.get("/users")
-def get_all_users(
-    search: Optional[str] = Query(None),
+@router.get("/universities")
+def get_universities(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_required)
 ):
-    """List all users with optional search"""
+    """Get list of distinct universities"""
+    universities = db.query(User.university).distinct().order_by(User.university).all()
+    return [u[0] for u in universities]
+
+
+@router.get("/users")
+def get_all_users(
+    search: Optional[str] = Query(None),
+    university: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_admin_required)
+):
+    """List all users with optional search and university filter"""
     query = db.query(User)
+    if university:
+        query = query.filter(User.university == university)
     if search:
         search_term = f"%{search}%"
         query = query.filter(
@@ -69,6 +82,7 @@ def get_all_users(
             "university": u.university,
             "is_verified": u.is_verified,
             "is_admin": u.is_admin,
+            "is_super_admin": u.is_super_admin,
             "is_suspended": u.is_suspended,
             "created_at": u.created_at.isoformat() if u.created_at else None
         }
@@ -80,9 +94,9 @@ def get_all_users(
 def toggle_admin(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_admin_required)
+    current_user: User = Depends(get_super_admin_required)
 ):
-    """Toggle admin status for a user"""
+    """Toggle admin status for a user (super admin only)"""
     if user_id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -123,11 +137,14 @@ def toggle_suspend(
 @router.get("/listings")
 def get_all_listings(
     search: Optional[str] = Query(None),
+    university: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_required)
 ):
     """List all listings with seller info"""
     query = db.query(Listing).options(joinedload(Listing.seller))
+    if university:
+        query = query.join(Listing.seller).filter(User.university == university)
     if search:
         search_term = f"%{search}%"
         query = query.filter(

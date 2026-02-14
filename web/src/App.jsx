@@ -12,6 +12,7 @@ import Requests from './pages/Requests';
 import Transactions from './pages/Transactions';
 import MyListings from './pages/MyListings';
 import Admin from './pages/Admin';
+import AnnouncementModal from './components/AnnouncementModal';
 import Signup from './pages/Signup';
 import VerifyEmail from './pages/VerifyEmail';
 import CheckEmail from './pages/CheckEmail';
@@ -260,6 +261,7 @@ function App() {
 
   return (
     <Layout currentPage={currentPage} onNavigate={handleNavigate} currentMarketplace={currentMarketplace} onMarketplaceChange={setCurrentMarketplace}>
+      <AnnouncementModal />
       <div key={currentPage} className="animate-fadeIn">
 
         {currentPage === 'listings' && (

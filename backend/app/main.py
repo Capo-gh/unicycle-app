@@ -3,8 +3,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text, inspect
 from .database import engine, Base, SessionLocal
-from .routers import auth, listings, requests, messages, upload, reviews, users, transactions, admin
+from .routers import auth, listings, requests, messages, upload, reviews, users, transactions, admin, notifications, announcements
 from .models.user import User
+from .models.notification import Notification, NotificationRead
+from .models.announcement import Announcement, AnnouncementDismissal
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -19,15 +21,25 @@ with engine.connect() as conn:
     if "is_suspended" not in existing_columns:
         conn.execute(text("ALTER TABLE users ADD COLUMN is_suspended BOOLEAN DEFAULT FALSE"))
         conn.commit()
+    if "is_super_admin" not in existing_columns:
+        conn.execute(text("ALTER TABLE users ADD COLUMN is_super_admin BOOLEAN DEFAULT FALSE"))
+        conn.commit()
 
-# Seed admin user
+# Seed super admin user
 def seed_admin():
     db = SessionLocal()
     try:
         admin_user = db.query(User).filter(User.email == "ibrahim.sabiku@mail.mcgill.ca").first()
-        if admin_user and not admin_user.is_admin:
-            admin_user.is_admin = True
-            db.commit()
+        if admin_user:
+            changed = False
+            if not admin_user.is_admin:
+                admin_user.is_admin = True
+                changed = True
+            if not admin_user.is_super_admin:
+                admin_user.is_super_admin = True
+                changed = True
+            if changed:
+                db.commit()
     finally:
         db.close()
 
@@ -66,6 +78,8 @@ app.include_router(upload.router)
 app.include_router(reviews.router)
 app.include_router(transactions.router)
 app.include_router(admin.router)
+app.include_router(notifications.router)
+app.include_router(announcements.router)
 
 @app.get("/")
 def read_root():

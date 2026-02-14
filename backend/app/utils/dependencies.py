@@ -82,3 +82,13 @@ def get_admin_required(current_user: User = Depends(get_current_user_required)):
             detail="Admin access required"
         )
     return current_user
+
+
+def get_super_admin_required(current_user: User = Depends(get_current_user_required)):
+    """Require authenticated super admin user"""
+    if not current_user.is_super_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super admin access required"
+        )
+    return current_user
