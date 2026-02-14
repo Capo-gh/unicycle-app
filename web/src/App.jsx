@@ -10,6 +10,7 @@ import UserProfile from './pages/UserProfile';
 import Messages from './pages/Messages';
 import Requests from './pages/Requests';
 import Transactions from './pages/Transactions';
+import MyListings from './pages/MyListings';
 import Signup from './pages/Signup';
 import VerifyEmail from './pages/VerifyEmail';
 import CheckEmail from './pages/CheckEmail';
@@ -342,6 +343,10 @@ function App() {
 
         {currentPage === 'my-interests' && (
           <Transactions onNavigate={handleNavigate} />
+        )}
+
+        {currentPage === 'my-listings' && (
+          <MyListings onNavigate={handleNavigate} />
         )}
 
       </div>

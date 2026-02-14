@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../../../shared/constants/colors';
-import { getMyListings, deleteListing } from '../api/listings';
+import { getMyListings } from '../api/listings';
 import { getMyStats, getMyTransactions } from '../api/transactions';
 
 export default function ProfileScreen({ navigation }) {
@@ -59,30 +59,6 @@ export default function ProfileScreen({ navigation }) {
         setRefreshing(true);
         await fetchData();
         setRefreshing(false);
-    };
-
-    const handleDeleteListing = (listingId, title) => {
-        Alert.alert(
-            'Delete Listing',
-            `Are you sure you want to delete "${title}"?`,
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await deleteListing(listingId);
-                            setMyListings(prev => prev.filter(l => l.id !== listingId));
-                            Alert.alert('Success', 'Listing deleted');
-                        } catch (error) {
-                            console.error('Error deleting listing:', error);
-                            Alert.alert('Error', 'Failed to delete listing');
-                        }
-                    }
-                }
-            ]
-        );
     };
 
     const renderStars = (rating) => {
@@ -193,48 +169,49 @@ export default function ProfileScreen({ navigation }) {
                             <Text style={styles.emptySubtext}>Tap the Sell tab to create your first listing</Text>
                         </View>
                     ) : (
-                        myListings.map((listing) => (
-                            <View key={listing.id} style={styles.listingCard}>
-                                {listing.images ? (
-                                    <Image
-                                        source={{ uri: typeof listing.images === 'string' ? listing.images.split(',')[0] : listing.images[0] }}
-                                        style={styles.listingImage}
-                                    />
-                                ) : (
-                                    <View style={[styles.listingImage, styles.listingImagePlaceholder]}>
-                                        <Ionicons name="image-outline" size={32} color="#d1d5db" />
+                        <>
+                            {myListings.slice(0, 3).map((listing) => (
+                                <TouchableOpacity
+                                    key={listing.id}
+                                    style={styles.listingCard}
+                                    onPress={() => navigation.navigate('ItemDetail', { listing })}
+                                    activeOpacity={0.7}
+                                >
+                                    {listing.images ? (
+                                        <Image
+                                            source={{ uri: typeof listing.images === 'string' ? listing.images.split(',')[0] : listing.images[0] }}
+                                            style={styles.listingImage}
+                                        />
+                                    ) : (
+                                        <View style={[styles.listingImage, styles.listingImagePlaceholder]}>
+                                            <Ionicons name="image-outline" size={32} color="#d1d5db" />
+                                        </View>
+                                    )}
+                                    <View style={styles.listingContent}>
+                                        <Text style={styles.listingTitle} numberOfLines={1}>{listing.title}</Text>
+                                        <Text style={styles.listingPrice}>${listing.price}</Text>
+                                        <View style={styles.listingBadges}>
+                                            <View style={styles.listingBadge}>
+                                                <Text style={styles.listingBadgeText}>{listing.category}</Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={20} color="#999" />
+                                </TouchableOpacity>
+                            ))}
+                            <TouchableOpacity
+                                style={styles.viewAllButton}
+                                onPress={() => navigation.navigate('MyListings')}
+                            >
+                                <Text style={styles.viewAllText}>View All Listings</Text>
+                                {myListings.length > 3 && (
+                                    <View style={styles.viewAllBadge}>
+                                        <Text style={styles.viewAllBadgeText}>+{myListings.length - 3}</Text>
                                     </View>
                                 )}
-                                <View style={styles.listingContent}>
-                                    <Text style={styles.listingTitle} numberOfLines={1}>{listing.title}</Text>
-                                    <Text style={styles.listingPrice}>${listing.price}</Text>
-                                    <View style={styles.listingBadges}>
-                                        <View style={styles.listingBadge}>
-                                            <Text style={styles.listingBadgeText}>{listing.category}</Text>
-                                        </View>
-                                        <View style={[styles.listingBadge, listing.status === 'sold' && styles.soldBadge]}>
-                                            <Text style={[styles.listingBadgeText, listing.status === 'sold' && styles.soldBadgeText]}>
-                                                {listing.status}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                </View>
-                                <View style={styles.listingActions}>
-                                    <TouchableOpacity
-                                        style={styles.actionButton}
-                                        onPress={() => navigation.navigate('ItemDetail', { listing })}
-                                    >
-                                        <Ionicons name="create-outline" size={20} color={COLORS.green} />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={styles.actionButton}
-                                        onPress={() => handleDeleteListing(listing.id, listing.title)}
-                                    >
-                                        <Ionicons name="trash-outline" size={20} color="#ef4444" />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        ))
+                                <Ionicons name="arrow-forward" size={16} color="#fff" />
+                            </TouchableOpacity>
+                        </>
                     )}
                 </View>
 
@@ -432,12 +409,14 @@ const styles = StyleSheet.create({
     },
     listingCard: {
         flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: '#fff',
         borderRadius: 12,
         marginBottom: 12,
         borderWidth: 1,
         borderColor: '#e0e0e0',
         overflow: 'hidden',
+        paddingRight: 12,
     },
     listingImage: {
         width: 80,
@@ -492,6 +471,31 @@ const styles = StyleSheet.create({
     },
     actionButton: {
         padding: 8,
+    },
+    viewAllButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: COLORS.green,
+        borderRadius: 12,
+        paddingVertical: 12,
+        gap: 8,
+    },
+    viewAllText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    viewAllBadge: {
+        backgroundColor: 'rgba(255,255,255,0.25)',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 10,
+    },
+    viewAllBadgeText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
     },
     menu: {
         backgroundColor: '#fff',

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Settings, ShieldCheck, Package, Star, Pencil, Trash2, Plus, ArrowLeftRight } from 'lucide-react';
-import { getMyListings, deleteListing } from '../api/listings';
+import { Settings, ShieldCheck, Package, Star, Plus, ArrowLeftRight } from 'lucide-react';
+import { getMyListings } from '../api/listings';
 import { getMyStats, getMyTransactions } from '../api/transactions';
 
 export default function Profile({ user: signupUser, onNavigate }) {
@@ -10,8 +10,6 @@ export default function Profile({ user: signupUser, onNavigate }) {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [deleteConfirm, setDeleteConfirm] = useState(null); // listing id to delete
-    const [deleting, setDeleting] = useState(false);
 
     const user = {
         name: signupUser?.name || 'User',
@@ -61,22 +59,6 @@ export default function Profile({ user: signupUser, onNavigate }) {
 
         fetchData();
     }, []);
-
-    // Handle delete listing
-    const handleDelete = async (listingId) => {
-        setDeleting(true);
-        try {
-            await deleteListing(listingId);
-            // Remove from local state
-            setMyListings(prev => prev.filter(l => l.id !== listingId));
-            setDeleteConfirm(null);
-        } catch (err) {
-            console.error('Error deleting listing:', err);
-            alert('Failed to delete listing. Please try again.');
-        } finally {
-            setDeleting(false);
-        }
-    };
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
@@ -207,51 +189,51 @@ export default function Profile({ user: signupUser, onNavigate }) {
                             </div>
                         )}
 
-                        {/* Listings Grid */}
+                        {/* Listings Preview (max 3) */}
                         {!loading && !error && myListings.length > 0 && (
-                            <div className="grid grid-cols-1 gap-3">
-                                {myListings.map((listing) => (
+                            <div className="space-y-3">
+                                {myListings.slice(0, 3).map((listing) => (
                                     <div
                                         key={listing.id}
-                                        className="bg-white rounded-lg p-3 shadow-sm border border-gray-200"
+                                        className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 cursor-pointer hover:border-unicycle-green transition-colors"
+                                        onClick={() => onNavigate('detail', listing)}
                                     >
                                         <div className="flex gap-3">
                                             <img
                                                 src={listing.images ? listing.images.split(',')[0] : 'https://via.placeholder.com/80'}
                                                 alt={listing.title}
-                                                className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
+                                                className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                                             />
                                             <div className="flex-1 min-w-0">
                                                 <h4 className="font-semibold text-gray-900 text-sm mb-1 truncate">{listing.title}</h4>
-                                                <p className="text-lg font-bold text-unicycle-green">${listing.price}</p>
+                                                <p className="text-base font-bold text-unicycle-green">${listing.price}</p>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full flex-shrink-0">
-                                                        Active
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                                                        listing.is_sold
+                                                            ? 'bg-red-100 text-red-700'
+                                                            : 'bg-green-100 text-green-700'
+                                                    }`}>
+                                                        {listing.is_sold ? 'Sold' : 'Active'}
                                                     </span>
                                                     <span className="text-xs text-gray-500 truncate">{listing.category}</span>
                                                 </div>
                                             </div>
                                         </div>
-
-                                        {/* Action Buttons */}
-                                        <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                                            <button
-                                                onClick={() => onNavigate('edit-listing', listing)}
-                                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-                                            >
-                                                <Pencil className="w-4 h-4" />
-                                                Edit
-                                            </button>
-                                            <button
-                                                onClick={() => setDeleteConfirm(listing.id)}
-                                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                                Delete
-                                            </button>
-                                        </div>
                                     </div>
                                 ))}
+
+                                {/* View All Button */}
+                                <button
+                                    onClick={() => onNavigate('my-listings')}
+                                    className="w-full py-2.5 bg-unicycle-green text-white rounded-lg font-medium hover:bg-unicycle-green/90 transition-colors text-sm flex items-center justify-center gap-2"
+                                >
+                                    View All Listings
+                                    {myListings.length > 3 && (
+                                        <span className="px-2 py-0.5 bg-white text-unicycle-green text-xs rounded-full font-semibold">
+                                            +{myListings.length - 3}
+                                        </span>
+                                    )}
+                                </button>
                             </div>
                         )}
                     </div>
@@ -367,45 +349,6 @@ export default function Profile({ user: signupUser, onNavigate }) {
                 </div>
             </div>
 
-            {/* ─── Delete Confirmation Modal ─── */}
-            {deleteConfirm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-                    <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl">
-                        <div className="text-center">
-                            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Trash2 className="w-6 h-6 text-red-600" />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Listing?</h3>
-                            <p className="text-sm text-gray-600 mb-6">
-                                This will remove your listing from the marketplace. This action cannot be undone.
-                            </p>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setDeleteConfirm(null)}
-                                    disabled={deleting}
-                                    className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(deleteConfirm)}
-                                    disabled={deleting}
-                                    className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
-                                    {deleting ? (
-                                        <>
-                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                            Deleting...
-                                        </>
-                                    ) : (
-                                        'Delete'
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
