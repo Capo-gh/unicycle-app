@@ -10,7 +10,8 @@ import {
     Image,
     Alert,
     ActivityIndicator,
-    Modal
+    Modal,
+    Keyboard
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -70,7 +71,7 @@ export default function SellScreen({ navigation }) {
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ['images'],
             allowsMultipleSelection: true,
             quality: 0.8,
             selectionLimit: 5 - images.length,
@@ -121,9 +122,13 @@ export default function SellScreen({ navigation }) {
 
         try {
             // Upload images first
-            const uploadedImages = await uploadImages(images);
+            const uploadResult = await uploadImages(images);
+            // Extract URLs: response is {images: [{url, public_id}, ...]}
+            const imageUrls = uploadResult.images
+                ? uploadResult.images.map(img => img.url)
+                : [];
 
-            // Create listing
+            // Create listing - join image URLs as comma-separated string
             const listingData = {
                 title: formData.title.trim(),
                 category: formData.category,
@@ -132,7 +137,7 @@ export default function SellScreen({ navigation }) {
                 description: formData.description.trim(),
                 safe_zone: formData.safeZone,
                 safe_zone_address: formData.safeZoneAddress,
-                images: uploadedImages
+                images: imageUrls.join(',')
             };
 
             await createListing(listingData);
@@ -281,8 +286,16 @@ export default function SellScreen({ navigation }) {
                         multiline
                         numberOfLines={4}
                         textAlignVertical="top"
+                        submitBehavior="blurAndSubmit"
+                        returnKeyType="done"
+                        onSubmitEditing={() => Keyboard.dismiss()}
                     />
-                    <Text style={styles.charCount}>{formData.description.length}/500</Text>
+                    <View style={styles.descriptionFooter}>
+                        <Text style={styles.charCount}>{formData.description.length}/500</Text>
+                        <TouchableOpacity onPress={() => Keyboard.dismiss()}>
+                            <Text style={styles.doneButton}>Done</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Safe Zone */}
@@ -497,11 +510,22 @@ const styles = StyleSheet.create({
     textArea: {
         minHeight: 100,
     },
+    descriptionFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 4,
+    },
     charCount: {
         fontSize: 12,
         color: '#999',
-        marginTop: 4,
-        textAlign: 'right',
+    },
+    doneButton: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: COLORS.green,
+        paddingVertical: 4,
+        paddingHorizontal: 8,
     },
     imagesContainer: {
         flexDirection: 'row',
