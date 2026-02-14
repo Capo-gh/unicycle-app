@@ -180,9 +180,17 @@ export default function MessagesScreen() {
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.chatHeaderName}>{otherPerson?.name || 'Unknown'}</Text>
-                                <Text style={styles.chatHeaderListing} numberOfLines={1}>
-                                    {activeConversation.listing?.title || 'Item'}
-                                </Text>
+                                <View style={styles.chatHeaderSubRow}>
+                                    <Text style={styles.chatHeaderListing} numberOfLines={1}>
+                                        {activeConversation.listing?.title || 'Item'} • ${activeConversation.listing?.price || 0}
+                                    </Text>
+                                    {activeConversation.listing?.price >= 80 && (
+                                        <View style={styles.securePayBadge}>
+                                            <Ionicons name="shield-checkmark" size={10} color={COLORS.green} />
+                                            <Text style={styles.securePayBadgeText}>Secure-Pay</Text>
+                                        </View>
+                                    )}
+                                </View>
                             </View>
                         </View>
                         <TouchableOpacity
@@ -621,5 +629,25 @@ const styles = StyleSheet.create({
     },
     sendButtonDisabled: {
         opacity: 0.5,
+    },
+    chatHeaderSubRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: 2,
+    },
+    securePayBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        backgroundColor: 'rgba(76,175,80,0.1)',
+        paddingHorizontal: 5,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    securePayBadgeText: {
+        fontSize: 9,
+        fontWeight: '600',
+        color: COLORS.green,
     },
 });

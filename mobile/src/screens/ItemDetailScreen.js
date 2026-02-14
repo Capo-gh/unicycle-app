@@ -16,8 +16,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../../../shared/constants/colors';
 import { markAsSold, markAsUnsold } from '../api/listings';
-import { createTransaction, getMyTransactions } from '../api/transactions';
+import { createTransaction, getMyTransactions, deleteTransaction } from '../api/transactions';
 import { getUserReviews } from '../api/reviews';
+import SecurePayModal from '../components/SecurePayModal';
 
 const { width } = Dimensions.get('window');
 
@@ -29,7 +30,9 @@ export default function ItemDetailScreen({ route, navigation }) {
     const [updating, setUpdating] = useState(false);
     const [expressingInterest, setExpressingInterest] = useState(false);
     const [alreadyInterested, setAlreadyInterested] = useState(false);
+    const [interestTransactionId, setInterestTransactionId] = useState(null);
     const [sellerReviews, setSellerReviews] = useState(null);
+    const [showSecurePayModal, setShowSecurePayModal] = useState(false);
 
     // Check if current user is the owner
     const isOwner = currentUser && listing?.seller_id === currentUser.id;
@@ -59,6 +62,7 @@ export default function ItemDetailScreen({ route, navigation }) {
                     const existingInterest = myInterests.find(t => t.listing_id === listing.id);
                     if (existingInterest) {
                         setAlreadyInterested(true);
+                        setInterestTransactionId(existingInterest.id);
                     }
                 } catch (err) {
                     console.error('Error checking interest status:', err);
@@ -109,9 +113,9 @@ export default function ItemDetailScreen({ route, navigation }) {
 
         setExpressingInterest(true);
         try {
-            await createTransaction(listing.id);
+            const transaction = await createTransaction(listing.id);
             setAlreadyInterested(true);
-            Alert.alert('Success', 'Interest expressed! You can now message the seller.');
+            setInterestTransactionId(transaction.id);
         } catch (err) {
             console.error('Error expressing interest:', err);
             if (err.response?.data?.detail && err.response.data.detail.includes('already')) {
@@ -124,10 +128,37 @@ export default function ItemDetailScreen({ route, navigation }) {
         }
     };
 
+    const handleRemoveInterest = async () => {
+        if (!interestTransactionId) return;
+        setExpressingInterest(true);
+        try {
+            await deleteTransaction(interestTransactionId);
+            setAlreadyInterested(false);
+            setInterestTransactionId(null);
+        } catch (err) {
+            console.error('Error removing interest:', err);
+            Alert.alert('Error', err.response?.data?.detail || 'Failed to remove interest');
+        } finally {
+            setExpressingInterest(false);
+        }
+    };
+
     const handleContactSeller = () => {
+        if (listing.price >= 80) {
+            setShowSecurePayModal(true);
+        } else {
+            navigation.navigate('Messages', {
+                listingId: listing.id,
+                initialMessage: `Hi! Is "${listing.title}" still available?`
+            });
+        }
+    };
+
+    const handleSecurePayProceed = () => {
+        setShowSecurePayModal(false);
         navigation.navigate('Messages', {
             listingId: listing.id,
-            initialMessage: `Hi! Is "${listing.title}" still available?`
+            initialMessage: `Hi! I'm interested in "${listing.title}" ($${listing.price}). Is it still available?`
         });
     };
 
@@ -284,6 +315,23 @@ export default function ItemDetailScreen({ route, navigation }) {
                         <Text style={styles.directionsButtonText}>Get Directions</Text>
                     </TouchableOpacity>
                 </View>
+
+                {/* Secure-Pay Info (only for buyers, not sold) */}
+                {!isOwner && !isSold && listing.price >= 80 && (
+                    <View style={styles.securePayInfo}>
+                        <View style={styles.securePayInfoRow}>
+                            <View style={styles.securePayIcon}>
+                                <Ionicons name="shield-checkmark" size={18} color="#fff" />
+                            </View>
+                            <View style={styles.securePayTextContainer}>
+                                <Text style={styles.securePayTitle}>Secure-Pay Protected</Text>
+                                <Text style={styles.securePayDesc}>
+                                    This item qualifies for escrow protection. Your payment is held securely until you verify the item in person.
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
             </ScrollView>
 
             {/* Fixed Bottom Action Bar */}
@@ -319,28 +367,52 @@ export default function ItemDetailScreen({ route, navigation }) {
                         <Text style={styles.soldContainerText}>This item has been sold</Text>
                     </View>
                 ) : (
-                    <TouchableOpacity
-                        style={[styles.interestButton, expressingInterest && styles.interestButtonDisabled]}
-                        onPress={alreadyInterested ? handleContactSeller : handleExpressInterest}
-                        disabled={expressingInterest}
-                    >
-                        {expressingInterest ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <>
-                                <Ionicons
-                                    name={alreadyInterested ? 'chatbubble-ellipses' : 'heart'}
-                                    size={20}
-                                    color="#fff"
-                                />
-                                <Text style={styles.interestButtonText}>
-                                    {alreadyInterested ? 'Message Seller' : "I'm Interested"}
-                                </Text>
-                            </>
-                        )}
-                    </TouchableOpacity>
+                    <View style={styles.dualButtonRow}>
+                        <TouchableOpacity
+                            style={[
+                                styles.interestToggleButton,
+                                alreadyInterested ? styles.removeInterestButton : styles.addInterestButton,
+                                expressingInterest && styles.interestButtonDisabled
+                            ]}
+                            onPress={alreadyInterested ? handleRemoveInterest : handleExpressInterest}
+                            disabled={expressingInterest}
+                        >
+                            {expressingInterest ? (
+                                <ActivityIndicator color={alreadyInterested ? '#ef4444' : COLORS.green} size="small" />
+                            ) : (
+                                <>
+                                    <Ionicons
+                                        name={alreadyInterested ? 'heart' : 'heart-outline'}
+                                        size={18}
+                                        color={alreadyInterested ? '#ef4444' : COLORS.green}
+                                    />
+                                    <Text style={[
+                                        styles.interestToggleText,
+                                        { color: alreadyInterested ? '#ef4444' : COLORS.green }
+                                    ]}>
+                                        {alreadyInterested ? 'Remove' : 'Interested'}
+                                    </Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.messageSellerButton}
+                            onPress={handleContactSeller}
+                        >
+                            <Ionicons name="chatbubble-ellipses" size={18} color="#fff" />
+                            <Text style={styles.messageSellerText}>Message Seller</Text>
+                        </TouchableOpacity>
+                    </View>
                 )}
             </View>
+
+            {/* Secure-Pay Modal */}
+            <SecurePayModal
+                visible={showSecurePayModal}
+                item={listing}
+                onClose={() => setShowSecurePayModal(false)}
+                onProceed={handleSecurePayProceed}
+            />
         </SafeAreaView>
     );
 }
@@ -627,21 +699,82 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '500',
     },
-    interestButton: {
+    dualButtonRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    interestToggleButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        borderRadius: 12,
+        gap: 6,
+        borderWidth: 1.5,
+    },
+    addInterestButton: {
+        backgroundColor: 'rgba(76, 175, 80, 0.08)',
+        borderColor: 'rgba(76, 175, 80, 0.3)',
+    },
+    removeInterestButton: {
+        backgroundColor: 'rgba(239, 68, 68, 0.06)',
+        borderColor: 'rgba(239, 68, 68, 0.25)',
+    },
+    interestToggleText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    messageSellerButton: {
+        flex: 1,
         backgroundColor: COLORS.green,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 14,
         borderRadius: 12,
-        gap: 8,
+        gap: 6,
+    },
+    messageSellerText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
     },
     interestButtonDisabled: {
         opacity: 0.6,
     },
-    interestButtonText: {
-        color: '#fff',
-        fontSize: 16,
+    securePayInfo: {
+        backgroundColor: 'rgba(59, 130, 246, 0.08)',
+        margin: 8,
+        borderRadius: 12,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: 'rgba(59, 130, 246, 0.2)',
+    },
+    securePayInfoRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    securePayIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 8,
+        backgroundColor: COLORS.green,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    securePayTextContainer: {
+        flex: 1,
+    },
+    securePayTitle: {
+        fontSize: 14,
         fontWeight: '600',
+        color: '#111',
+        marginBottom: 4,
+    },
+    securePayDesc: {
+        fontSize: 12,
+        color: '#666',
+        lineHeight: 16,
     },
 });

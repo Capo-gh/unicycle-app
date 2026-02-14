@@ -20,6 +20,8 @@ class UserResponse(BaseModel):
     name: str
     university: str
     is_verified: bool
+    is_admin: bool = False
+    is_suspended: bool = False
     avg_rating: Optional[float] = 0.0
     review_count: Optional[int] = 0
     created_at: datetime

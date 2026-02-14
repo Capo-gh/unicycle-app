@@ -64,4 +64,21 @@ def get_current_user_required(authorization: Optional[str] = Header(None), db: S
             detail="Please verify your email to access this feature. Check your inbox for the verification link."
         )
 
+    # Check if user is suspended
+    if user.is_suspended:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been suspended. Contact support for assistance."
+        )
+
     return user
+
+
+def get_admin_required(current_user: User = Depends(get_current_user_required)):
+    """Require authenticated admin user"""
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_user

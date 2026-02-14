@@ -144,6 +144,38 @@ def update_transaction(
     return transaction
 
 
+@router.delete("/{transaction_id}")
+def delete_transaction(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Remove interest (delete transaction) - only buyer can do this, only if still 'interested'"""
+    transaction = db.query(Transaction).filter(Transaction.id == transaction_id).first()
+
+    if not transaction:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Transaction not found"
+        )
+
+    if transaction.buyer_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the buyer can remove their interest"
+        )
+
+    if transaction.status != TransactionStatus.INTERESTED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can only remove interest before agreement"
+        )
+
+    db.delete(transaction)
+    db.commit()
+    return {"message": "Interest removed"}
+
+
 @router.get("/stats", response_model=UserStats)
 def get_user_stats(
     db: Session = Depends(get_db),

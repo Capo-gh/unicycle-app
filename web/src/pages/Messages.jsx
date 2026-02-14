@@ -328,9 +328,17 @@ export default function Messages({ incomingRequest, user }) {
                                 <h3 className="font-semibold text-gray-900">
                                     {getOtherPerson(activeConversation)?.name || 'Unknown'}
                                 </h3>
-                                <p className="text-xs text-gray-500">
-                                    Re: {activeConversation.listing?.title || 'Item'} • ${activeConversation.listing?.price || 0}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-xs text-gray-500">
+                                        Re: {activeConversation.listing?.title || 'Item'} • ${activeConversation.listing?.price || 0}
+                                    </p>
+                                    {activeConversation.listing?.price >= 80 && (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-unicycle-blue bg-unicycle-blue/10 px-1.5 py-0.5 rounded">
+                                            <ShieldCheck className="w-3 h-3" />
+                                            Secure-Pay
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <button
                                 onClick={() => handleArchiveConversation(activeConversation.id)}

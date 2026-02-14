@@ -41,3 +41,11 @@ export const getUserStats = async (userId) => {
     const response = await client.get(`/transactions/stats/${userId}`);
     return response.data;
 };
+
+/**
+ * Remove interest (delete transaction)
+ */
+export const deleteTransaction = async (transactionId) => {
+    const response = await client.delete(`/transactions/${transactionId}`);
+    return response.data;
+};

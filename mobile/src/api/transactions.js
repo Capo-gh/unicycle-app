@@ -21,3 +21,8 @@ export const getMyStats = async () => {
     const response = await api.get('/transactions/stats');
     return response.data;
 };
+
+export const deleteTransaction = async (transactionId) => {
+    const response = await api.delete(`/transactions/${transactionId}`);
+    return response.data;
+};

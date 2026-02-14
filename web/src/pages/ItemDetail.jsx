@@ -3,7 +3,7 @@ import { ArrowLeft, MapPin, ShieldCheck, MessageCircle, Share2, Edit, Star, Chec
 import SecurePayModal from './SecurePayModal';
 import { getUserReviews } from '../api/reviews';
 import { markAsSold, markAsUnsold } from '../api/listings';
-import { createTransaction, getMyTransactions } from '../api/transactions';
+import { createTransaction, getMyTransactions, deleteTransaction } from '../api/transactions';
 
 export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, onViewSellerProfile }) {
     const [showSecurePayModal, setShowSecurePayModal] = useState(false);
@@ -16,6 +16,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
     const [touchEnd, setTouchEnd] = useState(null);
     const [expressingInterest, setExpressingInterest] = useState(false);
     const [alreadyInterested, setAlreadyInterested] = useState(false);
+    const [interestTransactionId, setInterestTransactionId] = useState(null);
 
     // Get current user from localStorage
     useEffect(() => {
@@ -50,6 +51,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                     const existingInterest = myInterests.find(t => t.listing_id === item.id);
                     if (existingInterest) {
                         setAlreadyInterested(true);
+                        setInterestTransactionId(existingInterest.id);
                     }
                 } catch (err) {
                     console.error('Error checking interest status:', err);
@@ -73,7 +75,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
     const isOwner = currentUser && item?.seller_id === currentUser.id;
 
     const handleContactSeller = () => {
-        if (item.price >= 50) {
+        if (item.price >= 80) {
             setShowSecurePayModal(true);
         } else {
             onContactSeller({
@@ -129,17 +131,31 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
 
         setExpressingInterest(true);
         try {
-            await createTransaction(item.id);
+            const transaction = await createTransaction(item.id);
             setAlreadyInterested(true);
-            // Interest successfully expressed - button will now show "Message Seller"
+            setInterestTransactionId(transaction.id);
         } catch (err) {
             console.error('Error expressing interest:', err);
             if (err.response?.data?.detail && err.response.data.detail.includes('already')) {
-                // Already interested - just mark as interested
                 setAlreadyInterested(true);
             } else {
                 alert(err.response?.data?.detail || 'Failed to express interest. Please try again.');
             }
+        } finally {
+            setExpressingInterest(false);
+        }
+    };
+
+    const handleRemoveInterest = async () => {
+        if (!interestTransactionId) return;
+        setExpressingInterest(true);
+        try {
+            await deleteTransaction(interestTransactionId);
+            setAlreadyInterested(false);
+            setInterestTransactionId(null);
+        } catch (err) {
+            console.error('Error removing interest:', err);
+            alert(err.response?.data?.detail || 'Failed to remove interest');
         } finally {
             setExpressingInterest(false);
         }
@@ -383,7 +399,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                     </div>
 
                     {/* Secure-Pay Info (only for buyers, not sold) */}
-                    {!isOwner && !isSold && item.price >= 50 && (
+                    {!isOwner && !isSold && item.price >= 80 && (
                         <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                             <div className="flex items-start gap-3">
                                 <div className="p-2 bg-unicycle-blue rounded-lg">
@@ -423,30 +439,29 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                         </div>
                     )}
 
-                    {/* I'm Interested / Message Seller Button - Desktop (only if not owner and not sold) */}
+                    {/* Action Buttons - Desktop (only if not owner and not sold) */}
                     {!isOwner && !isSold && (
-                        <button
-                            onClick={alreadyInterested ? handleContactSeller : handleExpressInterest}
-                            disabled={expressingInterest}
-                            className="hidden lg:flex w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                            {alreadyInterested ? (
-                                <>
-                                    <MessageCircle className="w-5 h-5" />
-                                    Message Seller
-                                </>
-                            ) : expressingInterest ? (
-                                <>
-                                    <Heart className="w-5 h-5" />
-                                    Expressing Interest...
-                                </>
-                            ) : (
-                                <>
-                                    <Heart className="w-5 h-5" />
-                                    I'm Interested
-                                </>
-                            )}
-                        </button>
+                        <div className="hidden lg:flex gap-2">
+                            <button
+                                onClick={alreadyInterested ? handleRemoveInterest : handleExpressInterest}
+                                disabled={expressingInterest}
+                                className={`flex-1 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed ${
+                                    alreadyInterested
+                                        ? 'bg-red-50 text-red-600 border-2 border-red-200 hover:bg-red-100'
+                                        : 'bg-unicycle-green/10 text-unicycle-green border-2 border-unicycle-green/30 hover:bg-unicycle-green/20'
+                                }`}
+                            >
+                                <Heart className={`w-5 h-5 ${alreadyInterested ? 'fill-red-500 text-red-500' : ''}`} />
+                                {expressingInterest ? 'Loading...' : alreadyInterested ? 'Remove Interest' : 'Add to Interests'}
+                            </button>
+                            <button
+                                onClick={handleContactSeller}
+                                className="flex-1 bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <MessageCircle className="w-5 h-5" />
+                                Message Seller
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
@@ -480,28 +495,27 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                             This item has been sold
                         </div>
                     ) : (
-                        <button
-                            onClick={alreadyInterested ? handleContactSeller : handleExpressInterest}
-                            disabled={expressingInterest}
-                            className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                            {alreadyInterested ? (
-                                <>
-                                    <MessageCircle className="w-5 h-5" />
-                                    Message Seller
-                                </>
-                            ) : expressingInterest ? (
-                                <>
-                                    <Heart className="w-5 h-5" />
-                                    Expressing...
-                                </>
-                            ) : (
-                                <>
-                                    <Heart className="w-5 h-5" />
-                                    I'm Interested
-                                </>
-                            )}
-                        </button>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={alreadyInterested ? handleRemoveInterest : handleExpressInterest}
+                                disabled={expressingInterest}
+                                className={`flex-1 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60 ${
+                                    alreadyInterested
+                                        ? 'bg-red-50 text-red-600 border border-red-200'
+                                        : 'bg-unicycle-green/10 text-unicycle-green border border-unicycle-green/30'
+                                }`}
+                            >
+                                <Heart className={`w-4 h-4 ${alreadyInterested ? 'fill-red-500 text-red-500' : ''}`} />
+                                {expressingInterest ? '...' : alreadyInterested ? 'Remove' : 'Interested'}
+                            </button>
+                            <button
+                                onClick={handleContactSeller}
+                                className="flex-1 bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors flex items-center justify-center gap-1.5"
+                            >
+                                <MessageCircle className="w-4 h-4" />
+                                Message
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>

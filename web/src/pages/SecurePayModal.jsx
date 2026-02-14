@@ -28,7 +28,7 @@ export default function SecurePayModal({ item, onClose, onProceed }) {
                     {/* Item Info */}
                     <div className="flex gap-3 items-center pb-4 border-b border-gray-200">
                         <img
-                            src={item.images[0]}
+                            src={item.images ? item.images.split(',')[0] : 'https://via.placeholder.com/64'}
                             alt={item.title}
                             className="w-16 h-16 rounded-lg object-cover"
                         />
@@ -45,7 +45,7 @@ export default function SecurePayModal({ item, onClose, onProceed }) {
                             <div>
                                 <h4 className="font-semibold text-gray-900 mb-1">Why Secure-Pay?</h4>
                                 <p className="text-sm text-gray-700">
-                                    This item qualifies for escrow protection because it's over $50. Your money stays safe until you verify the item in person.
+                                    This item qualifies for escrow protection because it's over $80. Your money stays safe until you verify the item in person.
                                 </p>
                             </div>
                         </div>
@@ -73,7 +73,7 @@ export default function SecurePayModal({ item, onClose, onProceed }) {
                                 </div>
                                 <div className="flex-1">
                                     <p className="font-medium text-gray-900 mb-1">Meet at the Safe Zone</p>
-                                    <p className="text-sm text-gray-600">Inspect the item at {item.safeZone}</p>
+                                    <p className="text-sm text-gray-600">Inspect the item at {item.safeZone || item.safe_zone}</p>
                                 </div>
                             </div>
 

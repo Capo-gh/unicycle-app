@@ -15,6 +15,9 @@ class User(Base):
     verification_token = Column(String, nullable=True)
     token_created_at = Column(DateTime(timezone=True), nullable=True)
 
+    is_admin = Column(Boolean, default=False)
+    is_suspended = Column(Boolean, default=False)
+
     # Review stats (will be updated when reviews are added)
     avg_rating = Column(Float, default=0.0)
     review_count = Column(Integer, default=0)

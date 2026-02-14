@@ -1,19 +1,34 @@
-import { Search, Megaphone, MessageCircle, User } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Megaphone, MessageCircle, User, Shield } from 'lucide-react';
 import icon from '../assets/unicycle-icon.png';
 import MarketplacePicker from './MarketplacePicker';
 
 export default function Layout({ currentPage, onNavigate, currentMarketplace, onMarketplaceChange, children }) {
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    useEffect(() => {
+        try {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const userData = JSON.parse(userStr);
+                setIsAdmin(userData.is_admin === true);
+            }
+        } catch (e) {}
+    }, []);
+
     const navItems = [
         { id: 'listings', label: 'Browse', Icon: Search },
         { id: 'requests', label: 'Requests', Icon: Megaphone },
         { id: 'sell', label: 'Sell', Icon: null, isPlus: true },
         { id: 'messages', label: 'Messages', Icon: MessageCircle, badge: true },
         { id: 'profile', label: 'Profile', Icon: User },
+        ...(isAdmin ? [{ id: 'admin', label: 'Admin', Icon: Shield }] : []),
     ];
 
     // detail and chat are sub-pages, so highlight Browse
     const getActiveNav = () => {
         if (currentPage === 'detail' || currentPage === 'chat') return 'listings';
+        if (currentPage === 'admin') return 'admin';
         return currentPage;
     };
     const activeNav = getActiveNav();
