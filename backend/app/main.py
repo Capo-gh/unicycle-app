@@ -14,10 +14,10 @@ with engine.connect() as conn:
     inspector = inspect(engine)
     existing_columns = [col["name"] for col in inspector.get_columns("users")]
     if "is_admin" not in existing_columns:
-        conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE"))
         conn.commit()
     if "is_suspended" not in existing_columns:
-        conn.execute(text("ALTER TABLE users ADD COLUMN is_suspended BOOLEAN DEFAULT 0"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN is_suspended BOOLEAN DEFAULT FALSE"))
         conn.commit()
 
 # Seed admin user
