@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { ArrowLeft, Upload, MapPin, DollarSign, X, Image } from 'lucide-react';
+import { ArrowLeft, MapPin, DollarSign, X, Image } from 'lucide-react';
 import { createListing } from '../api/listings';
 import { uploadImage } from '../api/upload';
-import { getSafeZones } from '../../../shared/constants/safeZones';
+import { getSafeZones } from '../constants/safeZones';
 
 export default function SellItem({ onBack }) {
     const [formData, setFormData] = useState({

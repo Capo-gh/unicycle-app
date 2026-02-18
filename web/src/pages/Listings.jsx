@@ -34,14 +34,6 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
         'Other'
     ];
 
-    const universities = [
-        'McGill University',
-        'Concordia University',
-        'Université de Montréal',
-        'UQAM',
-        'HEC Montréal'
-    ];
-
     const conditions = ['All', 'New', 'Like New', 'Good', 'Fair'];
 
     const sortOptions = [

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Upload, MapPin, DollarSign, Save } from 'lucide-react';
-import { updateListing, getListing } from '../api/listings';
-import { getSafeZones } from '../../../shared/constants/safeZones';
+import { ArrowLeft, MapPin, DollarSign, Save } from 'lucide-react';
+import { updateListing } from '../api/listings';
+import { getSafeZones } from '../constants/safeZones';
 
 export default function EditListing({ listing, onBack, onSuccess }) {
     const [formData, setFormData] = useState({
