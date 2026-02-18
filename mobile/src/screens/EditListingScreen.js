@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -10,17 +10,24 @@ import {
     Alert,
     ActivityIndicator,
     Modal,
+    Image,
     Keyboard
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { COLORS } from '../../../shared/constants/colors';
 import { getSafeZones } from '../../../shared/constants/safeZones';
 import { updateListing, markAsSold, markAsUnsold } from '../api/listings';
+import { uploadImages } from '../api/upload';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function EditListingScreen({ route, navigation }) {
     const { listing } = route.params;
     const { user } = useAuth();
+    const [images, setImages] = useState(
+        listing.images ? listing.images.split(',').filter(Boolean) : []
+    );
+    const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [togglingId, setTogglingId] = useState(false);
     const [showSafeZonePicker, setShowSafeZonePicker] = useState(false);
@@ -50,6 +57,41 @@ export default function EditListingScreen({ route, navigation }) {
 
     const conditions = ['New', 'Like New', 'Good', 'Fair'];
     const safeZones = getSafeZones(user?.university || '');
+
+    const pickImages = async () => {
+        if (images.length >= 5) {
+            Alert.alert('Limit Reached', 'Maximum 5 images allowed');
+            return;
+        }
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+            Alert.alert('Permission Required', 'Please allow access to your photo library');
+            return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsMultipleSelection: true,
+            quality: 0.8,
+            selectionLimit: 5 - images.length,
+        });
+        if (!result.canceled && result.assets) {
+            setUploading(true);
+            try {
+                const uris = result.assets.map(a => a.uri);
+                const uploaded = await uploadImages(uris);
+                const urls = uploaded.images ? uploaded.images.map(i => i.url) : [];
+                setImages(prev => [...prev, ...urls].slice(0, 5));
+            } catch {
+                Alert.alert('Error', 'Failed to upload images');
+            } finally {
+                setUploading(false);
+            }
+        }
+    };
+
+    const removeImage = (index) => {
+        setImages(prev => prev.filter((_, i) => i !== index));
+    };
 
     const handleSubmit = async () => {
         if (!formData.title.trim()) {
@@ -87,6 +129,7 @@ export default function EditListingScreen({ route, navigation }) {
                 description: formData.description.trim(),
                 safe_zone: formData.safeZone,
                 safe_zone_address: formData.safeZoneAddress,
+                images: images.join(','),
             });
             Alert.alert('Success', 'Listing updated successfully', [
                 { text: 'OK', onPress: () => navigation.goBack() }
@@ -122,6 +165,33 @@ export default function EditListingScreen({ route, navigation }) {
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+
+                {/* Images */}
+                <View style={styles.section}>
+                    <Text style={styles.label}>Photos (Max 5)</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
+                        {images.map((uri, index) => (
+                            <View key={index} style={styles.imageWrapper}>
+                                <Image source={{ uri }} style={styles.imageThumb} />
+                                <TouchableOpacity style={styles.removeImageBtn} onPress={() => removeImage(index)}>
+                                    <Ionicons name="close-circle" size={22} color="#ef4444" />
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                        {images.length < 5 && (
+                            <TouchableOpacity style={styles.addImageBtn} onPress={pickImages} disabled={uploading}>
+                                {uploading ? (
+                                    <ActivityIndicator color={COLORS.green} />
+                                ) : (
+                                    <>
+                                        <Ionicons name="camera" size={28} color="#999" />
+                                        <Text style={styles.addImageText}>Add</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        )}
+                    </ScrollView>
+                </View>
 
                 {/* Mark as Sold Toggle */}
                 <TouchableOpacity
@@ -470,4 +540,13 @@ const styles = StyleSheet.create({
     pickerItemText: { fontSize: 15, fontWeight: '500', color: COLORS.dark },
     pickerItemTextActive: { color: COLORS.green, fontWeight: '600' },
     pickerItemSub: { fontSize: 12, color: '#999', marginTop: 2 },
+    imageWrapper: { marginRight: 10, position: 'relative' },
+    imageThumb: { width: 90, height: 90, borderRadius: 10 },
+    removeImageBtn: { position: 'absolute', top: -6, right: -6, backgroundColor: '#fff', borderRadius: 11 },
+    addImageBtn: {
+        width: 90, height: 90, borderRadius: 10,
+        borderWidth: 2, borderColor: '#d1d5db', borderStyle: 'dashed',
+        justifyContent: 'center', alignItems: 'center',
+    },
+    addImageText: { fontSize: 11, color: '#999', marginTop: 3 },
 });

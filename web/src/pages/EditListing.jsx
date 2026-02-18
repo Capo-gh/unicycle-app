@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, DollarSign, Save } from 'lucide-react';
+import { ArrowLeft, MapPin, DollarSign, Save, X, Image } from 'lucide-react';
 import { updateListing } from '../api/listings';
+import { uploadImage } from '../api/upload';
 import { getSafeZones } from '../constants/safeZones';
 
 export default function EditListing({ listing, onBack, onSuccess }) {
@@ -13,6 +14,8 @@ export default function EditListing({ listing, onBack, onSuccess }) {
         safeZone: '',
         safeZoneAddress: ''
     });
+    const [images, setImages] = useState([]);
+    const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
@@ -50,8 +53,37 @@ export default function EditListing({ listing, onBack, onSuccess }) {
                 safeZone: listing.safe_zone || listing.safeZone || '',
                 safeZoneAddress: listing.safe_zone_address || listing.safeZoneAddress || ''
             });
+            // Initialize images from existing listing
+            if (listing.images) {
+                setImages(listing.images.split(',').filter(Boolean));
+            }
         }
     }, [listing]);
+
+    const handleImageUpload = async (e) => {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+        if (images.length + files.length > 5) {
+            setError('Maximum 5 images allowed');
+            return;
+        }
+        setUploading(true);
+        setError('');
+        try {
+            for (const file of files) {
+                const url = await uploadImage(file);
+                setImages(prev => [...prev, url]);
+            }
+        } catch (err) {
+            setError('Failed to upload image. Please try again.');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const removeImage = (index) => {
+        setImages(prev => prev.filter((_, i) => i !== index));
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -96,7 +128,8 @@ export default function EditListing({ listing, onBack, onSuccess }) {
                 category: formData.category,
                 condition: formData.condition,
                 safe_zone: formData.safeZone,
-                safe_zone_address: formData.safeZoneAddress
+                safe_zone_address: formData.safeZoneAddress,
+                images: images.join(',')
             };
 
             await updateListing(listing.id, updateData);
@@ -178,20 +211,51 @@ export default function EditListing({ listing, onBack, onSuccess }) {
             <div className="max-w-2xl mx-auto px-4 py-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
 
-                    {/* Current Image Preview */}
+                    {/* Photos */}
                     <div className="bg-white rounded-lg p-6 shadow-sm">
-                        <label className="block text-sm font-semibold text-gray-900 mb-3">Current Photo</label>
-                        <div className="flex items-center gap-4">
-                            <img
-                                src={listing.images ? listing.images.split(',')[0] : 'https://via.placeholder.com/120'}
-                                alt={listing.title}
-                                className="w-24 h-24 object-cover rounded-lg"
-                            />
-                            <div className="flex-1">
-                                <p className="text-sm text-gray-600 mb-2">Image upload editing coming soon!</p>
-                                <p className="text-xs text-gray-500">Current image will be kept</p>
-                            </div>
+                        <div className="flex items-center justify-between mb-3">
+                            <label className="text-sm font-semibold text-gray-900">Photos *</label>
+                            <span className={`text-sm font-medium ${images.length >= 5 ? 'text-red-600' : 'text-gray-500'}`}>
+                                {images.length}/5 images
+                            </span>
                         </div>
+                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-2">
+                            {images.map((url, index) => (
+                                <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
+                                    <img src={url} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeImage(index)}
+                                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            ))}
+                            {images.length < 5 && (
+                                <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-unicycle-green hover:bg-gray-50 transition-colors">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={handleImageUpload}
+                                        className="hidden"
+                                        disabled={uploading}
+                                    />
+                                    {uploading ? (
+                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-unicycle-green" />
+                                    ) : (
+                                        <>
+                                            <Image className="w-6 h-6 text-gray-400 mb-1" />
+                                            <span className="text-xs text-gray-500">Add</span>
+                                        </>
+                                    )}
+                                </label>
+                            )}
+                        </div>
+                        {images.length === 0 && (
+                            <p className="text-xs text-amber-600">At least one photo is required</p>
+                        )}
                     </div>
 
                     {/* Title */}
