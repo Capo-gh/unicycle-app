@@ -30,6 +30,16 @@ export const deleteListing = async (id) => {
     return response.data;
 };
 
+export const markAsSold = async (id) => {
+    const response = await api.put(`/listings/${id}/sold`);
+    return response.data;
+};
+
+export const markAsUnsold = async (id) => {
+    const response = await api.put(`/listings/${id}/unsold`);
+    return response.data;
+};
+
 export const uploadImages = async (formData) => {
     const response = await api.post('/upload/images', formData, {
         headers: {

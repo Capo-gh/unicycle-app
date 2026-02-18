@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { getListings } from '../api/listings';
 import { COLORS } from '../../../shared/constants/colors';
+import NotificationBell from '../components/NotificationBell';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -148,14 +149,20 @@ export default function BrowseScreen({ navigation }) {
             <View style={styles.header}>
                 <View style={styles.headerTop}>
                     <Text style={styles.headerTitle}>UniCycle</Text>
-                    <TouchableOpacity
-                        style={styles.marketplaceButton}
-                        onPress={() => setShowMarketplacePicker(true)}
-                    >
-                        <Ionicons name="location" size={16} color={COLORS.green} />
-                        <Text style={styles.marketplaceButtonText}>{currentMarketplaceShortName}</Text>
-                        <Ionicons name="chevron-down" size={16} color="#666" />
-                    </TouchableOpacity>
+                    <View style={styles.headerTopRight}>
+                        <NotificationBell
+                            onPress={() => navigation.navigate('Profile', { screen: 'Notifications' })}
+                            color={COLORS.dark}
+                        />
+                        <TouchableOpacity
+                            style={styles.marketplaceButton}
+                            onPress={() => setShowMarketplacePicker(true)}
+                        >
+                            <Ionicons name="location" size={16} color={COLORS.green} />
+                            <Text style={styles.marketplaceButtonText}>{currentMarketplaceShortName}</Text>
+                            <Ionicons name="chevron-down" size={16} color="#666" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Search + Filter Button */}
@@ -419,6 +426,11 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 12,
+    },
+    headerTopRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
     headerTitle: {
         fontSize: 24,

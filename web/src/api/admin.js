@@ -41,8 +41,10 @@ export const adminDeleteListing = async (listingId) => {
     return response.data;
 };
 
-export const getAdminTransactions = async () => {
-    const response = await apiClient.get('/admin/transactions');
+export const getAdminTransactions = async (university = '') => {
+    const params = {};
+    if (university) params.university = university;
+    const response = await apiClient.get('/admin/transactions', { params });
     return response.data;
 };
 

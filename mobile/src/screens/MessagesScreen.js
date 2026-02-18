@@ -40,6 +40,18 @@ export default function MessagesScreen() {
         }
     }, [activeConversation?.messages]);
 
+    // Poll active conversation for new messages every 5 seconds
+    useEffect(() => {
+        if (!selectedConvId) return;
+        const interval = setInterval(async () => {
+            try {
+                const data = await getConversation(selectedConvId);
+                setActiveConversation(data);
+            } catch (err) {}
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [selectedConvId]);
+
     const fetchConversations = async () => {
         setLoading(true);
         try {

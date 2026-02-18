@@ -16,10 +16,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { COLORS } from '../../../shared/constants/colors';
+import { getSafeZones } from '../../../shared/constants/safeZones';
 import { createListing } from '../api/listings';
 import { uploadImages } from '../api/upload';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function SellScreen({ navigation }) {
+    const { user } = useAuth();
     const [formData, setFormData] = useState({
         title: '',
         category: '',
@@ -49,13 +52,7 @@ export default function SellScreen({ navigation }) {
 
     const conditions = ['New', 'Like New', 'Good', 'Fair'];
 
-    const safeZones = [
-        { name: 'McConnell Library', address: '3459 McTavish St, Main Floor Lobby' },
-        { name: 'Redpath Library', address: '3461 McTavish St, Front Entrance' },
-        { name: 'Leacock Building', address: '855 Sherbrooke St W, Main Entrance' },
-        { name: 'Shatner University Centre', address: '3480 McTavish St, Main Floor' },
-        { name: 'Trottier Building', address: '3630 University St, Lobby' }
-    ];
+    const safeZones = getSafeZones(user?.university || '');
 
     const pickImages = async () => {
         if (images.length >= 5) {

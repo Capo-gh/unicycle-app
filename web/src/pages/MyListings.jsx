@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react';
-import { getMyListings, deleteListing } from '../api/listings';
+import { ArrowLeft, Pencil, Trash2, Plus, CheckCircle, Circle } from 'lucide-react';
+import { getMyListings, deleteListing, markAsSold, markAsUnsold } from '../api/listings';
 
 export default function MyListings({ onNavigate }) {
     const [listings, setListings] = useState([]);
@@ -8,6 +8,7 @@ export default function MyListings({ onNavigate }) {
     const [error, setError] = useState(null);
     const [deleteConfirm, setDeleteConfirm] = useState(null);
     const [deleting, setDeleting] = useState(false);
+    const [togglingId, setTogglingId] = useState(null);
 
     useEffect(() => {
         fetchListings();
@@ -24,6 +25,25 @@ export default function MyListings({ onNavigate }) {
             setError('Failed to load listings');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleToggleSold = async (listing) => {
+        setTogglingId(listing.id);
+        try {
+            if (listing.is_sold) {
+                await markAsUnsold(listing.id);
+            } else {
+                await markAsSold(listing.id);
+            }
+            setListings(prev => prev.map(l =>
+                l.id === listing.id ? { ...l, is_sold: !l.is_sold } : l
+            ));
+        } catch (err) {
+            console.error('Error toggling sold status:', err);
+            alert('Failed to update listing');
+        } finally {
+            setTogglingId(null);
         }
     };
 
@@ -127,6 +147,18 @@ export default function MyListings({ onNavigate }) {
 
                                 {/* Actions */}
                                 <div className="flex gap-2 px-4 pb-4 pt-3 border-t border-gray-100">
+                                    <button
+                                        onClick={() => handleToggleSold(listing)}
+                                        disabled={togglingId === listing.id}
+                                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg transition-colors text-sm font-medium disabled:opacity-50 ${
+                                            listing.is_sold
+                                                ? 'bg-green-50 text-green-700 hover:bg-green-100'
+                                                : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                        }`}
+                                    >
+                                        {listing.is_sold ? <CheckCircle className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                                        {listing.is_sold ? 'Mark Available' : 'Mark Sold'}
+                                    </button>
                                     <button
                                         onClick={() => onNavigate('edit-listing', listing)}
                                         className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"

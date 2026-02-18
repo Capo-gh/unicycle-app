@@ -203,15 +203,19 @@ def delete_listing(
 
 @router.get("/transactions")
 def get_all_transactions(
+    university: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_required)
 ):
-    """List all transactions"""
-    transactions = db.query(Transaction).options(
+    """List all transactions with optional university filter"""
+    query = db.query(Transaction).options(
         joinedload(Transaction.listing),
         joinedload(Transaction.buyer),
         joinedload(Transaction.seller)
-    ).order_by(Transaction.created_at.desc()).all()
+    )
+    if university:
+        query = query.join(Transaction.buyer).filter(User.university == university)
+    transactions = query.order_by(Transaction.created_at.desc()).all()
 
     return [
         {

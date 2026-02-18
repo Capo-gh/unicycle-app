@@ -47,6 +47,7 @@ export default function Admin() {
     // University filter
     const [universities, setUniversities] = useState([]);
     const [selectedUniversity, setSelectedUniversity] = useState('');
+    const [txUniversity, setTxUniversity] = useState('');
 
     // Notifications
     const [sentNotifications, setSentNotifications] = useState([]);
@@ -75,7 +76,7 @@ export default function Admin() {
 
     useEffect(() => {
         loadTabData();
-    }, [activeTab, selectedUniversity]);
+    }, [activeTab, selectedUniversity, txUniversity]);
 
     const loadTabData = async () => {
         setLoading(true);
@@ -92,7 +93,7 @@ export default function Admin() {
                     setListings(await getAdminListings('', selectedUniversity));
                     break;
                 case 'transactions':
-                    setTransactions(await getAdminTransactions());
+                    setTransactions(await getAdminTransactions(txUniversity));
                     break;
                 case 'notifications':
                     setSentNotifications(await getAdminNotifications());
@@ -512,6 +513,18 @@ export default function Admin() {
 
                 {/* Transactions Tab */}
                 {!loading && activeTab === 'transactions' && (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <select
+                                value={txUniversity}
+                                onChange={(e) => setTxUniversity(e.target.value)}
+                                className="px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
+                            >
+                                <option value="">All Universities</option>
+                                {universities.map(u => <option key={u} value={u}>{u}</option>)}
+                            </select>
+                            <span className="text-sm text-gray-500">{transactions.length} transactions</span>
+                        </div>
                     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
@@ -546,6 +559,7 @@ export default function Admin() {
                         {transactions.length === 0 && (
                             <div className="text-center py-8 text-gray-500 text-sm">No transactions found</div>
                         )}
+                    </div>
                     </div>
                 )}
 

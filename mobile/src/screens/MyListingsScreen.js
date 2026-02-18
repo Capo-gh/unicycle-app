@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../../../shared/constants/colors';
-import { getMyListings, deleteListing } from '../api/listings';
+import { getMyListings, deleteListing, markAsSold, markAsUnsold } from '../api/listings';
 
 export default function MyListingsScreen({ navigation }) {
     const { user } = useAuth();
@@ -72,51 +72,83 @@ export default function MyListingsScreen({ navigation }) {
         );
     };
 
+    const handleToggleSold = async (listing) => {
+        try {
+            if (listing.is_sold) {
+                await markAsUnsold(listing.id);
+            } else {
+                await markAsSold(listing.id);
+            }
+            setListings(prev => prev.map(l =>
+                l.id === listing.id ? { ...l, is_sold: !l.is_sold } : l
+            ));
+        } catch (error) {
+            Alert.alert('Error', 'Failed to update listing');
+        }
+    };
+
     const renderListing = ({ item: listing }) => (
-        <TouchableOpacity
-            style={styles.listingCard}
-            onPress={() => navigation.navigate('ItemDetail', { listing })}
-            activeOpacity={0.7}
-        >
-            {listing.images ? (
-                <Image
-                    source={{ uri: typeof listing.images === 'string' ? listing.images.split(',')[0] : listing.images[0] }}
-                    style={styles.listingImage}
-                />
-            ) : (
-                <View style={[styles.listingImage, styles.listingImagePlaceholder]}>
-                    <Ionicons name="image-outline" size={32} color="#d1d5db" />
-                </View>
-            )}
-            <View style={styles.listingContent}>
-                <Text style={styles.listingTitle} numberOfLines={1}>{listing.title}</Text>
-                <Text style={styles.listingPrice}>${listing.price}</Text>
-                <View style={styles.listingBadges}>
-                    <View style={styles.listingBadge}>
-                        <Text style={styles.listingBadgeText}>{listing.category}</Text>
+        <View style={styles.listingCard}>
+            <TouchableOpacity
+                style={styles.listingCardInner}
+                onPress={() => navigation.navigate('ItemDetail', { listing })}
+                activeOpacity={0.7}
+            >
+                {listing.images ? (
+                    <Image
+                        source={{ uri: typeof listing.images === 'string' ? listing.images.split(',')[0] : listing.images[0] }}
+                        style={styles.listingImage}
+                    />
+                ) : (
+                    <View style={[styles.listingImage, styles.listingImagePlaceholder]}>
+                        <Ionicons name="image-outline" size={32} color="#d1d5db" />
                     </View>
-                    <View style={[styles.listingBadge, listing.is_sold && styles.soldBadge]}>
-                        <Text style={[styles.listingBadgeText, listing.is_sold && styles.soldBadgeText]}>
-                            {listing.is_sold ? 'Sold' : 'Active'}
-                        </Text>
+                )}
+                <View style={styles.listingContent}>
+                    <Text style={styles.listingTitle} numberOfLines={1}>{listing.title}</Text>
+                    <Text style={styles.listingPrice}>${listing.price}</Text>
+                    <View style={styles.listingBadges}>
+                        <View style={styles.listingBadge}>
+                            <Text style={styles.listingBadgeText}>{listing.category}</Text>
+                        </View>
+                        <View style={[styles.listingBadge, listing.is_sold && styles.soldBadge]}>
+                            <Text style={[styles.listingBadgeText, listing.is_sold && styles.soldBadgeText]}>
+                                {listing.is_sold ? 'Sold' : 'Active'}
+                            </Text>
+                        </View>
                     </View>
                 </View>
-            </View>
+            </TouchableOpacity>
             <View style={styles.listingActions}>
                 <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => navigation.navigate('ItemDetail', { listing })}
+                    style={[styles.actionButton, styles.soldButton, listing.is_sold && styles.soldButtonActive]}
+                    onPress={() => handleToggleSold(listing)}
                 >
-                    <Ionicons name="create-outline" size={20} color={COLORS.green} />
+                    <Ionicons
+                        name={listing.is_sold ? 'checkmark-circle' : 'checkmark-circle-outline'}
+                        size={16}
+                        color={listing.is_sold ? COLORS.green : '#f59e0b'}
+                    />
+                    <Text style={[styles.actionButtonText, listing.is_sold ? styles.soldActiveText : styles.soldInactiveText]}>
+                        {listing.is_sold ? 'Sold' : 'Mark Sold'}
+                    </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={styles.actionButton}
+                    style={[styles.actionButton, styles.editButton]}
+                    onPress={() => navigation.navigate('EditListing', { listing })}
+                >
+                    <Ionicons name="create-outline" size={16} color={COLORS.green} />
+                    <Text style={[styles.actionButtonText, { color: COLORS.green }]}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.actionButton, styles.deleteButton]}
                     onPress={() => handleDelete(listing.id, listing.title)}
                 >
-                    <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                    <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                    <Text style={[styles.actionButtonText, { color: '#ef4444' }]}>Delete</Text>
                 </TouchableOpacity>
             </View>
-        </TouchableOpacity>
+        </View>
     );
 
     return (
@@ -178,12 +210,15 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     listingCard: {
-        flexDirection: 'row',
         backgroundColor: '#fff',
         borderRadius: 12,
-        padding: 12,
         borderWidth: 1,
         borderColor: '#e5e7eb',
+        overflow: 'hidden',
+    },
+    listingCardInner: {
+        flexDirection: 'row',
+        padding: 12,
         alignItems: 'center',
     },
     listingImage: {
@@ -234,12 +269,38 @@ const styles = StyleSheet.create({
         color: '#dc2626',
     },
     listingActions: {
-        gap: 8,
-        marginLeft: 8,
+        flexDirection: 'row',
+        borderTopWidth: 1,
+        borderTopColor: '#f0f0f0',
     },
     actionButton: {
-        padding: 8,
-        backgroundColor: '#f9fafb',
-        borderRadius: 8,
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        paddingVertical: 10,
+    },
+    actionButtonText: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    soldButton: {
+        backgroundColor: '#fffbeb',
+        borderRightWidth: 1,
+        borderRightColor: '#f0f0f0',
+    },
+    soldButtonActive: {
+        backgroundColor: 'rgba(76,175,80,0.06)',
+    },
+    soldActiveText: { color: COLORS.green },
+    soldInactiveText: { color: '#f59e0b' },
+    editButton: {
+        backgroundColor: '#f0fdf4',
+        borderRightWidth: 1,
+        borderRightColor: '#f0f0f0',
+    },
+    deleteButton: {
+        backgroundColor: '#fef2f2',
     },
 });

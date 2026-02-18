@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Upload, MapPin, DollarSign, Save } from 'lucide-react';
 import { updateListing, getListing } from '../api/listings';
+import { getSafeZones } from '../../../shared/constants/safeZones';
 
 export default function EditListing({ listing, onBack, onSuccess }) {
     const [formData, setFormData] = useState({
@@ -30,13 +31,12 @@ export default function EditListing({ listing, onBack, onSuccess }) {
 
     const conditions = ['New', 'Like New', 'Good', 'Fair'];
 
-    const safeZones = [
-        { name: 'McConnell Library', address: '3459 McTavish St, Main Floor Lobby' },
-        { name: 'Redpath Library', address: '3461 McTavish St, Front Entrance' },
-        { name: 'Leacock Building', address: '855 Sherbrooke St W, Main Entrance' },
-        { name: 'Shatner University Centre', address: '3480 McTavish St, Main Floor' },
-        { name: 'Trottier Building', address: '3630 University St, Lobby' }
-    ];
+    const userUniversity = (() => {
+        try {
+            return JSON.parse(localStorage.getItem('user') || '{}').university || '';
+        } catch { return ''; }
+    })();
+    const safeZones = getSafeZones(userUniversity);
 
     // Pre-fill form with existing listing data
     useEffect(() => {

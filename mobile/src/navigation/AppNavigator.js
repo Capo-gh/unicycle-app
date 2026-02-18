@@ -18,6 +18,7 @@ import ItemDetailScreen from '../screens/ItemDetailScreen';
 import MyInterestsScreen from '../screens/MyInterestsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import MyListingsScreen from '../screens/MyListingsScreen';
+import EditListingScreen from '../screens/EditListingScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AnnouncementModal from '../components/AnnouncementModal';
 
@@ -126,6 +127,15 @@ function ProfileStack() {
                 options={{
                     headerShown: true,
                     title: 'My Listings',
+                    headerBackTitle: 'Back'
+                }}
+            />
+            <Stack.Screen
+                name="EditListing"
+                component={EditListingScreen}
+                options={{
+                    headerShown: true,
+                    title: 'Edit Listing',
                     headerBackTitle: 'Back'
                 }}
             />

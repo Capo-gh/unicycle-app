@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, Upload, MapPin, DollarSign, X, Image } from 'lucide-react';
 import { createListing } from '../api/listings';
 import { uploadImage } from '../api/upload';
+import { getSafeZones } from '../../../shared/constants/safeZones';
 
 export default function SellItem({ onBack }) {
     const [formData, setFormData] = useState({
@@ -33,13 +34,12 @@ export default function SellItem({ onBack }) {
 
     const conditions = ['New', 'Like New', 'Good', 'Fair'];
 
-    const safeZones = [
-        { name: 'McConnell Library', address: '3459 McTavish St, Main Floor Lobby' },
-        { name: 'Redpath Library', address: '3461 McTavish St, Front Entrance' },
-        { name: 'Leacock Building', address: '855 Sherbrooke St W, Main Entrance' },
-        { name: 'Shatner University Centre', address: '3480 McTavish St, Main Floor' },
-        { name: 'Trottier Building', address: '3630 University St, Lobby' }
-    ];
+    const userUniversity = (() => {
+        try {
+            return JSON.parse(localStorage.getItem('user') || '{}').university || '';
+        } catch { return ''; }
+    })();
+    const safeZones = getSafeZones(userUniversity);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
