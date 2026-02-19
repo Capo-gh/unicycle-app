@@ -128,7 +128,7 @@ export default function Requests({ user }) {
             <div className={`${selectedRequest ? 'hidden lg:flex' : 'flex'} flex-col w-full min-w-0 lg:w-1/2 lg:border-r lg:border-gray-200 lg:overflow-y-auto`}>
 
                 {/* Header */}
-                <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+                <div className="bg-white border-b border-gray-200 sticky top-14 lg:top-0 z-10 shadow-sm">
                     <div className="px-4 lg:px-6 py-4">
                         <div className="flex items-center justify-between mb-3">
                             <div>
@@ -543,7 +543,7 @@ function PostRequestForm({ user, onBack, onAddRequest }) {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
-            <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+            <div className="bg-white border-b border-gray-200 sticky top-14 lg:top-0 z-10">
                 <div className="max-w-md lg:max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
                     <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                         <ArrowLeft className="w-6 h-6 text-gray-700" />

@@ -20,6 +20,9 @@ import SettingsScreen from '../screens/SettingsScreen';
 import MyListingsScreen from '../screens/MyListingsScreen';
 import EditListingScreen from '../screens/EditListingScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
+import PrivacySafetyScreen from '../screens/PrivacySafetyScreen';
+import HelpSupportScreen from '../screens/HelpSupportScreen';
+import AboutScreen from '../screens/AboutScreen';
 import AnnouncementModal from '../components/AnnouncementModal';
 
 const Stack = createNativeStackNavigator();
@@ -147,6 +150,21 @@ function ProfileStack() {
                     title: 'Item Details',
                     headerBackTitle: 'Back'
                 }}
+            />
+            <Stack.Screen
+                name="PrivacySafety"
+                component={PrivacySafetyScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="HelpSupport"
+                component={HelpSupportScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="About"
+                component={AboutScreen}
+                options={{ headerShown: false }}
             />
         </Stack.Navigator>
     );

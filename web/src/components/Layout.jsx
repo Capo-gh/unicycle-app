@@ -37,14 +37,23 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
     return (
         <div className="flex min-h-screen bg-gray-50">
 
+            {/* ─── MOBILE TOP BAR (Small + Medium only) ─── */}
+            <div className="fixed top-0 left-0 right-0 lg:hidden bg-white border-b border-gray-200 z-30 h-14 px-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <img src={icon} alt="UniCycle" className="w-8 h-8 object-contain" />
+                    <span className="font-bold text-gray-900">UniCycle</span>
+                </div>
+                <NotificationBell />
+            </div>
+
             {/* ─── SIDEBAR (Desktop only) ─── */}
             <aside className="hidden lg:flex lg:w-64 bg-white border-r border-gray-200 flex-col fixed h-full z-20">
                 {/* Logo + Marketplace Picker */}
                 <div className="p-6 border-b border-gray-200">
                     <div className="flex items-center gap-3 mb-3">
-                        <img src={icon} alt="UniCycle" className="w-10 h-10 object-contain" />
-                        <h1 className="text-xl font-bold text-gray-900 flex-1">UniCycle</h1>
-                        <NotificationBell />
+                        <img src={icon} alt="UniCycle" className="w-10 h-10 object-contain flex-shrink-0" />
+                        <h1 className="text-xl font-bold text-gray-900 flex-1 min-w-0 truncate">UniCycle</h1>
+                        <div className="flex-shrink-0"><NotificationBell /></div>
                     </div>
                     <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} />
                 </div>
@@ -79,7 +88,7 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
             </aside>
 
             {/* ─── MAIN CONTENT ─── */}
-            <main className="flex-1 lg:ml-64 min-h-screen pb-20 lg:pb-0 min-w-0 overflow-x-hidden">
+            <main className="flex-1 lg:ml-64 min-h-screen pb-20 lg:pb-0 min-w-0 overflow-x-hidden pt-14 lg:pt-0">
                 {children}
             </main>
 

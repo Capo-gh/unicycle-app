@@ -6,7 +6,6 @@ import {
     StyleSheet,
     SafeAreaView,
     ScrollView,
-    Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -28,10 +27,6 @@ export default function SettingsScreen({ navigation }) {
                 }
             ]
         );
-    };
-
-    const handleComingSoon = (feature) => {
-        Alert.alert('Coming Soon', `${feature} will be available in a future update.`);
     };
 
     return (
@@ -72,30 +67,24 @@ export default function SettingsScreen({ navigation }) {
                     <View style={styles.card}>
                         <TouchableOpacity
                             style={styles.menuItem}
-                            onPress={() => handleComingSoon('Notifications')}
+                            onPress={() => navigation.navigate('Notifications')}
                         >
                             <View style={styles.menuItemLeft}>
                                 <Ionicons name="notifications-outline" size={22} color={COLORS.dark} />
                                 <Text style={styles.menuText}>Notifications</Text>
                             </View>
-                            <View style={styles.menuItemRight}>
-                                <Text style={styles.comingSoonText}>Coming soon</Text>
-                                <Ionicons name="chevron-forward" size={20} color="#999" />
-                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#999" />
                         </TouchableOpacity>
                         <View style={styles.divider} />
                         <TouchableOpacity
                             style={styles.menuItem}
-                            onPress={() => handleComingSoon('Privacy & Safety')}
+                            onPress={() => navigation.navigate('PrivacySafety')}
                         >
                             <View style={styles.menuItemLeft}>
                                 <Ionicons name="shield-checkmark-outline" size={22} color={COLORS.dark} />
                                 <Text style={styles.menuText}>Privacy & Safety</Text>
                             </View>
-                            <View style={styles.menuItemRight}>
-                                <Text style={styles.comingSoonText}>Coming soon</Text>
-                                <Ionicons name="chevron-forward" size={20} color="#999" />
-                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#999" />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -106,7 +95,7 @@ export default function SettingsScreen({ navigation }) {
                     <View style={styles.card}>
                         <TouchableOpacity
                             style={styles.menuItem}
-                            onPress={() => handleComingSoon('Help & Support')}
+                            onPress={() => navigation.navigate('HelpSupport')}
                         >
                             <View style={styles.menuItemLeft}>
                                 <Ionicons name="help-circle-outline" size={22} color={COLORS.dark} />
@@ -115,12 +104,18 @@ export default function SettingsScreen({ navigation }) {
                             <Ionicons name="chevron-forward" size={20} color="#999" />
                         </TouchableOpacity>
                         <View style={styles.divider} />
-                        <TouchableOpacity style={styles.menuItem}>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => navigation.navigate('About')}
+                        >
                             <View style={styles.menuItemLeft}>
                                 <Ionicons name="information-circle-outline" size={22} color={COLORS.dark} />
                                 <Text style={styles.menuText}>About UniCycle</Text>
                             </View>
-                            <Text style={styles.versionText}>v1.0.0</Text>
+                            <View style={styles.menuItemRight}>
+                                <Text style={styles.versionText}>v1.0.0</Text>
+                                <Ionicons name="chevron-forward" size={20} color="#999" />
+                            </View>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -216,11 +211,6 @@ const styles = StyleSheet.create({
     menuText: {
         fontSize: 16,
         color: COLORS.dark,
-    },
-    comingSoonText: {
-        fontSize: 12,
-        color: '#999',
-        fontStyle: 'italic',
     },
     versionText: {
         fontSize: 14,
