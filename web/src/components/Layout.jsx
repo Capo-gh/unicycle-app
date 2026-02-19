@@ -78,20 +78,20 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                 </nav>
             </aside>
 
-            {/* ─── CONTENT COLUMN ─── */}
-            <div className="flex-1 lg:ml-64 flex flex-col min-w-0 min-h-screen">
-
-                {/* Mobile Top Bar (Small + Medium only) */}
-                <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-200 h-14 px-4 flex items-center justify-between flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                        <img src={icon} alt="UniCycle" className="w-8 h-8 object-contain" />
-                        <span className="font-bold text-gray-900">UniCycle</span>
-                    </div>
-                    <NotificationBell />
+            {/* Mobile Top Bar (Small + Medium only) — fixed overlay */}
+            <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 h-14 px-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <img src={icon} alt="UniCycle" className="w-8 h-8 object-contain" />
+                    <span className="font-bold text-gray-900">UniCycle</span>
                 </div>
+                <NotificationBell />
+            </div>
 
-                {/* Main Content */}
-                <main className="flex-1 pb-20 lg:pb-0 min-w-0 overflow-x-hidden">
+            {/* ─── CONTENT COLUMN ─── */}
+            <div className="flex-1 lg:ml-64 min-w-0">
+                <main className="pb-20 lg:pb-0 min-w-0">
+                    {/* Spacer so content sits below the fixed mobile top bar */}
+                    <div className="h-14 lg:hidden" />
                     {children}
                 </main>
             </div>

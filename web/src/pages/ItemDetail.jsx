@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, ShieldCheck, MessageCircle, Share2, Edit, Star, CheckCircle, ChevronRight, Heart } from 'lucide-react';
+import { ArrowLeft, MapPin, ShieldCheck, MessageCircle, Share2, Edit, Star, CheckCircle, ChevronRight, Heart, Flag, X } from 'lucide-react';
 import SecurePayModal from './SecurePayModal';
 import { getUserReviews } from '../api/reviews';
 import { markAsSold, markAsUnsold } from '../api/listings';
 import { createTransaction, getMyTransactions, deleteTransaction } from '../api/transactions';
+import { reportUser } from '../api/users';
 
 export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, onViewSellerProfile }) {
     const [showSecurePayModal, setShowSecurePayModal] = useState(false);
@@ -17,6 +18,11 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
     const [expressingInterest, setExpressingInterest] = useState(false);
     const [alreadyInterested, setAlreadyInterested] = useState(false);
     const [interestTransactionId, setInterestTransactionId] = useState(null);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportReason, setReportReason] = useState('');
+    const [reportDetails, setReportDetails] = useState('');
+    const [submittingReport, setSubmittingReport] = useState(false);
+    const [reportSuccess, setReportSuccess] = useState(false);
 
     // Get current user from localStorage
     useEffect(() => {
@@ -73,6 +79,27 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
 
     // Check if current user is the seller
     const isOwner = currentUser && item?.seller_id === currentUser.id;
+    const canReport = currentUser && !isOwner;
+
+    const handleReport = async () => {
+        if (!reportReason) return;
+        setSubmittingReport(true);
+        try {
+            await reportUser(item.seller_id, reportReason, reportDetails);
+            setReportSuccess(true);
+            setTimeout(() => {
+                setShowReportModal(false);
+                setReportSuccess(false);
+                setReportReason('');
+                setReportDetails('');
+            }, 2000);
+        } catch (err) {
+            console.error('Error submitting report:', err);
+            alert('Failed to submit report. Please try again.');
+        } finally {
+            setSubmittingReport(false);
+        }
+    };
 
     const handleContactSeller = () => {
         if (item.price >= 80) {
@@ -364,6 +391,87 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                             </div>
                         </div>
                     </button>
+
+                    {/* Report Seller */}
+                    {canReport && (
+                        <button
+                            onClick={() => setShowReportModal(true)}
+                            className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors mt-1 ml-1"
+                        >
+                            <Flag className="w-3.5 h-3.5" />
+                            Report Seller
+                        </button>
+                    )}
+
+                    {/* Report Modal */}
+                    {showReportModal && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
+                            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                                {reportSuccess ? (
+                                    <div className="text-center py-4">
+                                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </div>
+                                        <p className="font-semibold text-gray-900">Report submitted</p>
+                                        <p className="text-sm text-gray-500 mt-1">Our team will review it within 24 hours.</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="font-semibold text-gray-900">Report {item.seller?.name}</h3>
+                                            <button onClick={() => setShowReportModal(false)} className="p-1 hover:bg-gray-100 rounded-full">
+                                                <X className="w-5 h-5 text-gray-500" />
+                                            </button>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Reason *</label>
+                                                <select
+                                                    value={reportReason}
+                                                    onChange={(e) => setReportReason(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 text-sm"
+                                                >
+                                                    <option value="">Select a reason</option>
+                                                    <option>Scam / Fraud</option>
+                                                    <option>Suspicious or fake account</option>
+                                                    <option>Inappropriate listing or content</option>
+                                                    <option>Harassment or threatening behaviour</option>
+                                                    <option>Other</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Additional details (optional)</label>
+                                                <textarea
+                                                    value={reportDetails}
+                                                    onChange={(e) => setReportDetails(e.target.value)}
+                                                    placeholder="Describe what happened..."
+                                                    rows="3"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 resize-none text-sm"
+                                                />
+                                            </div>
+                                            <div className="flex gap-3">
+                                                <button
+                                                    onClick={() => setShowReportModal(false)}
+                                                    className="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    onClick={handleReport}
+                                                    disabled={!reportReason || submittingReport}
+                                                    className="flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                                >
+                                                    {submittingReport ? 'Submitting...' : 'Submit Report'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Description */}
                     <div className="bg-white rounded-lg p-4 shadow-sm">

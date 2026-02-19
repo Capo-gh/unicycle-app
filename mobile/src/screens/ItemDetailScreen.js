@@ -10,7 +10,11 @@ import {
     Dimensions,
     Alert,
     Linking,
-    ActivityIndicator
+    ActivityIndicator,
+    Modal,
+    TextInput,
+    KeyboardAvoidingView,
+    Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -34,6 +38,11 @@ export default function ItemDetailScreen({ route, navigation }) {
     const [interestTransactionId, setInterestTransactionId] = useState(null);
     const [sellerReviews, setSellerReviews] = useState(null);
     const [showSecurePayModal, setShowSecurePayModal] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportReason, setReportReason] = useState('');
+    const [reportDetails, setReportDetails] = useState('');
+    const [submittingReport, setSubmittingReport] = useState(false);
+    const [reportSuccess, setReportSuccess] = useState(false);
 
     // Check if current user is the owner
     const isOwner = currentUser && listing?.seller_id === currentUser.id;
@@ -163,33 +172,30 @@ export default function ItemDetailScreen({ route, navigation }) {
         });
     };
 
-    const handleReport = () => {
-        const reasons = [
-            'Fake listing',
-            'Inappropriate content',
-            'Spam or scam',
-            'Harassment',
-            'Other',
-        ];
+    const reportReasons = ['Fake listing', 'Inappropriate content', 'Spam or scam', 'Harassment', 'Other'];
 
-        Alert.alert(
-            'Report Seller',
-            'Why are you reporting this seller?',
-            [
-                ...reasons.map(reason => ({
-                    text: reason,
-                    onPress: async () => {
-                        try {
-                            await reportUser(listing.seller_id, reason);
-                            Alert.alert('Report Submitted', 'Our team will review it within 24 hours.');
-                        } catch (err) {
-                            Alert.alert('Error', 'Failed to submit report. Please try again.');
-                        }
-                    }
-                })),
-                { text: 'Cancel', style: 'cancel' }
-            ]
-        );
+    const handleReport = () => {
+        setShowReportModal(true);
+    };
+
+    const submitReport = async () => {
+        if (!reportReason) return;
+        setSubmittingReport(true);
+        try {
+            await reportUser(listing.seller_id, reportReason, reportDetails);
+            setReportSuccess(true);
+        } catch (err) {
+            Alert.alert('Error', 'Failed to submit report. Please try again.');
+        } finally {
+            setSubmittingReport(false);
+        }
+    };
+
+    const closeReportModal = () => {
+        setShowReportModal(false);
+        setReportReason('');
+        setReportDetails('');
+        setReportSuccess(false);
     };
 
     const handleGetDirections = () => {
@@ -449,6 +455,83 @@ export default function ItemDetailScreen({ route, navigation }) {
                 onClose={() => setShowSecurePayModal(false)}
                 onProceed={handleSecurePayProceed}
             />
+
+            {/* Report Modal */}
+            <Modal visible={showReportModal} transparent animationType="slide">
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={styles.modalOverlay}
+                >
+                    <View style={styles.reportModalContent}>
+                        {reportSuccess ? (
+                            <View style={styles.reportSuccess}>
+                                <View style={styles.reportSuccessIcon}>
+                                    <Ionicons name="checkmark" size={28} color="#16a34a" />
+                                </View>
+                                <Text style={styles.reportSuccessTitle}>Report Submitted</Text>
+                                <Text style={styles.reportSuccessText}>Our team will review it within 24 hours.</Text>
+                                <TouchableOpacity style={styles.reportDoneButton} onPress={closeReportModal}>
+                                    <Text style={styles.reportDoneButtonText}>Done</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <>
+                                <View style={styles.reportModalHeader}>
+                                    <Text style={styles.reportModalTitle}>Report Seller</Text>
+                                    <TouchableOpacity onPress={closeReportModal} style={styles.reportCloseButton}>
+                                        <Ionicons name="close" size={22} color="#666" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <Text style={styles.reportLabel}>Reason *</Text>
+                                {reportReasons.map(reason => (
+                                    <TouchableOpacity
+                                        key={reason}
+                                        style={[styles.reasonOption, reportReason === reason && styles.reasonOptionSelected]}
+                                        onPress={() => setReportReason(reason)}
+                                    >
+                                        <View style={[styles.reasonRadio, reportReason === reason && styles.reasonRadioSelected]}>
+                                            {reportReason === reason && <View style={styles.reasonRadioDot} />}
+                                        </View>
+                                        <Text style={[styles.reasonText, reportReason === reason && styles.reasonTextSelected]}>
+                                            {reason}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+
+                                <Text style={[styles.reportLabel, { marginTop: 14 }]}>Additional details (optional)</Text>
+                                <TextInput
+                                    style={styles.reportDetailsInput}
+                                    placeholder="Describe what happened..."
+                                    placeholderTextColor="#bbb"
+                                    value={reportDetails}
+                                    onChangeText={setReportDetails}
+                                    multiline
+                                    numberOfLines={3}
+                                    textAlignVertical="top"
+                                />
+
+                                <View style={styles.reportModalButtons}>
+                                    <TouchableOpacity style={styles.reportCancelButton} onPress={closeReportModal}>
+                                        <Text style={styles.reportCancelText}>Cancel</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.reportSubmitButton, (!reportReason || submittingReport) && styles.reportSubmitDisabled]}
+                                        onPress={submitReport}
+                                        disabled={!reportReason || submittingReport}
+                                    >
+                                        {submittingReport ? (
+                                            <ActivityIndicator color="#fff" size="small" />
+                                        ) : (
+                                            <Text style={styles.reportSubmitText}>Submit Report</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
+                            </>
+                        )}
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -825,5 +908,155 @@ const styles = StyleSheet.create({
     reportButtonText: {
         fontSize: 12,
         color: '#ef4444',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    reportModalContent: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        padding: 20,
+        paddingBottom: 36,
+    },
+    reportModalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+    },
+    reportModalTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#111',
+    },
+    reportCloseButton: {
+        padding: 4,
+    },
+    reportLabel: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#374151',
+        marginBottom: 8,
+    },
+    reasonOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        marginBottom: 6,
+    },
+    reasonOptionSelected: {
+        borderColor: '#ef4444',
+        backgroundColor: 'rgba(239,68,68,0.04)',
+    },
+    reasonRadio: {
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        borderWidth: 2,
+        borderColor: '#d1d5db',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    reasonRadioSelected: {
+        borderColor: '#ef4444',
+    },
+    reasonRadioDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#ef4444',
+    },
+    reasonText: {
+        fontSize: 14,
+        color: '#374151',
+    },
+    reasonTextSelected: {
+        color: '#ef4444',
+        fontWeight: '500',
+    },
+    reportDetailsInput: {
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        borderRadius: 8,
+        padding: 10,
+        fontSize: 14,
+        color: '#111',
+        minHeight: 72,
+        marginBottom: 16,
+    },
+    reportModalButtons: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    reportCancelButton: {
+        flex: 1,
+        paddingVertical: 13,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        alignItems: 'center',
+    },
+    reportCancelText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#374151',
+    },
+    reportSubmitButton: {
+        flex: 1,
+        paddingVertical: 13,
+        borderRadius: 10,
+        backgroundColor: '#ef4444',
+        alignItems: 'center',
+    },
+    reportSubmitDisabled: {
+        backgroundColor: '#d1d5db',
+    },
+    reportSubmitText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#fff',
+    },
+    reportSuccess: {
+        alignItems: 'center',
+        paddingVertical: 20,
+    },
+    reportSuccessIcon: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#dcfce7',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 12,
+    },
+    reportSuccessTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#111',
+        marginBottom: 4,
+    },
+    reportSuccessText: {
+        fontSize: 13,
+        color: '#666',
+        marginBottom: 20,
+    },
+    reportDoneButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 40,
+        borderRadius: 10,
+        backgroundColor: COLORS.green,
+    },
+    reportDoneButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#fff',
     },
 });
