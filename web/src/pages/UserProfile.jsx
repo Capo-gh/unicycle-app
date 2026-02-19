@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ShieldCheck, Star, MapPin, Package } from 'lucide-react';
-import { getUserProfile } from '../api/users';
+import { ArrowLeft, ShieldCheck, Star, MapPin, Package, Flag, X } from 'lucide-react';
+import { getUserProfile, reportUser } from '../api/users';
 import { getUserListings } from '../api/listings';
 import { getUserReviews, createReview } from '../api/reviews';
 
@@ -17,6 +17,13 @@ export default function UserProfile({ userId, onBack, onItemClick, currentUser }
     const [reviewRating, setReviewRating] = useState(5);
     const [reviewText, setReviewText] = useState('');
     const [submittingReview, setSubmittingReview] = useState(false);
+
+    // Report state
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportReason, setReportReason] = useState('');
+    const [reportDetails, setReportDetails] = useState('');
+    const [submittingReport, setSubmittingReport] = useState(false);
+    const [reportSuccess, setReportSuccess] = useState(false);
 
     useEffect(() => {
         fetchUserData();
@@ -111,9 +118,30 @@ export default function UserProfile({ userId, onBack, onItemClick, currentUser }
         return imageList[0] || 'https://via.placeholder.com/300x300?text=No+Image';
     };
 
+    const handleReport = async () => {
+        if (!reportReason) return;
+        setSubmittingReport(true);
+        try {
+            await reportUser(userId, reportReason, reportDetails);
+            setReportSuccess(true);
+            setTimeout(() => {
+                setShowReportModal(false);
+                setReportSuccess(false);
+                setReportReason('');
+                setReportDetails('');
+            }, 2000);
+        } catch (err) {
+            console.error('Error submitting report:', err);
+            alert('Failed to submit report. Please try again.');
+        } finally {
+            setSubmittingReport(false);
+        }
+    };
+
     // Check if current user already reviewed this user
     const hasReviewed = reviews?.reviews?.some(r => r.reviewer_id === currentUser?.id);
     const canReview = currentUser && currentUser.id !== userId && !hasReviewed;
+    const canReport = currentUser && currentUser.id !== userId;
 
     if (loading) {
         return (
@@ -220,7 +248,91 @@ export default function UserProfile({ userId, onBack, onItemClick, currentUser }
                             </button>
                         </div>
                     )}
+
+                    {/* Report User */}
+                    {canReport && (
+                        <button
+                            onClick={() => setShowReportModal(true)}
+                            className="mt-3 w-full py-2 border border-red-200 text-red-500 rounded-lg hover:bg-red-50 transition-colors text-sm flex items-center justify-center gap-2"
+                        >
+                            <Flag className="w-4 h-4" />
+                            Report User
+                        </button>
+                    )}
                 </div>
+
+                {/* Report Modal */}
+                {showReportModal && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
+                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                            {reportSuccess ? (
+                                <div className="text-center py-4">
+                                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                    <p className="font-semibold text-gray-900">Report submitted</p>
+                                    <p className="text-sm text-gray-500 mt-1">Our team will review it within 24 hours.</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="font-semibold text-gray-900">Report {user?.name}</h3>
+                                        <button onClick={() => setShowReportModal(false)} className="p-1 hover:bg-gray-100 rounded-full">
+                                            <X className="w-5 h-5 text-gray-500" />
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Reason *</label>
+                                            <select
+                                                value={reportReason}
+                                                onChange={(e) => setReportReason(e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 text-sm"
+                                            >
+                                                <option value="">Select a reason</option>
+                                                <option>Scam / Fraud</option>
+                                                <option>Suspicious or fake account</option>
+                                                <option>Inappropriate listing or content</option>
+                                                <option>Harassment or threatening behaviour</option>
+                                                <option>Other</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Additional details (optional)</label>
+                                            <textarea
+                                                value={reportDetails}
+                                                onChange={(e) => setReportDetails(e.target.value)}
+                                                placeholder="Describe what happened..."
+                                                rows="3"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 resize-none text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setShowReportModal(false)}
+                                                className="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={handleReport}
+                                                disabled={!reportReason || submittingReport}
+                                                className="flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                            >
+                                                {submittingReport ? 'Submitting...' : 'Submit Report'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Tabs */}
                 <div className="flex bg-white rounded-lg shadow-sm overflow-hidden">

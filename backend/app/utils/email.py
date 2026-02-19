@@ -119,6 +119,101 @@ def send_verification_email(email: str, name: str, token: str):
         raise Exception(f"Failed to send verification email: {str(e)}")
 
 
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "ibrahim.sabiku@mail.mcgill.ca")
+
+
+def send_report_email(
+    reporter_name: str,
+    reporter_email: str,
+    reporter_university: str,
+    reportee_name: str,
+    reportee_email: str,
+    reportee_university: str,
+    reason: str,
+    details: str = "",
+):
+    """Send a user-report notification to the admin inbox."""
+    subject = f"[UniCycle Report] {reporter_name} reported {reportee_name}"
+
+    html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #ef4444;">User Report Received</h2>
+
+                <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+                    <tr style="background: #fef2f2;">
+                        <th colspan="2" style="padding: 10px; text-align: left; border: 1px solid #fecaca;">Reported User</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600; width: 30%;">Name</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{reportee_name}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600;">Email</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{reportee_email}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600;">University</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{reportee_university}</td>
+                    </tr>
+                    <tr style="background: #f0fdf4;">
+                        <th colspan="2" style="padding: 10px; text-align: left; border: 1px solid #bbf7d0;">Reporter</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600;">Name</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{reporter_name}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600;">Email</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{reporter_email}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600;">University</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{reporter_university}</td>
+                    </tr>
+                    <tr style="background: #fffbeb;">
+                        <th colspan="2" style="padding: 10px; text-align: left; border: 1px solid #fde68a;">Report Details</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600;">Reason</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{reason}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600;">Details</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{details or "—"}</td>
+                    </tr>
+                </table>
+                <p style="color: #666; font-size: 13px;">Review this report and take action if necessary. You can suspend the user from the Admin dashboard.</p>
+            </div>
+        </body>
+        </html>
+    """
+
+    if not SENDGRID_API_KEY:
+        print("=" * 50)
+        print("USER REPORT (SendGrid not configured)")
+        print(f"Reported: {reportee_name} ({reportee_email}) @ {reportee_university}")
+        print(f"Reporter: {reporter_name} ({reporter_email}) @ {reporter_university}")
+        print(f"Reason: {reason} | Details: {details}")
+        print("=" * 50)
+        return None
+
+    try:
+        message = Mail(
+            from_email=SENDGRID_FROM_EMAIL,
+            to_emails=ADMIN_EMAIL,
+            subject=subject,
+            html_content=html_content,
+        )
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        return sg.send(message)
+    except Exception as e:
+        print(f"Failed to send report email: {str(e)}")
+        raise Exception(f"Failed to send report email: {str(e)}")
+
+
 def is_token_expired(token_created_at: datetime) -> bool:
     """Check if verification token is expired (24 hours)"""
     if not token_created_at:

@@ -18,6 +18,7 @@ import { COLORS } from '../../../shared/constants/colors';
 import { markAsSold, markAsUnsold } from '../api/listings';
 import { createTransaction, getMyTransactions, deleteTransaction } from '../api/transactions';
 import { getUserReviews } from '../api/reviews';
+import { reportUser } from '../api/users';
 import SecurePayModal from '../components/SecurePayModal';
 
 const { width } = Dimensions.get('window');
@@ -162,6 +163,35 @@ export default function ItemDetailScreen({ route, navigation }) {
         });
     };
 
+    const handleReport = () => {
+        const reasons = [
+            'Fake listing',
+            'Inappropriate content',
+            'Spam or scam',
+            'Harassment',
+            'Other',
+        ];
+
+        Alert.alert(
+            'Report Seller',
+            'Why are you reporting this seller?',
+            [
+                ...reasons.map(reason => ({
+                    text: reason,
+                    onPress: async () => {
+                        try {
+                            await reportUser(listing.seller_id, reason);
+                            Alert.alert('Report Submitted', 'Our team will review it within 24 hours.');
+                        } catch (err) {
+                            Alert.alert('Error', 'Failed to submit report. Please try again.');
+                        }
+                    }
+                })),
+                { text: 'Cancel', style: 'cancel' }
+            ]
+        );
+    };
+
     const handleGetDirections = () => {
         const safeZone = listing.safe_zone || listing.safeZone;
         const safeZoneAddress = listing.safe_zone_address || listing.safeZoneAddress;
@@ -287,6 +317,12 @@ export default function ItemDetailScreen({ route, navigation }) {
                             )}
                         </View>
                     </View>
+                    {!isOwner && (
+                        <TouchableOpacity style={styles.reportButton} onPress={handleReport}>
+                            <Ionicons name="flag-outline" size={14} color="#ef4444" />
+                            <Text style={styles.reportButtonText}>Report Seller</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {/* Description */}
@@ -776,5 +812,18 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#666',
         lineHeight: 16,
+    },
+    reportButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        alignSelf: 'flex-start',
+        marginTop: 10,
+        paddingVertical: 4,
+        paddingHorizontal: 2,
+    },
+    reportButtonText: {
+        fontSize: 12,
+        color: '#ef4444',
     },
 });
