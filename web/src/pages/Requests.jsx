@@ -122,7 +122,7 @@ export default function Requests({ user }) {
     }
 
     return (
-        <div className="w-full min-h-screen lg:h-screen flex flex-col lg:flex-row pb-20 lg:pb-0 overflow-x-hidden">
+        <div className="w-full min-h-screen lg:h-screen flex flex-col lg:flex-row pb-20 lg:pb-0">
 
             {/* LEFT: Requests List */}
             <div className={`${selectedRequest ? 'hidden lg:flex' : 'flex'} flex-col w-full min-w-0 lg:w-1/2 lg:border-r lg:border-gray-200 lg:overflow-y-auto`}>
