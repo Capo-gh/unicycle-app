@@ -72,6 +72,11 @@ function App() {
     };
   }, [currentPage, navigationHistory]);
 
+  // Scroll to top on every page navigation
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentPage]);
+
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
