@@ -29,7 +29,7 @@ function validateListingPrice(price) {
 
 // Check if item is eligible for Secure-Pay escrow
 function isEscrowEligible(price) {
-    return Number(price) >= 50;
+    return Number(price) >= 80;
 }
 
 // Calculate 7% service fee
