@@ -227,7 +227,7 @@ export default function ProfileScreen({ navigation }) {
                     >
                         <View style={styles.menuItemLeft}>
                             <Ionicons name="swap-horizontal-outline" size={22} color={COLORS.dark} />
-                            <Text style={styles.menuText}>Transactions</Text>
+                            <Text style={styles.menuText}>Activity</Text>
                         </View>
                         <View style={styles.menuItemRight}>
                             <Text style={styles.menuCount}>{myInterests.length + incomingTransactions.length}</Text>

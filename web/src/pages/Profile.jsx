@@ -238,12 +238,12 @@ export default function Profile({ user: signupUser, onNavigate }) {
                         )}
                     </div>
 
-                    {/* Transactions */}
+                    {/* Activity */}
                     <div>
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                                 <ArrowLeftRight className="w-5 h-5" />
-                                Transactions
+                                Activity
                             </h3>
                             <span className="text-sm text-gray-500">
                                 {loading ? '...' : `${myInterests.length + incomingTransactions.length} total`}
@@ -254,7 +254,7 @@ export default function Profile({ user: signupUser, onNavigate }) {
                         {loading && (
                             <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200 text-center">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-unicycle-green mx-auto"></div>
-                                <p className="text-gray-500 text-sm mt-2">Loading transactions...</p>
+                                <p className="text-gray-500 text-sm mt-2">Loading activity...</p>
                             </div>
                         )}
 
@@ -269,7 +269,7 @@ export default function Profile({ user: signupUser, onNavigate }) {
                         {!loading && !error && myInterests.length === 0 && incomingTransactions.length === 0 && (
                             <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200 text-center">
                                 <div className="text-4xl mb-3">📦</div>
-                                <h4 className="font-semibold text-gray-900 mb-1">No transactions yet</h4>
+                                <h4 className="font-semibold text-gray-900 mb-1">No activity yet</h4>
                                 <p className="text-sm text-gray-600 mb-4">Express interest in items or wait for buyers to find yours!</p>
                                 <button
                                     onClick={() => onNavigate('listings')}
@@ -335,7 +335,7 @@ export default function Profile({ user: signupUser, onNavigate }) {
                                     onClick={() => onNavigate('my-interests')}
                                     className="w-full py-2.5 bg-unicycle-green text-white rounded-lg font-medium hover:bg-unicycle-green/90 transition-colors text-sm flex items-center justify-center gap-2"
                                 >
-                                    View All Transactions
+                                    View All Activity
                                     {(myInterests.length + incomingTransactions.length) > 3 && (
                                         <span className="px-2 py-0.5 bg-white text-unicycle-green text-xs rounded-full font-semibold">
                                             +{(myInterests.length + incomingTransactions.length) - 3}

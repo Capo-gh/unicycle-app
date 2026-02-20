@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Heart, MessageCircle, Clock, CheckCircle, X } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, MessageCircle, Clock, CheckCircle, X } from 'lucide-react';
 import { getMyTransactions } from '../api/transactions';
 
 export default function MyInterests({ onNavigate, onContactSeller }) {
@@ -53,8 +53,8 @@ export default function MyInterests({ onNavigate, onContactSeller }) {
                     >
                         <ArrowLeft className="w-6 h-6 text-gray-700" />
                     </button>
-                    <Heart className="w-6 h-6 text-unicycle-green" />
-                    <h1 className="text-lg font-semibold text-gray-900">My Interests</h1>
+                    <ArrowLeftRight className="w-6 h-6 text-unicycle-green" />
+                    <h1 className="text-lg font-semibold text-gray-900">Activity</h1>
                 </div>
             </div>
 
