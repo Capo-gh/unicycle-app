@@ -5,6 +5,7 @@ from typing import List, Optional
 from ..database import get_db
 from ..models.listing import Listing
 from ..models.user import User
+from ..models.transaction import Transaction
 from ..schemas.listing import ListingCreate, ListingUpdate, ListingResponse
 from ..utils.dependencies import get_current_user_optional, get_current_user_required
 
@@ -199,9 +200,12 @@ def delete_listing(
             detail="Not authorized to delete this listing"
         )
     
+    # Delete related transactions first (no ON DELETE CASCADE on FK)
+    db.query(Transaction).filter(Transaction.listing_id == listing_id).delete()
+
     db.delete(listing)
     db.commit()
-    
+
     return None
 
 

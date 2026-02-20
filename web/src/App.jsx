@@ -353,7 +353,7 @@ function App() {
           <MyListings onNavigate={handleNavigate} />
         )}
 
-        {currentPage === 'admin' && (
+        {currentPage === 'admin' && user?.is_admin && (
           <Admin />
         )}
 
