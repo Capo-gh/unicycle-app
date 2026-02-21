@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Search, Megaphone, MessageCircle, User, Shield } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import icon from '../assets/unicycle-icon.png';
 import MarketplacePicker from './MarketplacePicker';
 import NotificationBell from './NotificationBell';
+import LanguageToggle from './LanguageToggle';
 import { getUnreadCount } from '../api/messages';
 
 export default function Layout({ currentPage, onNavigate, currentMarketplace, onMarketplaceChange, children }) {
+    const { t } = useTranslation();
     const [isAdmin, setIsAdmin] = useState(false);
     const [unreadMessages, setUnreadMessages] = useState(0);
 
@@ -39,12 +42,12 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
     }, [currentPage]);
 
     const navItems = [
-        { id: 'listings', label: 'Browse', Icon: Search },
-        { id: 'requests', label: 'Requests', Icon: Megaphone },
-        { id: 'sell', label: 'Sell', Icon: null, isPlus: true },
-        { id: 'messages', label: 'Messages', Icon: MessageCircle },
-        { id: 'profile', label: 'Profile', Icon: User },
-        ...(isAdmin ? [{ id: 'admin', label: 'Admin', Icon: Shield }] : []),
+        { id: 'listings', label: t('nav.browse'), Icon: Search },
+        { id: 'requests', label: t('nav.requests'), Icon: Megaphone },
+        { id: 'sell', label: t('nav.sell'), Icon: null, isPlus: true },
+        { id: 'messages', label: t('nav.messages'), Icon: MessageCircle },
+        { id: 'profile', label: t('nav.profile'), Icon: User },
+        ...(isAdmin ? [{ id: 'admin', label: t('nav.admin'), Icon: Shield }] : []),
     ];
 
     // detail and chat are sub-pages, so highlight Browse
@@ -65,7 +68,10 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                     <div className="flex items-center gap-3 mb-3">
                         <img src={icon} alt="UniCycle" className="w-10 h-10 object-contain flex-shrink-0" />
                         <h1 className="text-xl font-bold text-gray-900 flex-1 min-w-0 truncate">UniCycle</h1>
-                        <div className="flex-shrink-0"><NotificationBell /></div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            <LanguageToggle />
+                            <NotificationBell />
+                        </div>
                     </div>
                     <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} />
                 </div>
@@ -110,7 +116,10 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                 <div className="flex-1 min-w-0 flex justify-center">
                     <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} compact />
                 </div>
-                <NotificationBell />
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <LanguageToggle />
+                    <NotificationBell />
+                </div>
             </div>
 
             {/* ─── CONTENT COLUMN ─── */}

@@ -1,8 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, ShieldCheck, MessageCircle, Send, ArrowLeft, Trash2 } from 'lucide-react';
+import { Search, ShieldCheck, MessageCircle, Send, ArrowLeft, Trash2, Languages } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getConversations, getConversation, sendMessage, createConversation, archiveConversation } from '../api/messages';
 
+async function translateText(text, targetLang) {
+    const sourceLang = targetLang === 'fr' ? 'en' : 'fr';
+    const res = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLang}|${targetLang}`
+    );
+    const data = await res.json();
+    return data.responseData?.translatedText || text;
+}
+
 export default function Messages({ incomingRequest, user }) {
+    const { t, i18n } = useTranslation();
     const [selectedConvId, setSelectedConvId] = useState(null);
     const [messageText, setMessageText] = useState('');
     const [conversations, setConversations] = useState([]);
@@ -11,10 +22,12 @@ export default function Messages({ incomingRequest, user }) {
     const [sending, setSending] = useState(false);
     const [error, setError] = useState(null);
     const [newConversationRequest, setNewConversationRequest] = useState(null);
+    const [translatedMessages, setTranslatedMessages] = useState({});
+    const [translatingId, setTranslatingId] = useState(null);
     const messagesEndRef = useRef(null);
 
-    // Get current user ID
     const currentUserId = user?.id;
+    const userLang = i18n.language || 'en';
 
     useEffect(() => {
         fetchConversations();
@@ -22,7 +35,6 @@ export default function Messages({ incomingRequest, user }) {
 
     useEffect(() => {
         if (incomingRequest?.listingId) {
-            // Store the request but don't auto-send - show message suggestions instead
             setNewConversationRequest(incomingRequest);
             setSelectedConvId('new');
             setActiveConversation(null);
@@ -53,7 +65,7 @@ export default function Messages({ incomingRequest, user }) {
             setConversations(data);
         } catch (err) {
             console.error('Error fetching conversations:', err);
-            setError('Failed to load conversations');
+            setError(t('messages.loadError'));
         } finally {
             setLoading(false);
         }
@@ -61,26 +73,15 @@ export default function Messages({ incomingRequest, user }) {
 
     const handleSelectConversation = async (convId) => {
         setSelectedConvId(convId);
+        setTranslatedMessages({});
         try {
             const data = await getConversation(convId);
             setActiveConversation(data);
-
             setConversations(prev => prev.map(c =>
                 c.id === convId ? { ...c, unread_count: 0 } : c
             ));
         } catch (err) {
             console.error('Error fetching conversation:', err);
-        }
-    };
-
-    const handleStartConversation = async (listingId, initialMessage) => {
-        try {
-            const conv = await createConversation(listingId, initialMessage);
-            await fetchConversations();
-            handleSelectConversation(conv.id);
-        } catch (err) {
-            console.error('Error starting conversation:', err);
-            alert('Failed to start conversation');
         }
     };
 
@@ -90,7 +91,6 @@ export default function Messages({ incomingRequest, user }) {
 
         setSending(true);
         try {
-            // If starting a new conversation
             if (selectedConvId === 'new' && newConversationRequest?.listingId) {
                 const conv = await createConversation(newConversationRequest.listingId, textToSend);
                 await fetchConversations();
@@ -98,20 +98,16 @@ export default function Messages({ incomingRequest, user }) {
                 setMessageText('');
                 handleSelectConversation(conv.id);
             } else if (selectedConvId && selectedConvId !== 'new') {
-                // Existing conversation
                 const newMessage = await sendMessage(selectedConvId, textToSend);
-
                 setActiveConversation(prev => ({
                     ...prev,
                     messages: [...prev.messages, newMessage]
                 }));
-
                 setConversations(prev => prev.map(c =>
                     c.id === selectedConvId
                         ? { ...c, last_message: newMessage, updated_at: newMessage.created_at }
                         : c
                 ));
-
                 setMessageText('');
             }
         } catch (err) {
@@ -122,9 +118,32 @@ export default function Messages({ incomingRequest, user }) {
         }
     };
 
+    const handleTranslate = async (msg) => {
+        const existing = translatedMessages[msg.id];
+        // Toggle: if already translated and showing, revert to original
+        if (existing?.showing) {
+            setTranslatedMessages(prev => ({ ...prev, [msg.id]: { ...prev[msg.id], showing: false } }));
+            return;
+        }
+        // If already fetched but hidden, just show again
+        if (existing?.text) {
+            setTranslatedMessages(prev => ({ ...prev, [msg.id]: { ...prev[msg.id], showing: true } }));
+            return;
+        }
+        // Fetch translation
+        setTranslatingId(msg.id);
+        try {
+            const translated = await translateText(msg.text, userLang);
+            setTranslatedMessages(prev => ({ ...prev, [msg.id]: { text: translated, showing: true } }));
+        } catch {
+            // silently fail
+        } finally {
+            setTranslatingId(null);
+        }
+    };
+
     const handleArchiveConversation = async (convId) => {
         if (!confirm('Archive this conversation?')) return;
-
         try {
             await archiveConversation(convId);
             setConversations(prev => prev.filter(c => c.id !== convId));
@@ -147,7 +166,6 @@ export default function Messages({ incomingRequest, user }) {
         const date = new Date(dateString);
         const now = new Date();
         const seconds = Math.floor((now - date) / 1000);
-
         if (seconds < 60) return 'Just now';
         if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
         if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
@@ -155,14 +173,15 @@ export default function Messages({ incomingRequest, user }) {
         return date.toLocaleDateString();
     };
 
+    const translateLabel = t('messages.translate');
+
     return (
         <div className="h-screen flex flex-col lg:flex-row bg-gray-50 overflow-hidden">
 
             {/* LEFT: Conversation List */}
             <div className={`w-full lg:w-96 bg-white flex flex-col border-r border-gray-200 ${selectedConvId ? 'hidden lg:flex' : 'flex'}`}>
-                {/* Header */}
                 <div className="px-4 py-4 border-b border-gray-200 flex-shrink-0">
-                    <h1 className="text-xl font-bold text-gray-900 mb-3">Messages</h1>
+                    <h1 className="text-xl font-bold text-gray-900 mb-3">{t('messages.title')}</h1>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <input
@@ -173,14 +192,12 @@ export default function Messages({ incomingRequest, user }) {
                     </div>
                 </div>
 
-                {/* Loading State */}
                 {loading && (
                     <div className="flex-1 flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-unicycle-green"></div>
                     </div>
                 )}
 
-                {/* Error State */}
                 {error && !loading && (
                     <div className="p-4">
                         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
@@ -192,16 +209,14 @@ export default function Messages({ incomingRequest, user }) {
                     </div>
                 )}
 
-                {/* Empty State */}
                 {!loading && !error && conversations.length === 0 && (
                     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
                         <MessageCircle className="w-16 h-16 text-gray-300 mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No conversations yet</h3>
-                        <p className="text-gray-500 text-sm">Start by contacting a seller on an item you're interested in!</p>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('messages.noConversations')}</h3>
+                        <p className="text-gray-500 text-sm">{t('messages.noConversationsSubtext')}</p>
                     </div>
                 )}
 
-                {/* Conversations List */}
                 {!loading && !error && conversations.length > 0 && (
                     <div className="flex-1 overflow-y-auto">
                         {conversations.map(conv => {
@@ -252,7 +267,6 @@ export default function Messages({ incomingRequest, user }) {
             <div className={`flex-1 flex flex-col bg-white ${selectedConvId ? 'flex' : 'hidden lg:flex'}`}>
                 {selectedConvId === 'new' && newConversationRequest ? (
                     <>
-                        {/* New Conversation Header */}
                         <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 flex-shrink-0">
                             <button
                                 onClick={() => {
@@ -272,7 +286,6 @@ export default function Messages({ incomingRequest, user }) {
                             </div>
                         </div>
 
-                        {/* Message Suggestions */}
                         <div className="flex-1 overflow-y-auto bg-gray-50 flex items-center justify-center py-6">
                             <div className="max-w-md w-full px-4">
                                 <h3 className="text-sm font-medium text-gray-900 mb-3">Quick replies:</h3>
@@ -298,15 +311,14 @@ export default function Messages({ incomingRequest, user }) {
                             </div>
                         </div>
 
-                        {/* Input */}
                         <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
                             <div className="flex gap-2 items-end">
                                 <input
                                     type="text"
                                     value={messageText}
                                     onChange={(e) => setMessageText(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && !sending && handleSendMessage()}
-                                    placeholder="Type a message..."
+                                    onKeyDown={(e) => e.key === 'Enter' && !sending && handleSendMessage()}
+                                    placeholder={t('messages.typePlaceholder')}
                                     className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green resize-none"
                                     disabled={sending}
                                 />
@@ -371,8 +383,10 @@ export default function Messages({ incomingRequest, user }) {
                                 </div>
                             ) : (
                                 activeConversation.messages.map((msg) => {
-                                    // FIXED: Check if message is from current user
                                     const isMe = msg.sender_id === currentUserId;
+                                    const translation = translatedMessages[msg.id];
+                                    const displayText = translation?.showing ? translation.text : msg.text;
+                                    const isTranslating = translatingId === msg.id;
 
                                     return (
                                         <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -384,15 +398,32 @@ export default function Messages({ incomingRequest, user }) {
                                                 {msg.sender?.name?.charAt(0) || '?'}
                                             </div>
 
-                                            {/* Message Bubble */}
-                                            <div className={`max-w-[75%] px-4 py-2 rounded-2xl text-sm ${isMe
-                                                ? 'bg-unicycle-green text-white rounded-tr-sm'
-                                                : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'
-                                                }`}>
-                                                <p>{msg.text}</p>
-                                                <p className={`text-[10px] mt-1 ${isMe ? 'text-white/80' : 'text-gray-400'}`}>
-                                                    {formatTimeAgo(msg.created_at)}
-                                                </p>
+                                            {/* Message Bubble + translate button */}
+                                            <div className={`max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                                <div className={`px-4 py-2 rounded-2xl text-sm ${isMe
+                                                    ? 'bg-unicycle-green text-white rounded-tr-sm'
+                                                    : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'
+                                                    }`}>
+                                                    <p>{displayText}</p>
+                                                    <p className={`text-[10px] mt-1 ${isMe ? 'text-white/80' : 'text-gray-400'}`}>
+                                                        {formatTimeAgo(msg.created_at)}
+                                                    </p>
+                                                </div>
+                                                {/* Translate button for incoming messages only */}
+                                                {!isMe && (
+                                                    <button
+                                                        onClick={() => handleTranslate(msg)}
+                                                        disabled={isTranslating}
+                                                        className="flex items-center gap-1 mt-1 text-[10px] text-gray-400 hover:text-unicycle-blue transition-colors disabled:opacity-50"
+                                                    >
+                                                        <Languages className="w-3 h-3" />
+                                                        {isTranslating
+                                                            ? t('messages.translating')
+                                                            : translation?.showing
+                                                                ? t('messages.showOriginal')
+                                                                : translateLabel}
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     );
@@ -408,8 +439,8 @@ export default function Messages({ incomingRequest, user }) {
                                     type="text"
                                     value={messageText}
                                     onChange={(e) => setMessageText(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && !sending && handleSendMessage()}
-                                    placeholder="Type a message..."
+                                    onKeyDown={(e) => e.key === 'Enter' && !sending && handleSendMessage()}
+                                    placeholder={t('messages.typePlaceholder')}
                                     className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green resize-none"
                                     disabled={sending}
                                 />

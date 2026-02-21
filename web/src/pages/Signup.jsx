@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { Mail, User, Building2, ShieldCheck, Eye, EyeOff, Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { signup, login } from '../api/auth';
+import LanguageToggle from '../components/LanguageToggle';
 
 // Import logo
 import logo from '../assets/unicycle-icon.png';
 
 export default function Signup({ onSignup, onNavigate }) {
+    const { t } = useTranslation();
     const [isLogin, setIsLogin] = useState(false);
     const [selectedUniversity, setSelectedUniversity] = useState('');
     const [email, setEmail] = useState('');
@@ -39,12 +42,12 @@ export default function Signup({ onSignup, onNavigate }) {
 
         if (isLogin) {
             if (!email || !password) {
-                setError('Please fill in all fields');
+                setError(t('auth.fillAllFields'));
                 return;
             }
         } else {
             if (!selectedUniversity || !email || !name) {
-                setError('Please fill in all fields');
+                setError(t('auth.fillAllFields'));
                 return;
             }
             if (!validateEmail()) {
@@ -87,8 +90,9 @@ export default function Signup({ onSignup, onNavigate }) {
             if (err.response?.data?.detail) {
                 setError(err.response.data.detail);
             } else {
-                setError(isLogin ? 'Login failed. Please check your credentials.' : 'Signup failed. Please try again.');
+                setError(isLogin ? t('auth.loginFailed') : t('auth.signupFailed'));
             }
+
         } finally {
             setLoading(false);
         }
@@ -101,6 +105,11 @@ export default function Signup({ onSignup, onNavigate }) {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col items-center justify-center px-4 py-8">
+            {/* Language Toggle */}
+            <div className="absolute top-4 right-4">
+                <LanguageToggle />
+            </div>
+
             {/* Logo */}
             <div className="mb-6">
                 <img src={logo} alt="UniCycle" className="h-16 w-auto" />
@@ -108,10 +117,10 @@ export default function Signup({ onSignup, onNavigate }) {
 
             {/* Title */}
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {isLogin ? 'Welcome Back!' : 'Welcome to UniCycle'}
+                {isLogin ? t('auth.welcomeBack') : t('auth.welcomeTo')}
             </h1>
             <p className="text-gray-600 mb-8">
-                {isLogin ? 'Sign in to your account' : 'The trusted student marketplace'}
+                {isLogin ? t('auth.signInToAccount') : t('auth.trustedMarketplace')}
             </p>
 
             {/* Form Card */}
@@ -122,7 +131,7 @@ export default function Signup({ onSignup, onNavigate }) {
                     <div>
                         <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                             <Building2 className="w-4 h-4" />
-                            Select Your University
+                            {t('auth.selectUniversity')}
                         </label>
                         <select
                             value={selectedUniversity}
@@ -132,14 +141,14 @@ export default function Signup({ onSignup, onNavigate }) {
                             }}
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
                         >
-                            <option value="">Choose your university</option>
+                            <option value="">{t('auth.chooseUniversity')}</option>
                             {universities.map(uni => (
                                 <option key={uni.name} value={uni.name}>{uni.name}</option>
                             ))}
                         </select>
                         {selectedUni && (
                             <p className="text-xs text-gray-500 mt-1">
-                                Email domain: {selectedUni.domains.map(d => `@${d}`).join(' or ')}
+                                {t('auth.emailDomain')}: {selectedUni.domains.map(d => `@${d}`).join(' or ')}
                             </p>
                         )}
                     </div>
@@ -149,18 +158,18 @@ export default function Signup({ onSignup, onNavigate }) {
                 <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                         <Mail className="w-4 h-4" />
-                        {isLogin ? 'Email' : 'Your University Email'}
+                        {isLogin ? 'Email' : t('auth.universityEmail')}
                     </label>
                     <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder={isLogin ? "your@email.com" : (selectedUni ? `username@${selectedUni.domains[0]}` : "Select university first")}
+                        placeholder={isLogin ? "your@email.com" : (selectedUni ? `username@${selectedUni.domains[0]}` : t('auth.chooseUniversity'))}
                         disabled={!isLogin && !selectedUniversity}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green disabled:bg-gray-100"
                     />
                     {!isLogin && (
-                        <p className="text-xs text-gray-500 mt-1">We'll verify your student status</p>
+                        <p className="text-xs text-gray-500 mt-1">{t('auth.emailVerification')}</p>
                     )}
                 </div>
 
@@ -169,13 +178,13 @@ export default function Signup({ onSignup, onNavigate }) {
                     <div>
                         <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                             <User className="w-4 h-4" />
-                            Your Name
+                            {t('auth.yourName')}
                         </label>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder="How others will see you"
+                            placeholder={t('auth.howOthersSeeYou')}
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
                         />
                     </div>
@@ -186,14 +195,14 @@ export default function Signup({ onSignup, onNavigate }) {
                     <div>
                         <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                             <Lock className="w-4 h-4" />
-                            Password
+                            {t('auth.password')}
                         </label>
                         <div className="relative">
                             <input
                                 type={showPassword ? "text" : "password"}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Enter your password"
+                                placeholder={t('auth.enterPassword')}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green pr-12"
                             />
                             <button
@@ -234,22 +243,22 @@ export default function Signup({ onSignup, onNavigate }) {
                     {loading ? (
                         <>
                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            {isLogin ? 'Signing in...' : 'Creating account...'}
+                            {isLogin ? t('auth.signingIn') : t('auth.creatingAccount')}
                         </>
                     ) : (
-                        isLogin ? 'Sign In' : 'Create Account'
+                        isLogin ? t('auth.signIn') : t('auth.createAccount')
                     )}
                 </button>
 
                 {/* Toggle between Login/Signup */}
                 <div className="text-center pt-2">
                     <p className="text-sm text-gray-600">
-                        {isLogin ? "Don't have an account?" : "Already have an account?"}
+                        {isLogin ? t('auth.dontHaveAccount') : t('auth.alreadyHaveAccount')}
                         <button
                             onClick={toggleMode}
                             className="ml-2 text-unicycle-blue font-semibold hover:underline"
                         >
-                            {isLogin ? 'Sign Up' : 'Sign In'}
+                            {isLogin ? t('auth.signUp') : t('auth.signIn')}
                         </button>
                     </p>
                 </div>
@@ -257,8 +266,7 @@ export default function Signup({ onSignup, onNavigate }) {
 
             {/* Footer */}
             <p className="text-xs text-gray-500 mt-6 text-center max-w-md">
-                By continuing, you agree to UniCycle's Terms of Service and Privacy Policy.
-                Only verified students can access the marketplace.
+                {t('auth.termsNotice')}
             </p>
         </div>
     );

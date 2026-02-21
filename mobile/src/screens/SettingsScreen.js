@@ -8,11 +8,21 @@ import {
     ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../../../shared/constants/colors';
 
 export default function SettingsScreen({ navigation }) {
     const { user, logout } = useAuth();
+    const { i18n } = useTranslation();
+    const isEn = i18n.language === 'en';
+
+    const toggleLanguage = async () => {
+        const next = isEn ? 'fr' : 'en';
+        await i18n.changeLanguage(next);
+        await AsyncStorage.setItem('language', next);
+    };
 
     const handleLogout = () => {
         Alert.alert(
@@ -65,6 +75,19 @@ export default function SettingsScreen({ navigation }) {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Preferences</Text>
                     <View style={styles.card}>
+                        {/* Language Toggle */}
+                        <TouchableOpacity style={styles.menuItem} onPress={toggleLanguage}>
+                            <View style={styles.menuItemLeft}>
+                                <Ionicons name="language-outline" size={22} color={COLORS.dark} />
+                                <Text style={styles.menuText}>Language</Text>
+                            </View>
+                            <View style={styles.langToggle}>
+                                <Text style={[styles.langOption, !isEn && styles.langActive]}>FR</Text>
+                                <Text style={styles.langSep}>/</Text>
+                                <Text style={[styles.langOption, isEn && styles.langActive]}>EN</Text>
+                            </View>
+                        </TouchableOpacity>
+                        <View style={styles.divider} />
                         <TouchableOpacity
                             style={styles.menuItem}
                             onPress={() => navigation.navigate('Notifications')}
@@ -215,6 +238,23 @@ const styles = StyleSheet.create({
     versionText: {
         fontSize: 14,
         color: '#999',
+    },
+    langToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    langOption: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#ccc',
+    },
+    langActive: {
+        color: COLORS.primary,
+    },
+    langSep: {
+        fontSize: 13,
+        color: '#ddd',
     },
     logoutButton: {
         flexDirection: 'row',
