@@ -25,18 +25,22 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     # Validate university email domain
     email_domain = user_data.email.split('@')[1] if '@' in user_data.email else ''
     valid_domains = {
-        'McGill University': 'mail.mcgill.ca',
-        'Concordia University': 'concordia.ca',
-        'Université de Montréal': 'umontreal.ca',
-        'UQAM': 'uqam.ca',
-        'HEC Montréal': 'hec.ca'
+        'McGill University': ['mail.mcgill.ca'],
+        'Concordia University': ['live.concordia.ca', 'concordia.ca'],
+        'École de technologie supérieure (ÉTS)': ['ens.etsmtl.ca'],
+        'Polytechnique Montréal': ['polymtl.ca'],
+        'Université de Montréal (UdeM)': ['umontreal.ca', 'iro.umontreal.ca'],
+        'Université du Québec à Montréal (UQAM)': ['courrier.uqam.ca', 'uqam.ca'],
+        'Université Laval': ['ulaval.ca'],
+        'Université de Sherbrooke': ['usherbrooke.ca'],
+        'HEC Montréal': ['hec.ca'],
     }
 
-    expected_domain = valid_domains.get(user_data.university)
-    if expected_domain and email_domain != expected_domain:
+    allowed_domains = valid_domains.get(user_data.university)
+    if allowed_domains and email_domain not in allowed_domains:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Email must end with @{expected_domain} for {user_data.university}"
+            detail=f"Email must end with {' or '.join('@' + d for d in allowed_domains)} for {user_data.university}"
         )
 
     # Generate verification token

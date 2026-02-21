@@ -16,18 +16,22 @@ export default function Signup({ onSignup, onNavigate }) {
     const [error, setError] = useState('');
 
     const universities = [
-        { name: 'McGill University', domain: 'mail.mcgill.ca' },
-        { name: 'Concordia University', domain: 'concordia.ca' },
-        { name: 'Université de Montréal', domain: 'umontreal.ca' },
-        { name: 'UQAM', domain: 'uqam.ca' },
-        { name: 'HEC Montréal', domain: 'hec.ca' }
+        { name: 'McGill University', domains: ['mail.mcgill.ca'] },
+        { name: 'Concordia University', domains: ['live.concordia.ca', 'concordia.ca'] },
+        { name: 'École de technologie supérieure (ÉTS)', domains: ['ens.etsmtl.ca'] },
+        { name: 'Polytechnique Montréal', domains: ['polymtl.ca'] },
+        { name: 'Université de Montréal (UdeM)', domains: ['umontreal.ca', 'iro.umontreal.ca'] },
+        { name: 'Université du Québec à Montréal (UQAM)', domains: ['courrier.uqam.ca', 'uqam.ca'] },
+        { name: 'Université Laval', domains: ['ulaval.ca'] },
+        { name: 'Université de Sherbrooke', domains: ['usherbrooke.ca'] },
+        { name: 'HEC Montréal', domains: ['hec.ca'] },
     ];
 
     const selectedUni = universities.find(u => u.name === selectedUniversity);
 
     const validateEmail = () => {
         if (!selectedUni) return true;
-        return email.endsWith(`@${selectedUni.domain}`);
+        return selectedUni.domains.some(d => email.endsWith(`@${d}`));
     };
 
     const handleSubmit = async () => {
@@ -44,7 +48,7 @@ export default function Signup({ onSignup, onNavigate }) {
                 return;
             }
             if (!validateEmail()) {
-                setError(`Email must end with @${selectedUni.domain}`);
+                setError(`Email must end with ${selectedUni.domains.map(d => `@${d}`).join(' or ')}`);
                 return;
             }
         }
@@ -135,7 +139,7 @@ export default function Signup({ onSignup, onNavigate }) {
                         </select>
                         {selectedUni && (
                             <p className="text-xs text-gray-500 mt-1">
-                                Email domain: @{selectedUni.domain}
+                                Email domain: {selectedUni.domains.map(d => `@${d}`).join(' or ')}
                             </p>
                         )}
                     </div>
@@ -151,7 +155,7 @@ export default function Signup({ onSignup, onNavigate }) {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder={isLogin ? "your@email.com" : (selectedUni ? `username@${selectedUni.domain}` : "Select university first")}
+                        placeholder={isLogin ? "your@email.com" : (selectedUni ? `username@${selectedUni.domains[0]}` : "Select university first")}
                         disabled={!isLogin && !selectedUniversity}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green disabled:bg-gray-100"
                     />
@@ -216,7 +220,7 @@ export default function Signup({ onSignup, onNavigate }) {
                         <ShieldCheck className="w-5 h-5 text-unicycle-blue" />
                         <div>
                             <p className="font-medium text-gray-900 text-sm">{selectedUni.name}</p>
-                            <p className="text-xs text-gray-600">Email must end with @{selectedUni.domain}</p>
+                            <p className="text-xs text-gray-600">Email: {selectedUni.domains.map(d => `@${d}`).join(' or ')}</p>
                         </div>
                     </div>
                 )}

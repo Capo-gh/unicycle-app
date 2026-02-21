@@ -9,7 +9,7 @@ import Profile from './pages/Profile';
 import UserProfile from './pages/UserProfile';
 import Messages from './pages/Messages';
 import Requests from './pages/Requests';
-import Transactions from './pages/Transactions';
+import Transactions from './pages/Activity';
 import MyListings from './pages/MyListings';
 import Admin from './pages/Admin';
 import AnnouncementModal from './components/AnnouncementModal';

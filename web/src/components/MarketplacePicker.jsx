@@ -10,6 +10,7 @@ const marketplaces = [
     { fullName: 'Université du Québec à Montréal (UQAM)', shortName: 'UQAM' },
     { fullName: 'Université Laval', shortName: 'Laval' },
     { fullName: 'Université de Sherbrooke', shortName: 'Sherbrooke' },
+    { fullName: 'HEC Montréal', shortName: 'HEC' },
 ];
 
 export default function MarketplacePicker({ currentMarketplace, onMarketplaceChange, compact = false }) {
