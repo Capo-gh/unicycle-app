@@ -3,9 +3,11 @@ import { Search, Megaphone, MessageCircle, User, Shield } from 'lucide-react';
 import icon from '../assets/unicycle-icon.png';
 import MarketplacePicker from './MarketplacePicker';
 import NotificationBell from './NotificationBell';
+import { getUnreadCount } from '../api/messages';
 
 export default function Layout({ currentPage, onNavigate, currentMarketplace, onMarketplaceChange, children }) {
     const [isAdmin, setIsAdmin] = useState(false);
+    const [unreadMessages, setUnreadMessages] = useState(0);
 
     useEffect(() => {
         try {
@@ -17,11 +19,30 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
         } catch (e) {}
     }, []);
 
+    useEffect(() => {
+        const fetchUnread = async () => {
+            try {
+                const data = await getUnreadCount();
+                setUnreadMessages(data.unread_count || 0);
+            } catch {}
+        };
+        fetchUnread();
+        const interval = setInterval(fetchUnread, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Reset unread count when user navigates to messages
+    useEffect(() => {
+        if (currentPage === 'messages') {
+            setUnreadMessages(0);
+        }
+    }, [currentPage]);
+
     const navItems = [
         { id: 'listings', label: 'Browse', Icon: Search },
         { id: 'requests', label: 'Requests', Icon: Megaphone },
         { id: 'sell', label: 'Sell', Icon: null, isPlus: true },
-        { id: 'messages', label: 'Messages', Icon: MessageCircle, badge: true },
+        { id: 'messages', label: 'Messages', Icon: MessageCircle },
         { id: 'profile', label: 'Profile', Icon: User },
         ...(isAdmin ? [{ id: 'admin', label: 'Admin', Icon: Shield }] : []),
     ];
@@ -68,8 +89,10 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                                 ) : (
                                     <item.Icon className="w-5 h-5" />
                                 )}
-                                {item.badge && activeNav !== item.id && (
-                                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full"></span>
+                                {item.id === 'messages' && unreadMessages > 0 && activeNav !== 'messages' && (
+                                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center bg-red-500 text-white text-[9px] font-bold rounded-full px-0.5">
+                                        {unreadMessages > 9 ? '9+' : unreadMessages}
+                                    </span>
                                 )}
                             </div>
                             <span>{item.label}</span>
@@ -79,10 +102,13 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
             </aside>
 
             {/* Mobile Top Bar (Small + Medium only) — fixed overlay */}
-            <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 h-14 px-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+            <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 h-14 px-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 flex-shrink-0">
                     <img src={icon} alt="UniCycle" className="w-8 h-8 object-contain" />
-                    <span className="font-bold text-gray-900">UniCycle</span>
+                    <span className="font-bold text-gray-900 hidden sm:block">UniCycle</span>
+                </div>
+                <div className="flex-1 min-w-0 flex justify-center">
+                    <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} compact />
                 </div>
                 <NotificationBell />
             </div>
@@ -116,8 +142,10 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                                 ) : (
                                     <item.Icon className="w-6 h-6" />
                                 )}
-                                {item.badge && activeNav !== item.id && (
-                                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                                {item.id === 'messages' && unreadMessages > 0 && activeNav !== 'messages' && (
+                                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center bg-red-500 text-white text-[9px] font-bold rounded-full px-0.5">
+                                        {unreadMessages > 9 ? '9+' : unreadMessages}
+                                    </span>
                                 )}
                             </div>
                             <span className="text-xs font-medium">{item.label}</span>
