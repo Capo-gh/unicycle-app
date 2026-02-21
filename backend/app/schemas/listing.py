@@ -52,7 +52,9 @@ class ListingResponse(BaseModel):
     safe_zone_address: Optional[str]
     images: Optional[str]
     is_active: bool
-    is_sold: bool = False  # NEW: Include sold status
+    is_sold: bool = False
+    is_boosted: bool = False
+    boosted_until: Optional[datetime] = None
     seller_id: int
     seller: Optional[SellerInfo] = None
     created_at: datetime

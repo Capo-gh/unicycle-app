@@ -17,6 +17,7 @@ import Signup from './pages/Signup';
 import VerifyEmail from './pages/VerifyEmail';
 import CheckEmail from './pages/CheckEmail';
 import { getCurrentUser } from './api/auth';
+import { activateBoost, activateSecurePay } from './api/payments';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('loading');
@@ -91,12 +92,46 @@ function App() {
           // Default to user's university marketplace
           setCurrentMarketplace(userData.university);
 
+          // Handle Stripe return URL params
+          const params = new URLSearchParams(window.location.search);
+
+          if (params.get('boost_success') && params.get('listing_id') && params.get('session_id')) {
+            try {
+              await activateBoost(parseInt(params.get('listing_id')), params.get('session_id'));
+            } catch (e) {
+              console.error('Boost activation failed:', e);
+            }
+            window.history.replaceState({}, '', window.location.pathname);
+            setCurrentPage('my-listings');
+            return;
+          }
+
+          if (params.get('boost_cancel')) {
+            window.history.replaceState({}, '', window.location.pathname);
+            setCurrentPage('my-listings');
+            return;
+          }
+
+          if (params.get('secure_pay_success') && params.get('listing_id') && params.get('session_id')) {
+            try {
+              await activateSecurePay(parseInt(params.get('listing_id')), params.get('session_id'));
+            } catch (e) {
+              console.error('Secure pay activation failed:', e);
+            }
+            window.history.replaceState({}, '', window.location.pathname);
+            setCurrentPage('my-interests');
+            return;
+          }
+
+          if (params.get('secure_pay_cancel')) {
+            window.history.replaceState({}, '', window.location.pathname);
+          }
+
           // Restore the last page user was on, or default to listings
           const lastPage = localStorage.getItem('currentPage') || 'listings';
           setCurrentPage(lastPage);
 
           // Clear any verification token from URL after successful login
-          const params = new URLSearchParams(window.location.search);
           if (params.get('token')) {
             window.history.replaceState({}, '', window.location.pathname);
           }

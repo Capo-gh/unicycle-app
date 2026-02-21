@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState } from 'react';
 import {
     View,
     Text,
@@ -6,12 +6,18 @@ import {
     TouchableOpacity,
     ScrollView,
     StyleSheet,
-    Image
+    Image,
+    Alert,
+    ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 import { COLORS } from '../../../shared/constants/colors';
+import { createSecurePaySession, activateSecurePay } from '../api/payments';
 
 export default function SecurePayModal({ visible, item, onClose, onProceed }) {
+    const [loading, setLoading] = useState(false);
+
     if (!item) return null;
 
     const imageUrl = item.images
@@ -19,6 +25,26 @@ export default function SecurePayModal({ visible, item, onClose, onProceed }) {
         : null;
 
     const safeZone = item.safe_zone || item.safeZone || 'the safe zone';
+
+    const handleSecurePay = async () => {
+        setLoading(true);
+        try {
+            const { checkout_url, session_id } = await createSecurePaySession(item.id);
+            await WebBrowser.openBrowserAsync(checkout_url);
+            // Browser closed — check if payment completed
+            try {
+                await activateSecurePay(item.id, session_id);
+                onClose();
+                Alert.alert('Payment Held', 'Your payment is now held in escrow. Meet the seller at the safe zone to inspect the item.');
+            } catch {
+                // Payment not completed (cancelled or still pending) — just close browser silently
+            }
+        } catch (err) {
+            Alert.alert('Error', err.response?.data?.detail || 'Failed to start payment. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <Modal visible={visible} animationType="slide" transparent>
@@ -107,9 +133,21 @@ export default function SecurePayModal({ visible, item, onClose, onProceed }) {
 
                     {/* Footer Actions */}
                     <View style={styles.footer}>
-                        <TouchableOpacity style={styles.proceedButton} onPress={onProceed}>
-                            <Text style={styles.proceedText}>Contact Seller (Secure-Pay)</Text>
+                        <TouchableOpacity
+                            style={[styles.proceedButton, loading && styles.proceedButtonDisabled]}
+                            onPress={handleSecurePay}
+                            disabled={loading}
+                        >
+                            {loading
+                                ? <ActivityIndicator color="#fff" size="small" />
+                                : <Text style={styles.proceedText}>Pay Securely (${((item.price || 0) * 1.07).toFixed(2)} CAD)</Text>
+                            }
                         </TouchableOpacity>
+                        {onProceed && (
+                            <TouchableOpacity style={styles.contactButton} onPress={onProceed}>
+                                <Text style={styles.contactText}>Contact Seller Without Secure Pay</Text>
+                            </TouchableOpacity>
+                        )}
                         <TouchableOpacity style={styles.laterButton} onPress={onClose}>
                             <Text style={styles.laterText}>Maybe Later</Text>
                         </TouchableOpacity>
@@ -304,20 +342,31 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         alignItems: 'center',
     },
+    proceedButtonDisabled: {
+        opacity: 0.6,
+    },
     proceedText: {
         color: '#fff',
         fontSize: 15,
         fontWeight: '600',
     },
-    laterButton: {
+    contactButton: {
         backgroundColor: '#f3f4f6',
         paddingVertical: 10,
         borderRadius: 12,
         alignItems: 'center',
     },
-    laterText: {
+    contactText: {
         color: '#555',
         fontSize: 14,
         fontWeight: '500',
+    },
+    laterButton: {
+        paddingVertical: 8,
+        alignItems: 'center',
+    },
+    laterText: {
+        color: '#888',
+        fontSize: 14,
     },
 });

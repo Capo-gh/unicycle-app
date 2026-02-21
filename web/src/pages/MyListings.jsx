@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Pencil, Trash2, Plus, CheckCircle, Circle } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Plus, CheckCircle, Circle, Zap } from 'lucide-react';
 import { getMyListings, deleteListing, markAsSold, markAsUnsold } from '../api/listings';
+import { createBoostSession } from '../api/payments';
 
 export default function MyListings({ onNavigate }) {
     const [listings, setListings] = useState([]);
@@ -9,6 +10,7 @@ export default function MyListings({ onNavigate }) {
     const [deleteConfirm, setDeleteConfirm] = useState(null);
     const [deleting, setDeleting] = useState(false);
     const [togglingId, setTogglingId] = useState(null);
+    const [boostingId, setBoostingId] = useState(null);
 
     useEffect(() => {
         fetchListings();
@@ -44,6 +46,21 @@ export default function MyListings({ onNavigate }) {
             alert('Failed to update listing');
         } finally {
             setTogglingId(null);
+        }
+    };
+
+    const handleBoost = async (listing) => {
+        if (listing.is_boosted && listing.boosted_until && new Date(listing.boosted_until) > new Date()) {
+            alert('This listing is already boosted!');
+            return;
+        }
+        setBoostingId(listing.id);
+        try {
+            const { checkout_url } = await createBoostSession(listing.id);
+            window.location.href = checkout_url;
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Failed to start boost payment');
+            setBoostingId(null);
         }
     };
 
@@ -140,6 +157,12 @@ export default function MyListings({ onNavigate }) {
                                             }`}>
                                                 {listing.is_sold ? 'Sold' : 'Active'}
                                             </span>
+                                            {listing.is_boosted && listing.boosted_until && new Date(listing.boosted_until) > new Date() && (
+                                                <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 flex items-center gap-1 flex-shrink-0">
+                                                    <Zap className="w-3 h-3" />
+                                                    Boosted
+                                                </span>
+                                            )}
                                             <span className="text-xs text-gray-500 truncate">{listing.category}</span>
                                         </div>
                                     </div>
@@ -173,6 +196,20 @@ export default function MyListings({ onNavigate }) {
                                         <Trash2 className="w-4 h-4" />
                                         Delete
                                     </button>
+                                    {!listing.is_sold && (
+                                        <button
+                                            onClick={() => handleBoost(listing)}
+                                            disabled={boostingId === listing.id}
+                                            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg transition-colors text-sm font-medium disabled:opacity-50 ${
+                                                listing.is_boosted && listing.boosted_until && new Date(listing.boosted_until) > new Date()
+                                                    ? 'bg-yellow-100 text-yellow-700'
+                                                    : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+                                            }`}
+                                        >
+                                            <Zap className="w-4 h-4" />
+                                            {listing.is_boosted && listing.boosted_until && new Date(listing.boosted_until) > new Date() ? 'Boosted' : 'Boost'}
+                                        </button>
+                                    )}
                                 </div>
 
                                 {/* Delete Confirmation */}

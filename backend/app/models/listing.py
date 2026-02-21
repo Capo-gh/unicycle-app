@@ -21,7 +21,12 @@ class Listing(Base):
     
     # Status
     is_active = Column(Boolean, default=True)
-    is_sold = Column(Boolean, default=False)  # NEW: Mark as sold
+    is_sold = Column(Boolean, default=False)
+
+    # Boost
+    is_boosted = Column(Boolean, default=False)
+    boosted_at = Column(DateTime(timezone=True), nullable=True)
+    boosted_until = Column(DateTime(timezone=True), nullable=True)
     
     # Foreign keys
     seller_id = Column(Integer, ForeignKey("users.id"), nullable=False)

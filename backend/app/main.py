@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text, inspect
 from .database import engine, Base, SessionLocal
-from .routers import auth, listings, requests, messages, upload, reviews, users, transactions, admin, notifications, announcements
+from .routers import auth, listings, requests, messages, upload, reviews, users, transactions, admin, notifications, announcements, payments
 from .models.user import User
 from .models.notification import Notification, NotificationRead
 from .models.announcement import Announcement, AnnouncementDismissal
@@ -15,6 +15,31 @@ Base.metadata.create_all(bind=engine)
 with engine.connect() as conn:
     inspector = inspect(engine)
     existing_columns = [col["name"] for col in inspector.get_columns("users")]
+    listing_columns = [col["name"] for col in inspector.get_columns("listings")]
+    transaction_columns = [col["name"] for col in inspector.get_columns("transactions")]
+
+    # Listing boost columns
+    if "is_boosted" not in listing_columns:
+        conn.execute(text("ALTER TABLE listings ADD COLUMN is_boosted BOOLEAN DEFAULT FALSE"))
+        conn.commit()
+    if "boosted_at" not in listing_columns:
+        conn.execute(text("ALTER TABLE listings ADD COLUMN boosted_at TIMESTAMP WITH TIME ZONE"))
+        conn.commit()
+    if "boosted_until" not in listing_columns:
+        conn.execute(text("ALTER TABLE listings ADD COLUMN boosted_until TIMESTAMP WITH TIME ZONE"))
+        conn.commit()
+
+    # Transaction payment columns
+    if "payment_method" not in transaction_columns:
+        conn.execute(text("ALTER TABLE transactions ADD COLUMN payment_method VARCHAR DEFAULT 'cash'"))
+        conn.commit()
+    if "stripe_payment_intent_id" not in transaction_columns:
+        conn.execute(text("ALTER TABLE transactions ADD COLUMN stripe_payment_intent_id VARCHAR"))
+        conn.commit()
+    if "payment_status" not in transaction_columns:
+        conn.execute(text("ALTER TABLE transactions ADD COLUMN payment_status VARCHAR"))
+        conn.commit()
+
     if "is_admin" not in existing_columns:
         conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE"))
         conn.commit()
@@ -80,6 +105,7 @@ app.include_router(transactions.router)
 app.include_router(admin.router)
 app.include_router(notifications.router)
 app.include_router(announcements.router)
+app.include_router(payments.router)
 
 @app.get("/")
 def read_root():

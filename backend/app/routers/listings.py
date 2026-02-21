@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import asc, desc
+from sqlalchemy import asc, desc, case, and_
 from typing import List, Optional
+from datetime import datetime, timezone
 from ..database import get_db
 from ..models.listing import Listing
 from ..models.user import User
@@ -90,8 +91,13 @@ def get_listings(
     elif sort == 'oldest':
         query = query.order_by(asc(Listing.created_at))
     else:
-        # Default: newest first
-        query = query.order_by(desc(Listing.created_at))
+        # Default: active boosts first (by most recently boosted), then newest
+        now = datetime.now(timezone.utc)
+        is_active_boost = and_(Listing.is_boosted == True, Listing.boosted_until > now)
+        query = query.order_by(
+            case((is_active_boost, 1), else_=0).desc(),
+            Listing.created_at.desc()
+        )
     
     return query.all()
 

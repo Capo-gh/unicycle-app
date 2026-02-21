@@ -1,6 +1,23 @@
-import { ShieldCheck, X, Lock, CheckCircle } from 'lucide-react';
+import { useState } from 'react';
+import { ShieldCheck, X, Lock, CheckCircle, Loader } from 'lucide-react';
+import { createSecurePaySession } from '../api/payments';
 
 export default function SecurePayModal({ item, onClose, onProceed }) {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const handleSecurePay = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const { checkout_url } = await createSecurePaySession(item.id);
+            window.location.href = checkout_url;
+        } catch (err) {
+            setError(err.response?.data?.detail || 'Failed to start payment. Please try again.');
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 animate-fadeIn">
             <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-slideUp">
@@ -126,15 +143,28 @@ export default function SecurePayModal({ item, onClose, onProceed }) {
 
                 {/* Footer Actions */}
                 <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 space-y-2">
+                    {error && (
+                        <p className="text-red-600 text-xs text-center">{error}</p>
+                    )}
                     <button
-                        onClick={onProceed}
-                        className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors"
+                        onClick={handleSecurePay}
+                        disabled={loading}
+                        className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                     >
-                        Contact Seller (Secure-Pay)
+                        {loading ? <Loader className="w-4 h-4 animate-spin" /> : null}
+                        {loading ? 'Redirecting to payment...' : `Pay Securely ($${((item.price || 0) * 1.07).toFixed(2)} CAD)`}
                     </button>
+                    {onProceed && (
+                        <button
+                            onClick={onProceed}
+                            className="w-full bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm"
+                        >
+                            Contact Seller Without Secure Pay
+                        </button>
+                    )}
                     <button
                         onClick={onClose}
-                        className="w-full bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm"
+                        className="w-full text-gray-500 py-1.5 text-sm hover:text-gray-700 transition-colors"
                     >
                         Maybe Later
                     </button>

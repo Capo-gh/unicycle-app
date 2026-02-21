@@ -10,12 +10,14 @@ import {
     RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../../../shared/constants/colors';
 import { getMyListings, deleteListing, markAsSold, markAsUnsold } from '../api/listings';
+import { createBoostSession, activateBoost } from '../api/payments';
 
 export default function MyListingsScreen({ navigation }) {
-    const { user } = useAuth();
+    useAuth();
     const [listings, setListings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -72,6 +74,29 @@ export default function MyListingsScreen({ navigation }) {
         );
     };
 
+    const handleBoost = async (listing) => {
+        const isActiveBoosted = listing.is_boosted && listing.boosted_until && new Date(listing.boosted_until) > new Date();
+        if (isActiveBoosted) {
+            Alert.alert('Already Boosted', 'This listing is already boosted!');
+            return;
+        }
+        try {
+            const { checkout_url, session_id } = await createBoostSession(listing.id);
+            await WebBrowser.openBrowserAsync(checkout_url);
+            // Browser closed — check if payment completed
+            try {
+                await activateBoost(listing.id, session_id);
+                Alert.alert('Boosted!', 'Your listing is now boosted to the top of Browse for 48 hours.');
+                const data = await getMyListings();
+                setListings(data);
+            } catch {
+                // Payment not completed — user cancelled
+            }
+        } catch (err) {
+            Alert.alert('Error', err.response?.data?.detail || 'Failed to start boost payment');
+        }
+    };
+
     const handleToggleSold = async (listing) => {
         try {
             if (listing.is_sold) {
@@ -116,6 +141,12 @@ export default function MyListingsScreen({ navigation }) {
                                 {listing.is_sold ? 'Sold' : 'Active'}
                             </Text>
                         </View>
+                        {listing.is_boosted && listing.boosted_until && new Date(listing.boosted_until) > new Date() && (
+                            <View style={styles.boostedBadge}>
+                                <Ionicons name="flash" size={10} color="#b45309" />
+                                <Text style={styles.boostedBadgeText}>Boosted</Text>
+                            </View>
+                        )}
                     </View>
                 </View>
             </TouchableOpacity>
@@ -147,6 +178,17 @@ export default function MyListingsScreen({ navigation }) {
                     <Ionicons name="trash-outline" size={16} color="#ef4444" />
                     <Text style={[styles.actionButtonText, { color: '#ef4444' }]}>Delete</Text>
                 </TouchableOpacity>
+                {!listing.is_sold && (
+                    <TouchableOpacity
+                        style={[styles.actionButton, styles.boostButton]}
+                        onPress={() => handleBoost(listing)}
+                    >
+                        <Ionicons name="flash" size={16} color="#b45309" />
+                        <Text style={[styles.actionButtonText, { color: '#b45309' }]}>
+                            {listing.is_boosted && listing.boosted_until && new Date(listing.boosted_until) > new Date() ? 'Boosted' : 'Boost'}
+                        </Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     );
@@ -302,5 +344,24 @@ const styles = StyleSheet.create({
     },
     deleteButton: {
         backgroundColor: '#fef2f2',
+        borderRightWidth: 1,
+        borderRightColor: '#f0f0f0',
+    },
+    boostButton: {
+        backgroundColor: '#fffbeb',
+    },
+    boostedBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 12,
+        backgroundColor: '#fef3c7',
+    },
+    boostedBadgeText: {
+        fontSize: 11,
+        color: '#b45309',
+        fontWeight: '500',
     },
 });

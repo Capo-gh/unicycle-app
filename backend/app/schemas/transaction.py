@@ -19,6 +19,8 @@ class TransactionResponse(BaseModel):
     buyer_id: int
     seller_id: int
     status: TransactionStatus
+    payment_method: Optional[str] = 'cash'
+    payment_status: Optional[str] = None
     created_at: datetime
     completed_at: Optional[datetime]
     updated_at: datetime

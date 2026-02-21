@@ -21,6 +21,11 @@ class Transaction(Base):
     seller_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     status = Column(Enum(TransactionStatus, values_callable=lambda x: [e.value for e in x]), default=TransactionStatus.INTERESTED)
 
+    # Payment (Secure Pay)
+    payment_method = Column(String, default='cash')  # 'cash' or 'secure_pay'
+    stripe_payment_intent_id = Column(String, nullable=True)
+    payment_status = Column(String, nullable=True)  # 'held', 'captured', 'refunded'
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     completed_at = Column(DateTime(timezone=True), nullable=True)

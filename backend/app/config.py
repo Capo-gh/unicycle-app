@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     frontend_url: Optional[str] = None
     sendgrid_api_key: Optional[str] = None
     sendgrid_from_email: Optional[str] = None
+    stripe_secret_key: Optional[str] = None
+    stripe_publishable_key: Optional[str] = None
 
     model_config = ConfigDict(env_file=".env", extra='ignore')
 
