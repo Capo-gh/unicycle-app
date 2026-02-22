@@ -1,8 +1,8 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import en from '../../../../shared/i18n/en.json';
-import fr from '../../../../shared/i18n/fr.json';
+import en from '../../../shared/i18n/en.json';
+import fr from '../../../shared/i18n/fr.json';
 
 const initI18n = async () => {
     const savedLanguage = await AsyncStorage.getItem('language');
