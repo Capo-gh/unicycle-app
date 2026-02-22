@@ -67,13 +67,15 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                 <div className="p-6 border-b border-gray-200">
                     <div className="flex items-center gap-3 mb-3">
                         <img src={icon} alt="UniCycle" className="w-10 h-10 object-contain flex-shrink-0" />
-                        <h1 className="text-xl font-bold text-gray-900 flex-1 min-w-0 truncate">UniCycle</h1>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                            <LanguageToggle />
-                            <NotificationBell />
-                        </div>
+                        <h1 className="text-xl font-bold text-gray-900 flex-1 min-w-0">UniCycle</h1>
+                        <NotificationBell />
                     </div>
-                    <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} />
+                    <div className="flex items-center gap-2">
+                        <div className="flex-1 min-w-0">
+                            <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} />
+                        </div>
+                        <LanguageToggle />
+                    </div>
                 </div>
 
                 {/* Nav Items */}
