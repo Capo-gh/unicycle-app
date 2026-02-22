@@ -109,11 +109,8 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
 
             {/* Mobile Top Bar (Small + Medium only) — fixed overlay */}
             <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 h-14 px-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 flex-shrink-0">
-                    <img src={icon} alt="UniCycle" className="w-8 h-8 object-contain" />
-                    <span className="font-bold text-gray-900 hidden sm:block">UniCycle</span>
-                </div>
-                <div className="flex-1 min-w-0 flex justify-center">
+                <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
+                    <img src={icon} alt="UniCycle" className="w-8 h-8 object-contain flex-shrink-0" />
                     <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} compact />
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">

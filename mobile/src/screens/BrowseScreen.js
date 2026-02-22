@@ -5,7 +5,6 @@ import {
     FlatList,
     TouchableOpacity,
     StyleSheet,
-    SafeAreaView,
     ActivityIndicator,
     Image,
     Modal,
@@ -13,6 +12,7 @@ import {
     Dimensions,
     ScrollView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getListings } from '../api/listings';
 import { COLORS } from '../../../shared/constants/colors';

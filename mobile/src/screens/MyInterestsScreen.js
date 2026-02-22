@@ -4,7 +4,6 @@ import {
     Text,
     FlatList,
     StyleSheet,
-    SafeAreaView,
     ActivityIndicator,
     Image,
     TouchableOpacity,
@@ -13,6 +12,7 @@ import {
     Modal,
     TextInput
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getMyTransactions, updateTransactionStatus } from '../api/transactions';
 import { createReview } from '../api/reviews';

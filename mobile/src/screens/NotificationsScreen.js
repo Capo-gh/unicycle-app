@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View, Text, FlatList, TouchableOpacity, StyleSheet,
-    SafeAreaView, ActivityIndicator
+    View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getNotifications, markAsRead, markAllAsRead } from '../api/notifications';
 import { COLORS } from '../../../shared/constants/colors';
