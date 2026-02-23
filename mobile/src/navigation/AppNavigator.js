@@ -24,6 +24,7 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import PrivacySafetyScreen from '../screens/PrivacySafetyScreen';
 import HelpSupportScreen from '../screens/HelpSupportScreen';
 import AboutScreen from '../screens/AboutScreen';
+import UserProfileScreen from '../screens/UserProfileScreen';
 import AnnouncementModal from '../components/AnnouncementModal';
 
 const Stack = createNativeStackNavigator();
@@ -94,6 +95,15 @@ function BrowseStack() {
                     headerBackTitle: 'Back'
                 }}
             />
+            <Stack.Screen
+                name="UserProfile"
+                component={UserProfileScreen}
+                options={{
+                    headerShown: true,
+                    title: 'Seller Profile',
+                    headerBackTitle: 'Back'
+                }}
+            />
         </Stack.Navigator>
     );
 }
@@ -150,6 +160,15 @@ function ProfileStack() {
                 options={{
                     headerShown: true,
                     title: 'Item Details',
+                    headerBackTitle: 'Back'
+                }}
+            />
+            <Stack.Screen
+                name="UserProfile"
+                component={UserProfileScreen}
+                options={{
+                    headerShown: true,
+                    title: 'Seller Profile',
                     headerBackTitle: 'Back'
                 }}
             />

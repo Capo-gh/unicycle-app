@@ -30,7 +30,7 @@ export default function MyInterestsScreen({ navigation }) {
     // Review state
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [reviewTarget, setReviewTarget] = useState(null);
-    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewRating, setReviewRating] = useState(0);
     const [reviewText, setReviewText] = useState('');
     const [submittingReview, setSubmittingReview] = useState(false);
 
@@ -94,7 +94,7 @@ export default function MyInterestsScreen({ navigation }) {
             userName: targetUserName,
             listingId: transaction.listing_id
         });
-        setReviewRating(5);
+        setReviewRating(0);
         setReviewText('');
         setShowReviewModal(true);
     };
@@ -337,9 +337,9 @@ export default function MyInterestsScreen({ navigation }) {
 
                         {/* Submit */}
                         <TouchableOpacity
-                            style={[styles.submitReviewButton, submittingReview && { opacity: 0.6 }]}
+                            style={[styles.submitReviewButton, (submittingReview || reviewRating === 0) && { opacity: 0.6 }]}
                             onPress={handleSubmitReview}
-                            disabled={submittingReview}
+                            disabled={submittingReview || reviewRating === 0}
                         >
                             {submittingReview ? (
                                 <ActivityIndicator color="#fff" />

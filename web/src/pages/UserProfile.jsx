@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ShieldCheck, Star, MapPin, Package, Flag, X } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Star, MapPin, Package, Flag, X, Pencil } from 'lucide-react';
 import { getUserProfile, reportUser } from '../api/users';
 import { getUserListings } from '../api/listings';
-import { getUserReviews, createReview } from '../api/reviews';
+import { getUserReviews, createReview, updateReview } from '../api/reviews';
 
 export default function UserProfile({ userId, onBack, onItemClick, currentUser }) {
     const [user, setUser] = useState(null);
@@ -14,9 +14,37 @@ export default function UserProfile({ userId, onBack, onItemClick, currentUser }
 
     // Review form state
     const [showReviewForm, setShowReviewForm] = useState(false);
-    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewRating, setReviewRating] = useState(0);
     const [reviewText, setReviewText] = useState('');
     const [submittingReview, setSubmittingReview] = useState(false);
+
+    // Edit review state
+    const [editingReview, setEditingReview] = useState(null); // { id, rating, text, reviewed_user_id, listing_id }
+    const [savingReview, setSavingReview] = useState(false);
+
+    const handleUpdateReview = async () => {
+        if (!editingReview || editingReview.rating === 0) return;
+        setSavingReview(true);
+        try {
+            await updateReview(editingReview.id, {
+                reviewed_user_id: editingReview.reviewed_user_id,
+                listing_id: editingReview.listing_id,
+                rating: editingReview.rating,
+                text: editingReview.text?.trim() || null,
+            });
+            const [updatedReviews, updatedUser] = await Promise.all([
+                getUserReviews(userId),
+                getUserProfile(userId),
+            ]);
+            setReviews(updatedReviews);
+            setUser(updatedUser);
+            setEditingReview(null);
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Failed to update review');
+        } finally {
+            setSavingReview(false);
+        }
+    };
 
     // Report state
     const [showReportModal, setShowReportModal] = useState(false);
@@ -70,7 +98,7 @@ export default function UserProfile({ userId, onBack, onItemClick, currentUser }
 
             // Reset form
             setShowReviewForm(false);
-            setReviewRating(5);
+            setReviewRating(0);
             setReviewText('');
         } catch (err) {
             console.error('Error submitting review:', err);
@@ -241,7 +269,7 @@ export default function UserProfile({ userId, onBack, onItemClick, currentUser }
 
                             <button
                                 onClick={handleSubmitReview}
-                                disabled={submittingReview}
+                                disabled={submittingReview || reviewRating === 0}
                                 className="w-full py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 transition-colors font-medium disabled:bg-gray-300"
                             >
                                 {submittingReview ? 'Submitting...' : 'Submit Review'}
@@ -405,7 +433,10 @@ export default function UserProfile({ userId, onBack, onItemClick, currentUser }
                                 <p className="text-gray-500">No reviews yet</p>
                             </div>
                         ) : (
-                            reviews.reviews.map((review) => (
+                            reviews.reviews.map((review) => {
+                                const isMyReview = review.reviewer_id === currentUser?.id;
+                                const isEditing = editingReview?.id === review.id;
+                                return (
                                 <div key={review.id} className="bg-white rounded-lg p-4 shadow-sm">
                                     <div className="flex items-start gap-3">
                                         <div className="w-10 h-10 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold">
@@ -414,16 +445,62 @@ export default function UserProfile({ userId, onBack, onItemClick, currentUser }
                                         <div className="flex-1">
                                             <div className="flex items-center justify-between mb-1">
                                                 <h4 className="font-medium text-gray-900">{review.reviewer?.name}</h4>
-                                                <span className="text-xs text-gray-500">{formatDate(review.created_at)}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs text-gray-500">{formatDate(review.created_at)}</span>
+                                                    {isMyReview && !isEditing && (
+                                                        <button
+                                                            onClick={() => setEditingReview({ id: review.id, rating: review.rating, text: review.text || '', reviewed_user_id: review.reviewed_user_id, listing_id: review.listing_id })}
+                                                            className="p-1 text-gray-400 hover:text-unicycle-green transition-colors"
+                                                            title="Edit review"
+                                                        >
+                                                            <Pencil className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="flex mb-2">{renderStars(review.rating)}</div>
-                                            {review.text && (
-                                                <p className="text-sm text-gray-700">{review.text}</p>
+
+                                            {isEditing ? (
+                                                <div className="space-y-2 mt-2">
+                                                    <div className="flex gap-1">
+                                                        {[1,2,3,4,5].map(s => (
+                                                            <button key={s} type="button" onClick={() => setEditingReview(prev => ({ ...prev, rating: s }))}>
+                                                                <Star className={`w-5 h-5 ${s <= editingReview.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <textarea
+                                                        value={editingReview.text}
+                                                        onChange={e => setEditingReview(prev => ({ ...prev, text: e.target.value }))}
+                                                        rows={2}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green resize-none"
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={handleUpdateReview}
+                                                            disabled={savingReview || editingReview.rating === 0}
+                                                            className="px-3 py-1.5 bg-unicycle-green text-white text-xs font-medium rounded-lg hover:bg-unicycle-green/90 disabled:opacity-50"
+                                                        >
+                                                            {savingReview ? 'Saving...' : 'Save'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setEditingReview(null)}
+                                                            className="px-3 py-1.5 border border-gray-300 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-50"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="flex mb-2">{renderStars(review.rating)}</div>
+                                                    {review.text && <p className="text-sm text-gray-700">{review.text}</p>}
+                                                </>
                                             )}
                                         </div>
                                     </div>
                                 </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
                 )}

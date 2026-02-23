@@ -13,7 +13,8 @@ import {
     Modal,
     TextInput,
     KeyboardAvoidingView,
-    Platform
+    Platform,
+    Share
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -48,6 +49,11 @@ export default function ItemDetailScreen({ route, navigation }) {
     const [submittingReport, setSubmittingReport] = useState(false);
     const [reportSuccess, setReportSuccess] = useState(false);
 
+    // Auto-translation state
+    const [translatedTitle, setTranslatedTitle] = useState(null);
+    const [translatedDescription, setTranslatedDescription] = useState(null);
+    const [isTranslating, setIsTranslating] = useState(false);
+
     // Check if current user is the owner
     const isOwner = currentUser && listing?.seller_id === currentUser.id;
 
@@ -59,6 +65,26 @@ export default function ItemDetailScreen({ route, navigation }) {
     };
 
     const images = getImages();
+
+    // Add share button to navigation header
+    useEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <TouchableOpacity
+                    onPress={() => {
+                        const WEB_BASE = 'https://unicycle-app.vercel.app';
+                        Share.share({
+                            message: `${listing.title} — $${listing.price}\n${WEB_BASE}?listing=${listing.id}`,
+                            url: `${WEB_BASE}?listing=${listing.id}`,
+                        });
+                    }}
+                    style={{ marginRight: 12 }}
+                >
+                    <Ionicons name="share-outline" size={24} color="#374151" />
+                </TouchableOpacity>
+            ),
+        });
+    }, [navigation, listing?.id]);
 
     // Fetch seller reviews
     useEffect(() => {
@@ -283,6 +309,30 @@ export default function ItemDetailScreen({ route, navigation }) {
         Linking.openURL(url);
     };
 
+    const handleTranslate = async () => {
+        if (translatedTitle) {
+            setTranslatedTitle(null);
+            setTranslatedDescription(null);
+            return;
+        }
+        setIsTranslating(true);
+        try {
+            const [titleRes, descRes] = await Promise.all([
+                fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(listing.title)}&langpair=en|fr`),
+                listing.description
+                    ? fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(listing.description)}&langpair=en|fr`)
+                    : null,
+            ]);
+            const titleData = await titleRes.json();
+            setTranslatedTitle(titleData.responseData?.translatedText || listing.title);
+            if (descRes) {
+                const descData = await descRes.json();
+                setTranslatedDescription(descData.responseData?.translatedText || listing.description);
+            }
+        } catch {}
+        setIsTranslating(false);
+    };
+
     const renderStars = (rating) => {
         const stars = [];
         const fullStars = Math.floor(rating);
@@ -354,7 +404,7 @@ export default function ItemDetailScreen({ route, navigation }) {
                 <View style={styles.section}>
                     <View style={styles.titleRow}>
                         <View style={styles.titleContainer}>
-                            <Text style={styles.title}>{listing.title}</Text>
+                            <Text style={styles.title}>{translatedTitle || listing.title}</Text>
                             <View style={styles.metaRow}>
                                 <Text style={styles.metaText}>{listing.category}</Text>
                                 <Text style={styles.metaText}>•</Text>
@@ -366,12 +416,22 @@ export default function ItemDetailScreen({ route, navigation }) {
                     {isSold && !isOwner && (
                         <Text style={styles.soldText}>This item has been sold</Text>
                     )}
+                    <TouchableOpacity onPress={handleTranslate} style={styles.translateListingBtn}>
+                        <Ionicons name="language-outline" size={14} color="#6b7280" />
+                        <Text style={styles.translateListingBtnText}>
+                            {isTranslating ? 'Translating...' : translatedTitle ? 'Show original' : 'Translate to French'}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Seller Info */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Seller</Text>
-                    <View style={styles.sellerCard}>
+                    <TouchableOpacity
+                        style={styles.sellerCard}
+                        onPress={() => !isOwner && listing.seller_id && navigation.navigate('UserProfile', { userId: listing.seller_id })}
+                        activeOpacity={isOwner ? 1 : 0.7}
+                    >
                         <View style={styles.avatarContainer}>
                             <Text style={styles.avatarText}>
                                 {listing.seller?.name?.charAt(0) || '?'}
@@ -399,7 +459,7 @@ export default function ItemDetailScreen({ route, navigation }) {
                                 </View>
                             )}
                         </View>
-                    </View>
+                    </TouchableOpacity>
                     {!isOwner && (
                         <TouchableOpacity style={styles.reportButton} onPress={handleReport}>
                             <Ionicons name="flag-outline" size={14} color="#ef4444" />
@@ -411,7 +471,7 @@ export default function ItemDetailScreen({ route, navigation }) {
                 {/* Description */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Description</Text>
-                    <Text style={styles.description}>{listing.description}</Text>
+                    <Text style={styles.description}>{translatedDescription || listing.description}</Text>
                 </View>
 
                 {/* Safe Zone */}
@@ -822,6 +882,16 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '500',
         marginTop: 8,
+    },
+    translateListingBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        marginTop: 8,
+    },
+    translateListingBtnText: {
+        fontSize: 12,
+        color: '#6b7280',
     },
     sectionTitle: {
         fontSize: 16,

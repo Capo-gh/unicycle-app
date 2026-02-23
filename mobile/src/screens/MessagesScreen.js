@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     View,
     Text,
@@ -25,8 +25,28 @@ export default function MessagesScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
+    const [translatedMessages, setTranslatedMessages] = useState({});
+    const [translatingId, setTranslatingId] = useState(null);
     const { user } = useAuth();
     const flatListRef = useRef(null);
+
+    const translateMessage = useCallback(async (msgId, text) => {
+        if (translatedMessages[msgId]) {
+            // Toggle back to original
+            setTranslatedMessages(prev => { const next = { ...prev }; delete next[msgId]; return next; });
+            return;
+        }
+        setTranslatingId(msgId);
+        try {
+            const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|fr`);
+            const data = await res.json();
+            const translated = data.responseData?.translatedText;
+            if (translated && translated !== text) {
+                setTranslatedMessages(prev => ({ ...prev, [msgId]: translated }));
+            }
+        } catch {}
+        setTranslatingId(null);
+    }, [translatedMessages]);
 
     useEffect(() => {
         fetchConversations();
@@ -232,22 +252,35 @@ export default function MessagesScreen() {
                                             </Text>
                                         </View>
                                     )}
-                                    <View style={[
-                                        styles.messageBubble,
-                                        isMe ? styles.myMessage : styles.theirMessage
-                                    ]}>
-                                        <Text style={[
-                                            styles.messageText,
-                                            isMe ? styles.myMessageText : styles.theirMessageText
+                                    <View>
+                                        <View style={[
+                                            styles.messageBubble,
+                                            isMe ? styles.myMessage : styles.theirMessage
                                         ]}>
-                                            {item.text}
-                                        </Text>
-                                        <Text style={[
-                                            styles.messageTime,
-                                            isMe ? styles.myMessageTime : styles.theirMessageTime
-                                        ]}>
-                                            {formatTimeAgo(item.created_at)}
-                                        </Text>
+                                            <Text style={[
+                                                styles.messageText,
+                                                isMe ? styles.myMessageText : styles.theirMessageText
+                                            ]}>
+                                                {translatedMessages[item.id] || item.text}
+                                            </Text>
+                                            <Text style={[
+                                                styles.messageTime,
+                                                isMe ? styles.myMessageTime : styles.theirMessageTime
+                                            ]}>
+                                                {formatTimeAgo(item.created_at)}
+                                            </Text>
+                                        </View>
+                                        {!isMe && (
+                                            <TouchableOpacity
+                                                onPress={() => translateMessage(item.id, item.text)}
+                                                style={styles.translateBtn}
+                                            >
+                                                <Ionicons name="language-outline" size={11} color="#9ca3af" />
+                                                <Text style={styles.translateBtnText}>
+                                                    {translatingId === item.id ? '...' : translatedMessages[item.id] ? 'Show original' : 'Translate'}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )}
                                     </View>
                                     {isMe && (
                                         <View style={[styles.msgAvatar, styles.msgAvatarMe]}>
@@ -612,6 +645,17 @@ const styles = StyleSheet.create({
     },
     theirMessageTime: {
         color: '#999',
+    },
+    translateBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        marginTop: 2,
+        marginLeft: 4,
+    },
+    translateBtnText: {
+        fontSize: 11,
+        color: '#9ca3af',
     },
     messageInput: {
         flexDirection: 'row',

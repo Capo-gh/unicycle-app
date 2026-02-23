@@ -44,6 +44,9 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
     const [escrowAction, setEscrowAction] = useState(null); // 'confirming-handoff' | 'confirming-receipt' | 'disputing'
     const [escrowMessage, setEscrowMessage] = useState(null);
 
+    // Share state
+    const [linkCopied, setLinkCopied] = useState(false);
+
     // Auto-translation state
     const [translatedTitle, setTranslatedTitle] = useState(null);
     const [translatedDescription, setTranslatedDescription] = useState(null);
@@ -278,6 +281,14 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
         }
     };
 
+    const handleShare = () => {
+        const url = `${window.location.origin}?listing=${item.id}`;
+        navigator.clipboard.writeText(url).then(() => {
+            setLinkCopied(true);
+            setTimeout(() => setLinkCopied(false), 2000);
+        });
+    };
+
     // Touch swipe handlers for image navigation
     const minSwipeDistance = 50;
 
@@ -343,9 +354,16 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                         <ArrowLeft className="w-6 h-6 text-gray-700" />
                     </button>
                     <h1 className="text-lg font-semibold text-gray-900">Item Details</h1>
-                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                        <Share2 className="w-5 h-5 text-gray-700" />
-                    </button>
+                    <div className="relative">
+                        <button onClick={handleShare} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                            <Share2 className="w-5 h-5 text-gray-700" />
+                        </button>
+                        {linkCopied && (
+                            <span className="absolute right-0 top-10 bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                                Link copied!
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
 

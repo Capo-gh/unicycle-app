@@ -5,6 +5,11 @@ export const getListings = async (params = {}) => {
     return response.data;
 };
 
+export const getUserListings = async (userId) => {
+    const response = await api.get(`/listings/user/${userId}?include_sold=true`);
+    return response.data;
+};
+
 export const getMyListings = async () => {
     const response = await api.get('/listings/my');
     return response.data;

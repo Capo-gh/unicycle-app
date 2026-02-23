@@ -9,6 +9,7 @@ from ..models.user import User
 from ..models.listing import Listing
 from ..models.transaction import Transaction, TransactionStatus
 from ..utils.dependencies import get_admin_required, get_super_admin_required
+from ..utils.email import send_suspension_email
 from ..config import settings
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -138,6 +139,14 @@ def toggle_suspend(
 
     user.is_suspended = not user.is_suspended
     db.commit()
+
+    # Send email notification only when suspending (not unsuspending)
+    if user.is_suspended:
+        try:
+            send_suspension_email(user.email, user.name)
+        except Exception as e:
+            print(f"Failed to send suspension email: {e}")
+
     return {"message": f"User {user.name} {'suspended' if user.is_suspended else 'unsuspended'}"}
 
 

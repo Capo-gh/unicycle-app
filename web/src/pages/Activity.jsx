@@ -10,7 +10,7 @@ export default function Transactions({ onNavigate }) {
     const [error, setError] = useState(null);
     const [updating, setUpdating] = useState(null);
     const [reviewModal, setReviewModal] = useState(null); // { userId, userName, listingId }
-    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewRating, setReviewRating] = useState(0);
     const [reviewText, setReviewText] = useState('');
     const [submittingReview, setSubmittingReview] = useState(false);
 
@@ -54,7 +54,7 @@ export default function Transactions({ onNavigate }) {
             userName: activeTab === 'buyer' ? transaction.seller?.name : transaction.buyer?.name,
             listingId: transaction.listing_id
         });
-        setReviewRating(5);
+        setReviewRating(0);
         setReviewText('');
     };
 
@@ -288,7 +288,7 @@ export default function Transactions({ onNavigate }) {
                         />
                         <button
                             onClick={handleSubmitReview}
-                            disabled={submittingReview}
+                            disabled={submittingReview || reviewRating === 0}
                             className="w-full py-2.5 bg-unicycle-green text-white rounded-lg font-semibold text-sm hover:bg-unicycle-green/90 transition-colors disabled:opacity-50"
                         >
                             {submittingReview ? 'Submitting...' : 'Submit Review'}

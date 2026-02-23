@@ -106,6 +106,13 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)):
             detail="Please verify your email before logging in. Check your inbox for the verification link."
         )
 
+    # Check if suspended
+    if user.is_suspended:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been suspended. Please contact support if you believe this is a mistake."
+        )
+
     # Create token
     token = create_access_token({"sub": user.email})
     
@@ -137,6 +144,12 @@ def get_me(
     user = db.query(User).filter(User.email == email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_suspended:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been suspended."
+        )
 
     return user
 

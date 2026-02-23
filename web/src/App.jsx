@@ -19,6 +19,7 @@ import CheckEmail from './pages/CheckEmail';
 import ResetPassword from './pages/ResetPassword';
 import { getCurrentUser } from './api/auth';
 import { activateBoost, activateSecurePay } from './api/payments';
+import { getListing } from './api/listings';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('loading');
@@ -128,6 +129,20 @@ function App() {
             window.history.replaceState({}, '', window.location.pathname);
           }
 
+          // Handle shared listing deep link (?listing=id)
+          if (params.get('listing')) {
+            const listingId = parseInt(params.get('listing'));
+            window.history.replaceState({}, '', window.location.pathname);
+            try {
+              const listing = await getListing(listingId);
+              setSelectedItem(listing);
+              setCurrentPage('detail');
+            } catch {
+              setCurrentPage('listings');
+            }
+            return;
+          }
+
           // Restore the last page user was on, or default to listings
           const lastPage = localStorage.getItem('currentPage') || 'listings';
           setCurrentPage(lastPage);
@@ -164,6 +179,12 @@ function App() {
         return;
       }
 
+      // Save shared listing for after login
+      if (params.get('listing')) {
+        localStorage.setItem('pendingListingId', params.get('listing'));
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+
       // Not logged in and no verification token
       setCurrentPage('signup');
     };
@@ -171,10 +192,24 @@ function App() {
     checkAuth();
   }, []);
 
-  const handleSignup = (userData) => {
+  const handleSignup = async (userData) => {
     setUser(userData);
-    // Default to user's university marketplace
     setCurrentMarketplace(userData.university);
+
+    // Check for a pending shared listing
+    const pendingId = localStorage.getItem('pendingListingId');
+    if (pendingId) {
+      localStorage.removeItem('pendingListingId');
+      try {
+        const listing = await getListing(parseInt(pendingId));
+        setSelectedItem(listing);
+        setCurrentPage('detail');
+        return;
+      } catch {
+        // fall through to listings
+      }
+    }
+
     setCurrentPage('listings');
     localStorage.setItem('currentPage', 'listings');
   };

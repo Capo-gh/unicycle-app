@@ -214,6 +214,62 @@ def send_report_email(
         raise Exception(f"Failed to send report email: {str(e)}")
 
 
+def send_suspension_email(email: str, name: str):
+    """Send account suspension notification to user"""
+    html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
+                .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🚫 Account Suspended</h1>
+                </div>
+                <div class="content">
+                    <p>Hi {name},</p>
+                    <p>Your UniCycle account has been <strong>suspended</strong> due to a violation of our community guidelines.</p>
+                    <p>You will no longer be able to sign in or access the marketplace.</p>
+                    <p>If you believe this is a mistake, please contact us by replying to this email and our team will review your case within 24–48 hours.</p>
+                    <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                    <p style="font-size: 13px; color: #666;">
+                        Common reasons for suspension include: posting fraudulent listings, harassment of other users, or repeated violations of our terms of service.
+                    </p>
+                </div>
+                <div class="footer">
+                    <p>&copy; 2025 UniCycle - Student Marketplace</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    """
+
+    if not SENDGRID_API_KEY:
+        print("=" * 50)
+        print(f"ACCOUNT SUSPENDED: {name} ({email})")
+        print("=" * 50)
+        return None
+
+    try:
+        message = Mail(
+            from_email=SENDGRID_FROM_EMAIL,
+            to_emails=email,
+            subject="Your UniCycle account has been suspended",
+            html_content=html_content
+        )
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        return sg.send(message)
+    except Exception as e:
+        print(f"Failed to send suspension email: {str(e)}")
+
+
 def send_reset_email(email: str, name: str, token: str):
     """Send password reset email using SendGrid"""
     reset_link = f"{FRONTEND_URL}?reset_token={token}"

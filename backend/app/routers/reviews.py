@@ -110,6 +110,32 @@ def get_user_reviews(
     }
 
 
+@router.put("/{review_id}", response_model=ReviewResponse)
+def update_review(
+    review_id: int,
+    review_data: ReviewCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Edit a review (only the reviewer can edit)"""
+    review = db.query(Review).filter(Review.id == review_id).first()
+
+    if not review:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
+
+    if review.reviewer_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to edit this review")
+
+    review.rating = review_data.rating
+    review.text = review_data.text
+    db.commit()
+
+    update_user_rating(db, review.reviewed_user_id)
+
+    review = db.query(Review).options(joinedload(Review.reviewer)).filter(Review.id == review_id).first()
+    return review
+
+
 @router.delete("/{review_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_review(
     review_id: int,
