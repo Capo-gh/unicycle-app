@@ -12,10 +12,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
+import { useTranslation } from 'react-i18next';
 import { COLORS } from '../../../shared/constants/colors';
 import { createSecurePaySession, activateSecurePay } from '../api/payments';
 
 export default function SecurePayModal({ visible, item, onClose, onProceed }) {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
 
     if (!item) return null;
@@ -35,7 +37,7 @@ export default function SecurePayModal({ visible, item, onClose, onProceed }) {
             try {
                 await activateSecurePay(item.id, session_id);
                 onClose();
-                Alert.alert('Payment Held', 'Your payment is now held in escrow. Meet the seller at the safe zone to inspect the item.');
+                Alert.alert(t('securePay.title'), 'Your payment is now held in escrow. Meet the seller at the safe zone to inspect the item.');
             } catch {
                 // Payment not completed (cancelled or still pending) — just close browser silently
             }
@@ -57,8 +59,8 @@ export default function SecurePayModal({ visible, item, onClose, onProceed }) {
                                 <Ionicons name="shield-checkmark" size={22} color={COLORS.green} />
                             </View>
                             <View>
-                                <Text style={styles.headerTitle}>Secure-Pay Protection</Text>
-                                <Text style={styles.headerSubtitle}>Escrow for your safety</Text>
+                                <Text style={styles.headerTitle}>{t('securePay.title')}</Text>
+                                <Text style={styles.headerSubtitle}>{t('securePay.subtitle')}</Text>
                             </View>
                         </View>
                         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -83,21 +85,19 @@ export default function SecurePayModal({ visible, item, onClose, onProceed }) {
                             <View style={styles.whyHeader}>
                                 <Ionicons name="lock-closed" size={18} color={COLORS.green} />
                                 <View style={styles.whyContent}>
-                                    <Text style={styles.whyTitle}>Why Secure-Pay?</Text>
-                                    <Text style={styles.whyText}>
-                                        This item qualifies for escrow protection because it's over $80. Your money stays safe until you verify the item in person.
-                                    </Text>
+                                    <Text style={styles.whyTitle}>{t('securePay.why')}</Text>
+                                    <Text style={styles.whyText}>{t('securePay.whyDesc')}</Text>
                                 </View>
                             </View>
                         </View>
 
                         {/* How It Works */}
-                        <Text style={styles.sectionTitle}>How It Works</Text>
+                        <Text style={styles.sectionTitle}>{t('securePay.howItWorks')}</Text>
                         {[
-                            { step: '1', title: 'You pay through UniCycle', desc: 'Your payment is held securely in escrow' },
-                            { step: '2', title: 'Meet at the Safe Zone', desc: `Inspect the item at ${safeZone}` },
-                            { step: '3', title: 'Confirm or decline', desc: 'Accept if satisfied, or get a full refund' },
-                            { step: '4', title: 'Seller gets paid', desc: 'Payment released after your confirmation' },
+                            { step: '1', title: t('securePay.step1Title'), desc: t('securePay.step1Desc') },
+                            { step: '2', title: t('securePay.step2Title'), desc: `${t('securePay.step2Desc')} ${safeZone}` },
+                            { step: '3', title: t('securePay.step3Title'), desc: t('securePay.step3Desc') },
+                            { step: '4', title: t('securePay.step4Title'), desc: t('securePay.step4Desc') },
                         ].map((s) => (
                             <View key={s.step} style={styles.stepRow}>
                                 <View style={styles.stepCircle}>
@@ -113,9 +113,9 @@ export default function SecurePayModal({ visible, item, onClose, onProceed }) {
                         {/* Protection Features */}
                         <View style={styles.protectionSection}>
                             {[
-                                'Full refund if item doesn\'t match description',
-                                'Seller doesn\'t get paid until you approve',
-                                'Dispute resolution if issues arise',
+                                t('securePay.feature1'),
+                                t('securePay.feature2'),
+                                t('securePay.feature3'),
                             ].map((feature, i) => (
                                 <View key={i} style={styles.featureRow}>
                                     <Ionicons name="checkmark-circle" size={16} color="#10b981" />
@@ -126,8 +126,8 @@ export default function SecurePayModal({ visible, item, onClose, onProceed }) {
 
                         {/* Fee Info */}
                         <View style={styles.feeSection}>
-                            <Text style={styles.feeTitle}>Service Fee: 7% (${(item.price * 0.07).toFixed(2)})</Text>
-                            <Text style={styles.feeDesc}>This covers escrow protection, dispute resolution, and platform security.</Text>
+                            <Text style={styles.feeTitle}>{t('securePay.feeLabel')} (${(item.price * 0.07).toFixed(2)})</Text>
+                            <Text style={styles.feeDesc}>{t('securePay.feeDesc')}</Text>
                         </View>
                     </ScrollView>
 
@@ -140,16 +140,16 @@ export default function SecurePayModal({ visible, item, onClose, onProceed }) {
                         >
                             {loading
                                 ? <ActivityIndicator color="#fff" size="small" />
-                                : <Text style={styles.proceedText}>Pay Securely (${((item.price || 0) * 1.07).toFixed(2)} CAD)</Text>
+                                : <Text style={styles.proceedText}>{t('securePay.paySecurely')} (${((item.price || 0) * 1.07).toFixed(2)} CAD)</Text>
                             }
                         </TouchableOpacity>
                         {onProceed && (
                             <TouchableOpacity style={styles.contactButton} onPress={onProceed}>
-                                <Text style={styles.contactText}>Contact Seller Without Secure Pay</Text>
+                                <Text style={styles.contactText}>{t('securePay.contactWithout')}</Text>
                             </TouchableOpacity>
                         )}
                         <TouchableOpacity style={styles.laterButton} onPress={onClose}>
-                            <Text style={styles.laterText}>Maybe Later</Text>
+                            <Text style={styles.laterText}>{t('securePay.maybeLater')}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

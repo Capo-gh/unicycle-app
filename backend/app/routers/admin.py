@@ -2,13 +2,20 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import Optional
+from pydantic import BaseModel
+from datetime import datetime, timezone
 from ..database import get_db
 from ..models.user import User
 from ..models.listing import Listing
 from ..models.transaction import Transaction, TransactionStatus
 from ..utils.dependencies import get_admin_required, get_super_admin_required
+from ..config import settings
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
+
+
+class ResolveDisputeRequest(BaseModel):
+    action: str  # 'release' (pay seller) or 'refund' (refund buyer)
 
 
 @router.get("/stats")
@@ -225,8 +232,57 @@ def get_all_transactions(
             "listing_title": t.listing.title if t.listing else "Deleted",
             "listing_price": t.listing.price if t.listing else 0,
             "status": t.status.value if hasattr(t.status, 'value') else t.status,
+            "payment_method": t.payment_method,
+            "payment_status": t.payment_status,
+            "stripe_payment_intent_id": t.stripe_payment_intent_id,
             "created_at": t.created_at.isoformat() if t.created_at else None,
             "completed_at": t.completed_at.isoformat() if t.completed_at else None
         }
         for t in transactions
     ]
+
+
+@router.post("/transactions/{transaction_id}/resolve")
+def resolve_dispute(
+    transaction_id: int,
+    body: ResolveDisputeRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_admin_required)
+):
+    """Admin resolves a disputed Secure-Pay transaction: release funds to seller or refund buyer"""
+    if body.action not in ('release', 'refund'):
+        raise HTTPException(status_code=400, detail="action must be 'release' or 'refund'")
+
+    transaction = db.query(Transaction).filter(
+        Transaction.id == transaction_id,
+        Transaction.payment_status == "disputed"
+    ).first()
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Disputed transaction not found")
+
+    if not settings.stripe_secret_key:
+        raise HTTPException(status_code=503, detail="Payment service not configured")
+
+    import stripe
+    stripe.api_key = settings.stripe_secret_key
+
+    if body.action == 'release':
+        # Capture the held payment → seller gets paid
+        try:
+            stripe.payment_intents.capture(transaction.stripe_payment_intent_id)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Stripe capture failed: {str(e)}")
+        transaction.payment_status = "captured"
+        transaction.status = TransactionStatus.COMPLETED
+        transaction.completed_at = datetime.now(timezone.utc)
+    else:
+        # Refund buyer
+        try:
+            stripe.refunds.create(payment_intent=transaction.stripe_payment_intent_id)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Stripe refund failed: {str(e)}")
+        transaction.payment_status = "refunded"
+        transaction.status = TransactionStatus.CANCELLED
+
+    db.commit()
+    return {"success": True, "action": body.action, "transaction_id": transaction_id}

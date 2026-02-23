@@ -24,6 +24,7 @@ import { createTransaction, getMyTransactions, deleteTransaction } from '../api/
 import { getUserReviews } from '../api/reviews';
 import { reportUser } from '../api/users';
 import SecurePayModal from '../components/SecurePayModal';
+import { getListingSecurePay, confirmHandoff, confirmReceipt, disputeTransaction } from '../api/payments';
 
 const { width } = Dimensions.get('window');
 
@@ -38,6 +39,9 @@ export default function ItemDetailScreen({ route, navigation }) {
     const [interestTransactionId, setInterestTransactionId] = useState(null);
     const [sellerReviews, setSellerReviews] = useState(null);
     const [showSecurePayModal, setShowSecurePayModal] = useState(false);
+    const [securePayTx, setSecurePayTx] = useState(null);
+    const [escrowAction, setEscrowAction] = useState(null); // 'confirming-handoff' | 'confirming-receipt' | 'disputing'
+    const [escrowMessage, setEscrowMessage] = useState(null);
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportReason, setReportReason] = useState('');
     const [reportDetails, setReportDetails] = useState('');
@@ -62,6 +66,13 @@ export default function ItemDetailScreen({ route, navigation }) {
             fetchSellerReviews();
         }
     }, [listing?.seller_id]);
+
+    // Fetch active Secure-Pay transaction for this listing
+    useEffect(() => {
+        if (currentUser && listing?.id) {
+            getListingSecurePay(listing.id).then(tx => setSecurePayTx(tx || null)).catch(() => {});
+        }
+    }, [currentUser, listing?.id]);
 
     // Check if user has already expressed interest
     useEffect(() => {
@@ -170,6 +181,72 @@ export default function ItemDetailScreen({ route, navigation }) {
             listingId: listing.id,
             initialMessage: `Hi! I'm interested in "${listing.title}" ($${listing.price}). Is it still available?`
         });
+    };
+
+    const handleConfirmHandoff = async () => {
+        setEscrowAction('confirming-handoff');
+        try {
+            await confirmHandoff(securePayTx.id);
+            setSecurePayTx(prev => ({ ...prev, seller_confirmed_at: new Date().toISOString() }));
+            setEscrowMessage('Handoff confirmed. The buyer can now release payment.');
+        } catch {
+            Alert.alert('Error', 'Failed to confirm handoff. Please try again.');
+        } finally {
+            setEscrowAction(null);
+        }
+    };
+
+    const handleConfirmReceipt = async () => {
+        Alert.alert(
+            'Confirm Receipt',
+            'Confirm you received the item? This will release payment to the seller.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Confirm',
+                    onPress: async () => {
+                        setEscrowAction('confirming-receipt');
+                        try {
+                            await confirmReceipt(securePayTx.id);
+                            setSecurePayTx(prev => ({ ...prev, payment_status: 'captured' }));
+                            setEscrowMessage('Payment released to seller. Transaction complete!');
+                        } catch {
+                            Alert.alert('Error', 'Failed to confirm receipt. Please try again.');
+                        } finally {
+                            setEscrowAction(null);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleDispute = async () => {
+        const hasSellerConfirmed = !!securePayTx?.seller_confirmed_at;
+        const msg = hasSellerConfirmed
+            ? 'The seller confirmed handoff. Disputing will hold funds for admin review — you will NOT get an immediate refund. Continue?'
+            : 'Cancel this Secure-Pay transaction? You will get a full refund.';
+        Alert.alert('Confirm', msg, [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Confirm',
+                style: 'destructive',
+                onPress: async () => {
+                    setEscrowAction('disputing');
+                    try {
+                        const result = await disputeTransaction(securePayTx.id);
+                        setSecurePayTx(prev => ({ ...prev, payment_status: result.admin_review ? 'disputed' : 'refunded' }));
+                        setEscrowMessage(result.admin_review
+                            ? 'Dispute submitted. Admin will review within 24 hours. Funds are held.'
+                            : 'Refund initiated. Funds will return to your card within 5–10 days.');
+                    } catch {
+                        Alert.alert('Error', 'Failed to submit dispute. Please try again.');
+                    } finally {
+                        setEscrowAction(null);
+                    }
+                }
+            }
+        ]);
     };
 
     const reportReasons = ['Fake listing', 'Inappropriate content', 'Spam or scam', 'Harassment', 'Other'];
@@ -358,8 +435,8 @@ export default function ItemDetailScreen({ route, navigation }) {
                     </TouchableOpacity>
                 </View>
 
-                {/* Secure-Pay Info (only for buyers, not sold) */}
-                {!isOwner && !isSold && listing.price >= 80 && (
+                {/* Secure-Pay Info (only for buyers when no active escrow) */}
+                {!isOwner && !isSold && listing.price >= 80 && !securePayTx && (
                     <View style={styles.securePayInfo}>
                         <View style={styles.securePayInfoRow}>
                             <View style={styles.securePayIcon}>
@@ -372,6 +449,112 @@ export default function ItemDetailScreen({ route, navigation }) {
                                 </Text>
                             </View>
                         </View>
+                    </View>
+                )}
+
+                {/* Secure-Pay Escrow Status Panel */}
+                {securePayTx && (
+                    <View style={[
+                        styles.escrowPanel,
+                        securePayTx.payment_status === 'captured' && styles.escrowPanelGreen,
+                        securePayTx.payment_status === 'disputed' && styles.escrowPanelOrange,
+                        securePayTx.payment_status === 'refunded' && styles.escrowPanelGray,
+                    ]}>
+                        <View style={styles.escrowHeader}>
+                            <Ionicons
+                                name="shield-checkmark"
+                                size={20}
+                                color={
+                                    securePayTx.payment_status === 'captured' ? '#16a34a' :
+                                    securePayTx.payment_status === 'disputed' ? '#ea580c' :
+                                    '#2563eb'
+                                }
+                            />
+                            <Text style={styles.escrowTitle}>
+                                {securePayTx.payment_status === 'held' && 'Secure-Pay — Funds Held'}
+                                {securePayTx.payment_status === 'captured' && 'Secure-Pay — Complete ✓'}
+                                {securePayTx.payment_status === 'disputed' && 'Secure-Pay — Under Review'}
+                                {securePayTx.payment_status === 'refunded' && 'Secure-Pay — Refunded'}
+                            </Text>
+                        </View>
+
+                        {escrowMessage && (
+                            <View style={styles.escrowMessageBox}>
+                                <Text style={styles.escrowMessageText}>{escrowMessage}</Text>
+                            </View>
+                        )}
+
+                        {securePayTx.payment_status === 'held' && (
+                            <>
+                                {/* Step indicator */}
+                                <View style={styles.escrowSteps}>
+                                    <View style={[styles.escrowStep, styles.escrowStepDone]}>
+                                        <Text style={styles.escrowStepDoneText}>✓</Text>
+                                    </View>
+                                    <Text style={styles.escrowStepLabel}>Payment held</Text>
+                                    <View style={styles.escrowStepLine} />
+                                    <View style={[styles.escrowStep, securePayTx.seller_confirmed_at ? styles.escrowStepDone : styles.escrowStepPending]}>
+                                        <Text style={securePayTx.seller_confirmed_at ? styles.escrowStepDoneText : styles.escrowStepPendingText}>2</Text>
+                                    </View>
+                                    <Text style={styles.escrowStepLabel}>Seller confirms</Text>
+                                    <View style={styles.escrowStepLine} />
+                                    <View style={styles.escrowStepPending}>
+                                        <Text style={styles.escrowStepPendingText}>3</Text>
+                                    </View>
+                                    <Text style={styles.escrowStepLabel}>Buyer releases</Text>
+                                </View>
+
+                                {/* Seller actions */}
+                                {securePayTx.is_seller && !securePayTx.seller_confirmed_at && (
+                                    <TouchableOpacity
+                                        style={[styles.escrowButton, styles.escrowButtonBlue, escrowAction === 'confirming-handoff' && styles.escrowButtonDisabled]}
+                                        onPress={handleConfirmHandoff}
+                                        disabled={!!escrowAction}
+                                    >
+                                        <Text style={styles.escrowButtonText}>
+                                            {escrowAction === 'confirming-handoff' ? 'Confirming...' : 'I Handed Over the Item'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
+                                {securePayTx.is_seller && securePayTx.seller_confirmed_at && (
+                                    <Text style={styles.escrowConfirmedText}>✓ You confirmed handoff. Waiting for buyer to confirm receipt.</Text>
+                                )}
+
+                                {/* Buyer actions */}
+                                {securePayTx.is_buyer && (
+                                    <>
+                                        {!securePayTx.seller_confirmed_at && (
+                                            <Text style={styles.escrowWaitingText}>Waiting for seller to confirm they handed over the item.</Text>
+                                        )}
+                                        <TouchableOpacity
+                                            style={[styles.escrowButton, styles.escrowButtonGreen, (!securePayTx.seller_confirmed_at || !!escrowAction) && styles.escrowButtonDisabled]}
+                                            onPress={handleConfirmReceipt}
+                                            disabled={!securePayTx.seller_confirmed_at || !!escrowAction}
+                                        >
+                                            <Text style={styles.escrowButtonText}>
+                                                {escrowAction === 'confirming-receipt' ? 'Confirming...' : 'I Received the Item — Release Payment'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.escrowButtonOutlineRed, !!escrowAction && styles.escrowButtonDisabled]}
+                                            onPress={handleDispute}
+                                            disabled={!!escrowAction}
+                                        >
+                                            <Text style={styles.escrowButtonOutlineRedText}>
+                                                {escrowAction === 'disputing' ? 'Submitting...' : securePayTx.seller_confirmed_at ? 'Dispute — I Did Not Receive the Item' : 'Cancel & Get Refund'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </>
+                                )}
+                            </>
+                        )}
+
+                        {securePayTx.payment_status === 'disputed' && (
+                            <View style={styles.escrowDisputeNote}>
+                                <Ionicons name="warning-outline" size={16} color="#ea580c" />
+                                <Text style={styles.escrowDisputeText}>This transaction is under admin review. Funds are held securely until resolved.</Text>
+                            </View>
+                        )}
                     </View>
                 )}
             </ScrollView>
@@ -1058,5 +1241,141 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         color: '#fff',
+    },
+    escrowPanel: {
+        margin: 8,
+        borderRadius: 12,
+        padding: 16,
+        backgroundColor: 'rgba(37, 99, 235, 0.06)',
+        borderWidth: 2,
+        borderColor: 'rgba(37, 99, 235, 0.25)',
+    },
+    escrowPanelGreen: {
+        backgroundColor: 'rgba(22, 163, 74, 0.06)',
+        borderColor: 'rgba(22, 163, 74, 0.3)',
+    },
+    escrowPanelOrange: {
+        backgroundColor: 'rgba(234, 88, 12, 0.06)',
+        borderColor: 'rgba(234, 88, 12, 0.3)',
+    },
+    escrowPanelGray: {
+        backgroundColor: '#f9fafb',
+        borderColor: '#d1d5db',
+    },
+    escrowHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 12,
+    },
+    escrowTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#111',
+    },
+    escrowMessageBox: {
+        backgroundColor: 'rgba(255,255,255,0.7)',
+        borderRadius: 8,
+        padding: 10,
+        marginBottom: 12,
+    },
+    escrowMessageText: {
+        fontSize: 13,
+        color: '#374151',
+    },
+    escrowSteps: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 14,
+        flexWrap: 'nowrap',
+    },
+    escrowStep: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    escrowStepDone: {
+        backgroundColor: '#2563eb',
+    },
+    escrowStepPending: {
+        backgroundColor: '#e5e7eb',
+    },
+    escrowStepDoneText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#fff',
+    },
+    escrowStepPendingText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#6b7280',
+    },
+    escrowStepLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#d1d5db',
+        marginHorizontal: 4,
+    },
+    escrowStepLabel: {
+        fontSize: 10,
+        color: '#6b7280',
+        marginHorizontal: 4,
+    },
+    escrowButton: {
+        paddingVertical: 12,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    escrowButtonBlue: {
+        backgroundColor: '#2563eb',
+    },
+    escrowButtonGreen: {
+        backgroundColor: COLORS.green,
+    },
+    escrowButtonDisabled: {
+        opacity: 0.4,
+    },
+    escrowButtonText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#fff',
+    },
+    escrowButtonOutlineRed: {
+        paddingVertical: 11,
+        borderRadius: 10,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#fca5a5',
+        marginBottom: 4,
+    },
+    escrowButtonOutlineRedText: {
+        fontSize: 13,
+        color: '#ef4444',
+        fontWeight: '500',
+    },
+    escrowConfirmedText: {
+        fontSize: 13,
+        color: '#2563eb',
+        fontWeight: '500',
+        marginBottom: 8,
+    },
+    escrowWaitingText: {
+        fontSize: 12,
+        color: '#6b7280',
+        marginBottom: 8,
+    },
+    escrowDisputeNote: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 6,
+    },
+    escrowDisputeText: {
+        flex: 1,
+        fontSize: 13,
+        color: '#ea580c',
+        lineHeight: 18,
     },
 });

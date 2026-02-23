@@ -52,3 +52,8 @@ export const getUniversities = async () => {
     const response = await apiClient.get('/admin/universities');
     return response.data;
 };
+
+export const resolveDispute = async (transactionId, action) => {
+    const response = await apiClient.post(`/admin/transactions/${transactionId}/resolve`, { action });
+    return response.data;
+};

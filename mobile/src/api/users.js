@@ -9,3 +9,8 @@ export const reportUser = async (userId, reason, details = '') => {
     const response = await apiClient.post(`/users/${userId}/report`, { reason, details });
     return response.data;
 };
+
+export const updateProfile = async (name) => {
+    const response = await apiClient.put('/users/me', { name });
+    return response.data;
+};

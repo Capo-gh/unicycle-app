@@ -16,6 +16,10 @@ class ReportRequest(BaseModel):
     details: Optional[str] = ""
 
 
+class UpdateProfileRequest(BaseModel):
+    name: str
+
+
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user_profile(
     user_id: int,
@@ -70,3 +74,20 @@ def report_user(
         pass  # Don't fail the request if email fails
 
     return {"message": "Report submitted. Our team will review it within 24 hours."}
+
+
+@router.put("/me", response_model=UserResponse)
+def update_profile(
+    body: UpdateProfileRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Update current user's profile (name)"""
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Name cannot be empty")
+
+    current_user.name = name
+    db.commit()
+    db.refresh(current_user)
+    return current_user

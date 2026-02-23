@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Settings, ShieldCheck, Package, Star, Plus, ArrowLeftRight } from 'lucide-react';
+import { Settings, ShieldCheck, Package, Star, Plus, ArrowLeftRight, Pencil, Check, X } from 'lucide-react';
 import { getMyListings } from '../api/listings';
 import { getMyStats, getMyTransactions } from '../api/transactions';
+import { updateProfile } from '../api/users';
 
 export default function Profile({ user: signupUser, onNavigate }) {
     const [myListings, setMyListings] = useState([]);
@@ -10,9 +11,30 @@ export default function Profile({ user: signupUser, onNavigate }) {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [editingName, setEditingName] = useState(false);
+    const [nameInput, setNameInput] = useState('');
+    const [displayName, setDisplayName] = useState(signupUser?.name || 'User');
+    const [savingName, setSavingName] = useState(false);
+
+    const handleSaveName = async () => {
+        const trimmed = nameInput.trim();
+        if (!trimmed) return;
+        setSavingName(true);
+        try {
+            await updateProfile(trimmed);
+            setDisplayName(trimmed);
+            const stored = JSON.parse(localStorage.getItem('user') || '{}');
+            localStorage.setItem('user', JSON.stringify({ ...stored, name: trimmed }));
+            setEditingName(false);
+        } catch {
+            // ignore
+        } finally {
+            setSavingName(false);
+        }
+    };
 
     const user = {
-        name: signupUser?.name || 'User',
+        name: displayName,
         email: signupUser?.email || '',
         university: signupUser?.university || '',
         verified: signupUser?.is_verified || false,
@@ -83,8 +105,32 @@ export default function Profile({ user: signupUser, onNavigate }) {
                         </div>
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                                <h2 className="text-xl lg:text-2xl font-bold">{user.name}</h2>
-                                {user.verified && <ShieldCheck className="w-5 h-5" />}
+                                {editingName ? (
+                                    <div className="flex items-center gap-2 flex-1">
+                                        <input
+                                            autoFocus
+                                            value={nameInput}
+                                            onChange={(e) => setNameInput(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setEditingName(false); }}
+                                            maxLength={60}
+                                            className="bg-white/20 text-white placeholder-white/60 border border-white/40 rounded-lg px-3 py-1 text-lg font-bold focus:outline-none focus:border-white flex-1"
+                                        />
+                                        <button onClick={handleSaveName} disabled={savingName || !nameInput.trim()} className="p-1 hover:bg-white/20 rounded-full disabled:opacity-50">
+                                            <Check className="w-5 h-5 text-white" />
+                                        </button>
+                                        <button onClick={() => setEditingName(false)} className="p-1 hover:bg-white/20 rounded-full">
+                                            <X className="w-5 h-5 text-white" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <h2 className="text-xl lg:text-2xl font-bold">{user.name}</h2>
+                                        {user.verified && <ShieldCheck className="w-5 h-5" />}
+                                        <button onClick={() => { setNameInput(user.name); setEditingName(true); }} className="p-1 hover:bg-white/20 rounded-full transition-colors">
+                                            <Pencil className="w-4 h-4 text-white/70" />
+                                        </button>
+                                    </>
+                                )}
                             </div>
                             <p className="text-sm text-white/80">{user.university}</p>
                             <p className="text-xs text-white/60 mt-1">Member since {user.memberSince}</p>

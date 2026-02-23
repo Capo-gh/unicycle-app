@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Package, ArrowLeftRight, BarChart3, Search, Shield, ShieldOff, Ban, CheckCircle, Trash2, Eye, EyeOff, Bell, Megaphone, Send, Star } from 'lucide-react';
+import { Users, Package, ArrowLeftRight, BarChart3, Search, Shield, ShieldOff, Ban, CheckCircle, Trash2, Eye, EyeOff, Bell, Megaphone, Send, Star, DollarSign, RotateCcw } from 'lucide-react';
 import {
     getAdminStats,
     getAdminUsers,
@@ -9,7 +9,8 @@ import {
     toggleListingActive,
     adminDeleteListing,
     getAdminTransactions,
-    getUniversities
+    getUniversities,
+    resolveDispute
 } from '../api/admin';
 import {
     sendBroadcast,
@@ -181,6 +182,24 @@ export default function Admin() {
         }
     };
 
+    const handleResolveDispute = async (transactionId, action) => {
+        const label = action === 'release' ? 'release funds to the seller' : 'refund the buyer';
+        if (!confirm(`Are you sure you want to ${label}? This action cannot be undone.`)) return;
+        setActionLoading(transactionId);
+        try {
+            await resolveDispute(transactionId, action);
+            setTransactions(prev => prev.map(t =>
+                t.id === transactionId
+                    ? { ...t, payment_status: action === 'release' ? 'captured' : 'refunded', status: action === 'release' ? 'completed' : 'cancelled' }
+                    : t
+            ));
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Failed to resolve dispute');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
     const handleSendNotification = async (e) => {
         e.preventDefault();
         if (!notifForm.title.trim() || !notifForm.message.trim()) return;
@@ -259,6 +278,7 @@ export default function Admin() {
             case 'agreed': return 'bg-blue-100 text-blue-700';
             case 'interested': return 'bg-yellow-100 text-yellow-700';
             case 'cancelled': return 'bg-red-100 text-red-700';
+            case 'disputed': return 'bg-orange-100 text-orange-700';
             default: return 'bg-gray-100 text-gray-700';
         }
     };
@@ -535,22 +555,59 @@ export default function Admin() {
                                         <th className="text-left px-4 py-3 font-medium text-gray-600">Item</th>
                                         <th className="text-left px-4 py-3 font-medium text-gray-600">Price</th>
                                         <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                                        <th className="text-left px-4 py-3 font-medium text-gray-600">Payment</th>
                                         <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
+                                        <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {transactions.map(t => (
-                                        <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50">
+                                        <tr key={t.id} className={`border-b border-gray-100 hover:bg-gray-50 ${t.payment_status === 'disputed' ? 'bg-orange-50/50' : ''}`}>
                                             <td className="px-4 py-3 text-gray-900">{t.buyer_name}</td>
                                             <td className="px-4 py-3 text-gray-900">{t.seller_name}</td>
-                                            <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate">{t.listing_title}</td>
+                                            <td className="px-4 py-3 text-gray-600 max-w-[160px] truncate">{t.listing_title}</td>
                                             <td className="px-4 py-3 text-gray-900 font-medium">${t.listing_price}</td>
                                             <td className="px-4 py-3">
                                                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium capitalize ${statusColor(t.status)}`}>
                                                     {t.status}
                                                 </span>
                                             </td>
+                                            <td className="px-4 py-3">
+                                                {t.payment_status && (
+                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium capitalize ${
+                                                        t.payment_status === 'disputed' ? 'bg-orange-100 text-orange-700' :
+                                                        t.payment_status === 'captured' ? 'bg-green-100 text-green-700' :
+                                                        t.payment_status === 'held' ? 'bg-blue-100 text-blue-700' :
+                                                        t.payment_status === 'refunded' ? 'bg-gray-100 text-gray-600' :
+                                                        'bg-gray-100 text-gray-600'
+                                                    }`}>
+                                                        {t.payment_method === 'secure_pay' ? `SP: ${t.payment_status}` : 'cash'}
+                                                    </span>
+                                                )}
+                                            </td>
                                             <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(t.created_at)}</td>
+                                            <td className="px-4 py-3">
+                                                {t.payment_status === 'disputed' && (
+                                                    <div className="flex justify-end gap-1">
+                                                        <button
+                                                            onClick={() => handleResolveDispute(t.id, 'release')}
+                                                            disabled={actionLoading === t.id}
+                                                            title="Release funds to seller"
+                                                            className="flex items-center gap-1 px-2 py-1 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors disabled:opacity-50"
+                                                        >
+                                                            <DollarSign className="w-3 h-3" /> Release
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleResolveDispute(t.id, 'refund')}
+                                                            disabled={actionLoading === t.id}
+                                                            title="Refund buyer"
+                                                            className="flex items-center gap-1 px-2 py-1 text-xs bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50"
+                                                        >
+                                                            <RotateCcw className="w-3 h-3" /> Refund
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

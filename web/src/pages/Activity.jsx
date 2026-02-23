@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Package, ShoppingBag, Clock, CheckCircle, X } from 'lucide-react';
+import { ArrowLeft, Package, ShoppingBag, Clock, CheckCircle, X, Star } from 'lucide-react';
 import { getMyTransactions, updateTransaction } from '../api/transactions';
+import { createReview } from '../api/reviews';
 
 export default function Transactions({ onNavigate }) {
     const [activeTab, setActiveTab] = useState('buyer'); // buyer or seller
@@ -8,6 +9,10 @@ export default function Transactions({ onNavigate }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [updating, setUpdating] = useState(null);
+    const [reviewModal, setReviewModal] = useState(null); // { userId, userName, listingId }
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewText, setReviewText] = useState('');
+    const [submittingReview, setSubmittingReview] = useState(false);
 
     // Fetch transactions
     useEffect(() => {
@@ -43,6 +48,34 @@ export default function Transactions({ onNavigate }) {
         }
     };
 
+    const openReviewModal = (transaction) => {
+        setReviewModal({
+            userId: activeTab === 'buyer' ? transaction.seller_id : transaction.buyer_id,
+            userName: activeTab === 'buyer' ? transaction.seller?.name : transaction.buyer?.name,
+            listingId: transaction.listing_id
+        });
+        setReviewRating(5);
+        setReviewText('');
+    };
+
+    const handleSubmitReview = async () => {
+        if (!reviewModal) return;
+        setSubmittingReview(true);
+        try {
+            await createReview({
+                reviewed_user_id: reviewModal.userId,
+                listing_id: reviewModal.listingId,
+                rating: reviewRating,
+                text: reviewText.trim() || null
+            });
+            setReviewModal(null);
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Failed to submit review');
+        } finally {
+            setSubmittingReview(false);
+        }
+    };
+
     const getStatusBadge = (status) => {
         const badges = {
             interested: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Interested', icon: Clock },
@@ -62,6 +95,7 @@ export default function Transactions({ onNavigate }) {
     };
 
     return (
+        <>
         <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
             {/* Header */}
             <div className="bg-white border-b border-gray-200 sticky top-14 lg:top-0 z-10">
@@ -198,12 +232,23 @@ export default function Transactions({ onNavigate }) {
                                     </div>
                                 )}
 
-                                {/* Completed info */}
-                                {transaction.status === 'completed' && transaction.completed_at && (
-                                    <div className="px-4 pb-4 pt-3 border-t border-gray-100">
+                                {/* Completed info + Leave Review */}
+                                {transaction.status === 'completed' && (
+                                    <div className="px-4 pb-4 pt-3 border-t border-gray-100 flex items-center justify-between">
                                         <p className="text-xs text-gray-500">
-                                            Completed on {new Date(transaction.completed_at).toLocaleDateString()}
+                                            {transaction.completed_at
+                                                ? `Completed on ${new Date(transaction.completed_at).toLocaleDateString()}`
+                                                : 'Completed'}
                                         </p>
+                                        {activeTab === 'buyer' && (
+                                            <button
+                                                onClick={() => openReviewModal(transaction)}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors text-xs font-medium border border-amber-200"
+                                            >
+                                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                                Leave Review
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -212,5 +257,46 @@ export default function Transactions({ onNavigate }) {
                 )}
             </div>
         </div>
+
+        {/* Review Modal */}
+        {reviewModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
+                    <div className="flex items-center justify-between p-5 border-b border-gray-100">
+                        <h3 className="font-semibold text-gray-900">Rate {reviewModal.userName}</h3>
+                        <button onClick={() => setReviewModal(null)} className="p-1 hover:bg-gray-100 rounded-full">
+                            <X className="w-5 h-5 text-gray-500" />
+                        </button>
+                    </div>
+                    <div className="p-5 space-y-4">
+                        {/* Star picker */}
+                        <div className="flex items-center justify-center gap-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button key={star} onClick={() => setReviewRating(star)}>
+                                    <Star className={`w-9 h-9 transition-colors ${star <= reviewRating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
+                                </button>
+                            ))}
+                            <span className="text-sm text-gray-500 ml-1">{reviewRating}/5</span>
+                        </div>
+                        {/* Text */}
+                        <textarea
+                            value={reviewText}
+                            onChange={(e) => setReviewText(e.target.value)}
+                            placeholder="Share your experience (optional)"
+                            rows={3}
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green resize-none"
+                        />
+                        <button
+                            onClick={handleSubmitReview}
+                            disabled={submittingReview}
+                            className="w-full py-2.5 bg-unicycle-green text-white rounded-lg font-semibold text-sm hover:bg-unicycle-green/90 transition-colors disabled:opacity-50"
+                        >
+                            {submittingReview ? 'Submitting...' : 'Submit Review'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 }

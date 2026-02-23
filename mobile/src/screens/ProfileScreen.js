@@ -7,7 +7,10 @@ import {
     ScrollView,
     Alert,
     Image,
-    RefreshControl
+    RefreshControl,
+    Modal,
+    TextInput,
+    ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,16 +19,20 @@ import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../../../shared/constants/colors';
 import { getMyListings } from '../api/listings';
 import { getMyStats, getMyTransactions } from '../api/transactions';
+import { updateProfile } from '../api/users';
 import NotificationBell from '../components/NotificationBell';
 
 export default function ProfileScreen({ navigation }) {
-    const { user, logout } = useAuth();
+    const { user, logout, updateUser } = useAuth();
     const [myListings, setMyListings] = useState([]);
     const [myInterests, setMyInterests] = useState([]);
     const [incomingTransactions, setIncomingTransactions] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [nameInput, setNameInput] = useState('');
+    const [savingName, setSavingName] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -60,6 +67,21 @@ export default function ProfileScreen({ navigation }) {
         setRefreshing(true);
         await fetchData();
         setRefreshing(false);
+    };
+
+    const handleSaveName = async () => {
+        const trimmed = nameInput.trim();
+        if (!trimmed) return;
+        setSavingName(true);
+        try {
+            const updated = await updateProfile(trimmed);
+            await updateUser({ name: updated.name });
+            setShowEditModal(false);
+        } catch {
+            Alert.alert('Error', 'Failed to update name. Please try again.');
+        } finally {
+            setSavingName(false);
+        }
     };
 
     const renderStars = (rating) => {
@@ -123,6 +145,12 @@ export default function ProfileScreen({ navigation }) {
                                         <Text style={styles.verifiedText}>Verified</Text>
                                     </View>
                                 )}
+                                <TouchableOpacity
+                                    onPress={() => { setNameInput(user?.name || ''); setShowEditModal(true); }}
+                                    style={styles.editNameButton}
+                                >
+                                    <Ionicons name="pencil" size={14} color="rgba(255,255,255,0.8)" />
+                                </TouchableOpacity>
                             </View>
                             <Text style={styles.university}>{user?.university || ''}</Text>
                             <View style={styles.ratingRow}>
@@ -246,6 +274,39 @@ export default function ProfileScreen({ navigation }) {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
+            {/* Edit Name Modal */}
+            <Modal visible={showEditModal} transparent animationType="slide" onRequestClose={() => setShowEditModal(false)}>
+                <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowEditModal(false)}>
+                    <View style={styles.editModalContent} onStartShouldSetResponder={() => true}>
+                        <View style={styles.modalHandle} />
+                        <Text style={styles.editModalTitle}>Edit Name</Text>
+                        <TextInput
+                            style={styles.editNameInput}
+                            value={nameInput}
+                            onChangeText={setNameInput}
+                            placeholder="Your name"
+                            placeholderTextColor="#bbb"
+                            autoFocus
+                            maxLength={60}
+                        />
+                        <View style={styles.editModalButtons}>
+                            <TouchableOpacity style={styles.editModalCancel} onPress={() => setShowEditModal(false)}>
+                                <Text style={styles.editModalCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.editModalSave, (!nameInput.trim() || savingName) && { opacity: 0.5 }]}
+                                onPress={handleSaveName}
+                                disabled={!nameInput.trim() || savingName}
+                            >
+                                {savingName
+                                    ? <ActivityIndicator color="#fff" size="small" />
+                                    : <Text style={styles.editModalSaveText}>Save</Text>
+                                }
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -535,5 +596,73 @@ const styles = StyleSheet.create({
     },
     logoutText: {
         color: '#ef4444',
+    },
+    editNameButton: {
+        padding: 4,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    editModalContent: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        padding: 20,
+        paddingBottom: 36,
+    },
+    modalHandle: {
+        width: 40,
+        height: 4,
+        backgroundColor: '#d1d5db',
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginBottom: 20,
+    },
+    editModalTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#111',
+        marginBottom: 16,
+    },
+    editNameInput: {
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        fontSize: 16,
+        color: '#111',
+        marginBottom: 20,
+    },
+    editModalButtons: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    editModalCancel: {
+        flex: 1,
+        paddingVertical: 13,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        alignItems: 'center',
+    },
+    editModalCancelText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#374151',
+    },
+    editModalSave: {
+        flex: 1,
+        paddingVertical: 13,
+        borderRadius: 12,
+        backgroundColor: COLORS.green,
+        alignItems: 'center',
+    },
+    editModalSaveText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#fff',
     },
 });

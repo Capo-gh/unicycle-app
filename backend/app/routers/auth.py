@@ -6,7 +6,7 @@ from ..database import get_db
 from ..models.user import User
 from ..schemas.user import UserCreate, UserLogin, UserResponse, Token, SetPassword
 from ..utils.auth import get_password_hash, verify_password, create_access_token, verify_token
-from ..utils.email import send_verification_email, generate_verification_token, is_token_expired
+from ..utils.email import send_verification_email, send_reset_email, generate_verification_token, is_token_expired
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -274,3 +274,59 @@ def resend_verification(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to send email: {str(e)}"
         )
+
+
+@router.post("/forgot-password")
+def forgot_password(email_data: dict, db: Session = Depends(get_db)):
+    """Send a password reset email. Always returns success to avoid revealing if email exists."""
+    email = email_data.get("email", "").strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+
+    # Always return success (don't reveal if email exists)
+    if not user or not user.is_verified:
+        return {"message": "If an account exists with that email, you will receive a reset link shortly."}
+
+    # Generate reset token (reuse verification_token column)
+    reset_token = generate_verification_token()
+    user.verification_token = reset_token
+    user.token_created_at = datetime.now()
+    db.commit()
+
+    try:
+        send_reset_email(user.email, user.name, reset_token)
+    except Exception as e:
+        print(f"Failed to send reset email: {str(e)}")
+
+    return {"message": "If an account exists with that email, you will receive a reset link shortly."}
+
+
+@router.post("/reset-password")
+def reset_password(data: SetPassword, db: Session = Depends(get_db)):
+    """Reset password using a token from the reset email"""
+    user = db.query(User).filter(User.verification_token == data.token).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset link. Please request a new one."
+        )
+
+    if is_token_expired(user.token_created_at):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reset link has expired. Please request a new one."
+        )
+
+    user.hashed_password = get_password_hash(data.password)
+    user.verification_token = None
+    user.token_created_at = None
+    db.commit()
+    db.refresh(user)
+
+    token = create_access_token({"sub": user.email})
+    return {
+        "message": "Password reset successfully! You are now logged in.",
+        "access_token": token,
+        "token_type": "bearer",
+        "user": user
+    }

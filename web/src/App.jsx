@@ -16,6 +16,7 @@ import AnnouncementModal from './components/AnnouncementModal';
 import Signup from './pages/Signup';
 import VerifyEmail from './pages/VerifyEmail';
 import CheckEmail from './pages/CheckEmail';
+import ResetPassword from './pages/ResetPassword';
 import { getCurrentUser } from './api/auth';
 import { activateBoost, activateSecurePay } from './api/payments';
 
@@ -146,8 +147,15 @@ function App() {
         }
       }
 
-      // Check if URL has verification token (only if not logged in)
+      // Check if URL has a reset_token (password reset link)
       const params = new URLSearchParams(window.location.search);
+
+      if (params.get('reset_token')) {
+        setCurrentPage('reset-password');
+        return;
+      }
+
+      // Check if URL has verification token (only if not logged in)
       const verificationToken = params.get('token');
 
       if (verificationToken) {
@@ -295,6 +303,14 @@ function App() {
     return (
       <div className="animate-fadeIn">
         <VerifyEmail onNavigate={handleNavigate} onSignup={handleSignup} />
+      </div>
+    );
+  }
+
+  if (currentPage === 'reset-password') {
+    return (
+      <div className="animate-fadeIn">
+        <ResetPassword onSignup={handleSignup} onNavigate={handleNavigate} />
       </div>
     );
   }

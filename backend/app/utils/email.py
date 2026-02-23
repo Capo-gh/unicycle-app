@@ -214,6 +214,74 @@ def send_report_email(
         raise Exception(f"Failed to send report email: {str(e)}")
 
 
+def send_reset_email(email: str, name: str, token: str):
+    """Send password reset email using SendGrid"""
+    reset_link = f"{FRONTEND_URL}?reset_token={token}"
+
+    print("=" * 50)
+    print("📧 SENDING PASSWORD RESET EMAIL")
+    print(f"To: {email}")
+    print(f"Link: {reset_link}")
+    print("=" * 50)
+
+    html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
+                .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }}
+                .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🔐 Reset Your Password</h1>
+                </div>
+                <div class="content">
+                    <p>Hi {name},</p>
+                    <p>We received a request to reset your UniCycle password. Click the button below to set a new password:</p>
+                    <center>
+                        <a href="{reset_link}" class="button">Reset Password</a>
+                    </center>
+                    <p><small>Or copy and paste this link:</small><br>
+                    <small style="color: #4CAF50;">{reset_link}</small></p>
+                    <p><strong>This link expires in 24 hours.</strong></p>
+                    <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                    <p style="font-size: 14px; color: #666;">If you didn't request a password reset, you can safely ignore this email.</p>
+                </div>
+                <div class="footer">
+                    <p>&copy; 2025 UniCycle - Student Marketplace</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    """
+
+    if not SENDGRID_API_KEY:
+        print("⚠️  SendGrid not configured - Reset link (copy this):")
+        print(f"🔗 {reset_link}")
+        print("=" * 50)
+        return None
+
+    try:
+        message = Mail(
+            from_email=SENDGRID_FROM_EMAIL,
+            to_emails=email,
+            subject="Reset your UniCycle password",
+            html_content=html_content
+        )
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        return sg.send(message)
+    except Exception as e:
+        print(f"❌ Failed to send reset email: {str(e)}")
+        raise Exception(f"Failed to send reset email: {str(e)}")
+
+
 def is_token_expired(token_created_at: datetime) -> bool:
     """Check if verification token is expired (24 hours)"""
     if not token_created_at:
