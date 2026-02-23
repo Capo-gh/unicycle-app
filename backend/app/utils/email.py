@@ -338,6 +338,59 @@ def send_reset_email(email: str, name: str, token: str):
         raise Exception(f"Failed to send reset email: {str(e)}")
 
 
+def send_direct_email(email: str, name: str, subject: str, message: str):
+    """Send a direct admin message to a specific user"""
+    html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
+                .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .message-box {{ background: white; border-left: 4px solid #4CAF50; padding: 15px 20px; margin: 15px 0; border-radius: 0 6px 6px 0; white-space: pre-wrap; }}
+                .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>📬 Message from UniCycle Team</h1>
+                </div>
+                <div class="content">
+                    <p>Hi {name},</p>
+                    <div class="message-box">{message}</div>
+                    <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                    <p style="font-size: 14px; color: #666;">This message was sent by the UniCycle moderation team. If you have questions, reply to this email.</p>
+                </div>
+                <div class="footer">
+                    <p>&copy; 2025 UniCycle - Student Marketplace</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    """
+
+    if not SENDGRID_API_KEY:
+        print(f"[Direct Email] To: {email} | Subject: {subject}")
+        print(message)
+        return None
+
+    try:
+        mail = Mail(
+            from_email=SENDGRID_FROM_EMAIL,
+            to_emails=email,
+            subject=subject,
+            html_content=html_content
+        )
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        return sg.send(mail)
+    except Exception as e:
+        print(f"Failed to send direct email: {str(e)}")
+        raise Exception(f"Failed to send email: {str(e)}")
+
+
 def is_token_expired(token_created_at: datetime) -> bool:
     """Check if verification token is expired (24 hours)"""
     if not token_created_at:

@@ -7,6 +7,8 @@ from .routers import auth, listings, requests, messages, upload, reviews, users,
 from .models.user import User
 from .models.notification import Notification, NotificationRead
 from .models.announcement import Announcement, AnnouncementDismissal
+from .models.report import Report
+from .models.admin_log import AdminLog
 
 # Create database tables
 Base.metadata.create_all(bind=engine)

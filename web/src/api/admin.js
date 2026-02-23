@@ -5,6 +5,11 @@ export const getAdminStats = async () => {
     return response.data;
 };
 
+export const getAdminStatsHistory = async () => {
+    const response = await apiClient.get('/admin/stats/history');
+    return response.data;
+};
+
 export const getAdminUsers = async (search = '', university = '') => {
     const params = {};
     if (search) params.search = search;
@@ -20,6 +25,11 @@ export const toggleUserAdmin = async (userId) => {
 
 export const toggleUserSuspend = async (userId) => {
     const response = await apiClient.put(`/admin/users/${userId}/suspend`);
+    return response.data;
+};
+
+export const emailUser = async (userId, subject, message) => {
+    const response = await apiClient.post(`/admin/users/${userId}/email`, { subject, message });
     return response.data;
 };
 
@@ -55,5 +65,39 @@ export const getUniversities = async () => {
 
 export const resolveDispute = async (transactionId, action) => {
     const response = await apiClient.post(`/admin/transactions/${transactionId}/resolve`, { action });
+    return response.data;
+};
+
+export const getAdminReports = async (reportStatus = '') => {
+    const params = {};
+    if (reportStatus) params.report_status = reportStatus;
+    const response = await apiClient.get('/admin/reports', { params });
+    return response.data;
+};
+
+export const dismissReport = async (reportId) => {
+    const response = await apiClient.put(`/admin/reports/${reportId}/dismiss`);
+    return response.data;
+};
+
+export const actionReport = async (reportId) => {
+    const response = await apiClient.put(`/admin/reports/${reportId}/action`);
+    return response.data;
+};
+
+export const getAdminReviews = async (search = '') => {
+    const params = {};
+    if (search) params.search = search;
+    const response = await apiClient.get('/admin/reviews', { params });
+    return response.data;
+};
+
+export const adminDeleteReview = async (reviewId) => {
+    const response = await apiClient.delete(`/admin/reviews/${reviewId}`);
+    return response.data;
+};
+
+export const getAdminLogs = async () => {
+    const response = await apiClient.get('/admin/logs');
     return response.data;
 };

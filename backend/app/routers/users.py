@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Optional
 from ..database import get_db
 from ..models.user import User
+from ..models.report import Report
 from ..schemas.user import UserResponse
 from ..utils.dependencies import get_current_user_required
 from ..utils.email import send_report_email
@@ -58,6 +59,17 @@ def report_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
+
+    # Persist to DB
+    report = Report(
+        reporter_id=current_user.id,
+        reportee_id=reportee.id,
+        reason=body.reason,
+        details=body.details or "",
+        status="pending"
+    )
+    db.add(report)
+    db.commit()
 
     try:
         send_report_email(
