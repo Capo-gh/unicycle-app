@@ -225,6 +225,58 @@ def activate_secure_pay(
     return {"transaction_id": transaction.id, "success": True}
 
 
+@router.get("/secure-pay/listing/{listing_id}")
+def get_listing_secure_pay(
+    listing_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Get the active Secure-Pay transaction for a listing (for buyer or seller)"""
+    transaction = db.query(Transaction).filter(
+        Transaction.listing_id == listing_id,
+        Transaction.payment_method == "secure_pay",
+        Transaction.payment_status.in_(["held", "disputed"])
+    ).filter(
+        (Transaction.buyer_id == current_user.id) | (Transaction.seller_id == current_user.id)
+    ).first()
+
+    if not transaction:
+        return None
+
+    return {
+        "id": transaction.id,
+        "payment_status": transaction.payment_status,
+        "status": transaction.status,
+        "seller_confirmed_at": transaction.seller_confirmed_at.isoformat() if transaction.seller_confirmed_at else None,
+        "is_buyer": transaction.buyer_id == current_user.id,
+        "is_seller": transaction.seller_id == current_user.id,
+    }
+
+
+@router.post("/secure-pay/{transaction_id}/confirm-handoff")
+def confirm_handoff(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Seller confirms they physically handed the item to the buyer"""
+    transaction = db.query(Transaction).filter(
+        Transaction.id == transaction_id,
+        Transaction.seller_id == current_user.id,
+        Transaction.payment_method == "secure_pay",
+        Transaction.payment_status == "held"
+    ).first()
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    if transaction.seller_confirmed_at:
+        return {"success": True, "already_confirmed": True}
+
+    transaction.seller_confirmed_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"success": True}
+
+
 @router.post("/secure-pay/{transaction_id}/confirm-receipt")
 def confirm_receipt(
     transaction_id: int,
@@ -263,9 +315,10 @@ def dispute_transaction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_required)
 ):
-    """Buyer disputes transaction — cancels payment intent and refunds"""
-    stripe = get_stripe()
-
+    """Buyer disputes transaction.
+    - If seller already confirmed handoff: funds are HELD for admin review (not auto-refunded).
+    - If seller has NOT confirmed: payment intent is cancelled and buyer gets a full refund.
+    """
     transaction = db.query(Transaction).filter(
         Transaction.id == transaction_id,
         Transaction.buyer_id == current_user.id,
@@ -275,13 +328,25 @@ def dispute_transaction(
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
 
-    try:
-        stripe.payment_intents.cancel(transaction.stripe_payment_intent_id)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Cancellation failed: {str(e)}")
+    if transaction.seller_confirmed_at:
+        # Seller confirmed handoff — don't auto-refund, escalate to admin
+        transaction.payment_status = "disputed"
+        transaction.status = TransactionStatus.DISPUTED
+        db.commit()
+        return {
+            "success": True,
+            "admin_review": True,
+            "message": "Dispute submitted. An admin will review within 24 hours. Funds are held until resolved."
+        }
+    else:
+        # Seller hasn't confirmed handoff — safe to refund (meeting likely never happened)
+        stripe = get_stripe()
+        try:
+            stripe.payment_intents.cancel(transaction.stripe_payment_intent_id)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Cancellation failed: {str(e)}")
 
-    transaction.payment_status = "refunded"
-    transaction.status = TransactionStatus.CANCELLED
-    db.commit()
-
-    return {"success": True, "transaction_id": transaction.id}
+        transaction.payment_status = "refunded"
+        transaction.status = TransactionStatus.CANCELLED
+        db.commit()
+        return {"success": True, "admin_review": False, "refunded": True, "transaction_id": transaction.id}

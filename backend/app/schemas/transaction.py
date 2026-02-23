@@ -21,6 +21,7 @@ class TransactionResponse(BaseModel):
     status: TransactionStatus
     payment_method: Optional[str] = 'cash'
     payment_status: Optional[str] = None
+    seller_confirmed_at: Optional[datetime] = None
     created_at: datetime
     completed_at: Optional[datetime]
     updated_at: datetime

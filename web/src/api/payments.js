@@ -20,6 +20,16 @@ export const activateSecurePay = async (listingId, sessionId) => {
     return response.data;
 };
 
+export const getListingSecurePay = async (listingId) => {
+    const response = await client.get(`/payments/secure-pay/listing/${listingId}`);
+    return response.data;
+};
+
+export const confirmHandoff = async (transactionId) => {
+    const response = await client.post(`/payments/secure-pay/${transactionId}/confirm-handoff`);
+    return response.data;
+};
+
 export const confirmReceipt = async (transactionId) => {
     const response = await client.post(`/payments/secure-pay/${transactionId}/confirm-receipt`);
     return response.data;

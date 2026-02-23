@@ -39,6 +39,16 @@ with engine.connect() as conn:
     if "payment_status" not in transaction_columns:
         conn.execute(text("ALTER TABLE transactions ADD COLUMN payment_status VARCHAR"))
         conn.commit()
+    if "seller_confirmed_at" not in transaction_columns:
+        conn.execute(text("ALTER TABLE transactions ADD COLUMN seller_confirmed_at TIMESTAMP WITH TIME ZONE"))
+        conn.commit()
+
+    # Add DISPUTED value to transactionstatus enum if not present
+    try:
+        conn.execute(text("ALTER TYPE transactionstatus ADD VALUE IF NOT EXISTS 'disputed'"))
+        conn.commit()
+    except Exception:
+        conn.rollback()
 
     if "is_admin" not in existing_columns:
         conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE"))

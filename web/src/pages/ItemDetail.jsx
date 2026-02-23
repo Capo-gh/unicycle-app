@@ -1,12 +1,27 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, ShieldCheck, MessageCircle, Share2, Edit, Star, CheckCircle, ChevronRight, Heart, Flag, X } from 'lucide-react';
+import { ArrowLeft, MapPin, ShieldCheck, MessageCircle, Share2, Edit, Star, CheckCircle, ChevronRight, Heart, Flag, X, AlertTriangle, Languages } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import SecurePayModal from './SecurePayModal';
 import { getUserReviews } from '../api/reviews';
 import { markAsSold, markAsUnsold } from '../api/listings';
 import { createTransaction, getMyTransactions, deleteTransaction } from '../api/transactions';
 import { reportUser } from '../api/users';
+import { getListingSecurePay, confirmHandoff, confirmReceipt, disputeTransaction } from '../api/payments';
+
+async function translateText(text, targetLang) {
+    try {
+        const res = await fetch(
+            `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`
+        );
+        const data = await res.json();
+        return data.responseData?.translatedText || text;
+    } catch {
+        return text;
+    }
+}
 
 export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, onViewSellerProfile }) {
+    const { i18n } = useTranslation();
     const [showSecurePayModal, setShowSecurePayModal] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [sellerReviews, setSellerReviews] = useState(null);
@@ -23,6 +38,15 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
     const [reportDetails, setReportDetails] = useState('');
     const [submittingReport, setSubmittingReport] = useState(false);
     const [reportSuccess, setReportSuccess] = useState(false);
+
+    // Secure-Pay escrow state
+    const [securePayTx, setSecurePayTx] = useState(null);
+    const [escrowAction, setEscrowAction] = useState(null); // 'confirming-handoff' | 'confirming-receipt' | 'disputing'
+    const [escrowMessage, setEscrowMessage] = useState(null);
+
+    // Auto-translation state
+    const [translatedTitle, setTranslatedTitle] = useState(null);
+    const [translatedDescription, setTranslatedDescription] = useState(null);
 
     // Get current user from localStorage
     useEffect(() => {
@@ -67,6 +91,24 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
 
         checkInterestStatus();
     }, [currentUser, item?.id]);
+
+    // Fetch active Secure-Pay transaction for this listing
+    useEffect(() => {
+        if (currentUser && item?.id) {
+            getListingSecurePay(item.id).then(tx => setSecurePayTx(tx || null)).catch(() => {});
+        }
+    }, [currentUser, item?.id]);
+
+    // Auto-translate title and description when language is French
+    useEffect(() => {
+        if (i18n.language === 'fr' && item?.id) {
+            if (item.title) translateText(item.title, 'fr').then(setTranslatedTitle);
+            if (item.description) translateText(item.description, 'fr').then(setTranslatedDescription);
+        } else {
+            setTranslatedTitle(null);
+            setTranslatedDescription(null);
+        }
+    }, [i18n.language, item?.id]);
 
     const fetchSellerReviews = async () => {
         try {
@@ -185,6 +227,54 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
             alert(err.response?.data?.detail || 'Failed to remove interest');
         } finally {
             setExpressingInterest(false);
+        }
+    };
+
+    // Escrow action handlers
+    const handleConfirmHandoff = async () => {
+        setEscrowAction('confirming-handoff');
+        try {
+            await confirmHandoff(securePayTx.id);
+            setSecurePayTx(prev => ({ ...prev, seller_confirmed_at: new Date().toISOString() }));
+            setEscrowMessage('Handoff confirmed. The buyer can now release payment.');
+        } catch (err) {
+            setEscrowMessage(err.response?.data?.detail || 'Failed to confirm. Please try again.');
+        } finally {
+            setEscrowAction(null);
+        }
+    };
+
+    const handleConfirmReceipt = async () => {
+        if (!window.confirm('Confirm you received the item? This will release payment to the seller.')) return;
+        setEscrowAction('confirming-receipt');
+        try {
+            await confirmReceipt(securePayTx.id);
+            setSecurePayTx(prev => ({ ...prev, payment_status: 'captured' }));
+            setEscrowMessage('Payment released to seller. Transaction complete!');
+        } catch (err) {
+            setEscrowMessage(err.response?.data?.detail || 'Failed to confirm. Please try again.');
+        } finally {
+            setEscrowAction(null);
+        }
+    };
+
+    const handleDispute = async () => {
+        const hasSellerConfirmed = !!securePayTx?.seller_confirmed_at;
+        const msg = hasSellerConfirmed
+            ? 'The seller confirmed handoff. Disputing will hold funds for admin review — you will NOT get an immediate refund. Continue?'
+            : 'Cancel this Secure-Pay transaction? You will get a full refund.';
+        if (!window.confirm(msg)) return;
+        setEscrowAction('disputing');
+        try {
+            const result = await disputeTransaction(securePayTx.id);
+            setSecurePayTx(prev => ({ ...prev, payment_status: result.admin_review ? 'disputed' : 'refunded' }));
+            setEscrowMessage(result.admin_review
+                ? 'Dispute submitted. Admin will review within 24 hours. Funds are held.'
+                : 'Transaction cancelled. You will receive a full refund.');
+        } catch (err) {
+            setEscrowMessage(err.response?.data?.detail || 'Failed to dispute. Please try again.');
+        } finally {
+            setEscrowAction(null);
         }
     };
 
@@ -335,7 +425,10 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                     <div className="bg-white rounded-lg p-4 shadow-sm">
                         <div className="flex items-start justify-between mb-2">
                             <div className="flex-1">
-                                <h2 className="text-2xl font-bold text-gray-900 mb-1">{item.title}</h2>
+                                <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                                    {translatedTitle || item.title}
+                                    {translatedTitle && <Languages className="inline w-3.5 h-3.5 ml-1.5 text-gray-400" title="Auto-translated" />}
+                                </h2>
                                 <div className="flex items-center gap-2 text-sm text-gray-500">
                                     <span>{item.category}</span>
                                     <span>•</span>
@@ -475,8 +568,11 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
 
                     {/* Description */}
                     <div className="bg-white rounded-lg p-4 shadow-sm">
-                        <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
-                        <p className="text-sm text-gray-700 leading-relaxed">{item.description}</p>
+                        <h3 className="font-semibold text-gray-900 mb-2">
+                            Description
+                            {translatedDescription && <Languages className="inline w-3.5 h-3.5 ml-1.5 text-gray-400" title="Auto-translated" />}
+                        </h3>
+                        <p className="text-sm text-gray-700 leading-relaxed">{translatedDescription || item.description}</p>
                     </div>
 
                     {/* Safe Zone */}
@@ -520,6 +616,94 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                                     </p>
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Secure-Pay Escrow Status Panel */}
+                    {securePayTx && (
+                        <div className={`rounded-lg p-4 border-2 ${
+                            securePayTx.payment_status === 'captured' ? 'bg-green-50 border-green-300' :
+                            securePayTx.payment_status === 'disputed' ? 'bg-orange-50 border-orange-300' :
+                            securePayTx.payment_status === 'refunded' ? 'bg-gray-50 border-gray-300' :
+                            'bg-blue-50 border-unicycle-blue/40'
+                        }`}>
+                            <div className="flex items-center gap-2 mb-3">
+                                <ShieldCheck className={`w-5 h-5 ${
+                                    securePayTx.payment_status === 'captured' ? 'text-green-600' :
+                                    securePayTx.payment_status === 'disputed' ? 'text-orange-500' :
+                                    'text-unicycle-blue'
+                                }`} />
+                                <span className="font-semibold text-gray-900">
+                                    {securePayTx.payment_status === 'held' && 'Secure-Pay — Funds Held'}
+                                    {securePayTx.payment_status === 'captured' && 'Secure-Pay — Complete ✓'}
+                                    {securePayTx.payment_status === 'disputed' && 'Secure-Pay — Under Review'}
+                                    {securePayTx.payment_status === 'refunded' && 'Secure-Pay — Refunded'}
+                                </span>
+                            </div>
+
+                            {escrowMessage && (
+                                <p className="text-sm text-gray-700 mb-3 p-2 bg-white/70 rounded-lg">{escrowMessage}</p>
+                            )}
+
+                            {securePayTx.payment_status === 'held' && (
+                                <>
+                                    {/* Step indicator */}
+                                    <div className="flex items-center gap-2 text-xs text-gray-600 mb-3">
+                                        <span className="w-5 h-5 rounded-full bg-unicycle-blue text-white flex items-center justify-center font-bold">✓</span>
+                                        <span>Payment held</span>
+                                        <span className="flex-1 h-px bg-gray-300" />
+                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold ${securePayTx.seller_confirmed_at ? 'bg-unicycle-blue text-white' : 'bg-gray-200 text-gray-500'}`}>2</span>
+                                        <span>Seller confirms</span>
+                                        <span className="flex-1 h-px bg-gray-300" />
+                                        <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold">3</span>
+                                        <span>Buyer confirms</span>
+                                    </div>
+
+                                    {/* Seller: confirm handoff button */}
+                                    {securePayTx.is_seller && !securePayTx.seller_confirmed_at && (
+                                        <button
+                                            onClick={handleConfirmHandoff}
+                                            disabled={escrowAction === 'confirming-handoff'}
+                                            className="w-full py-2.5 bg-unicycle-blue text-white rounded-lg font-semibold text-sm hover:bg-unicycle-blue/90 transition-colors disabled:opacity-60"
+                                        >
+                                            {escrowAction === 'confirming-handoff' ? 'Confirming...' : 'I Handed Over the Item'}
+                                        </button>
+                                    )}
+                                    {securePayTx.is_seller && securePayTx.seller_confirmed_at && (
+                                        <p className="text-sm text-unicycle-blue font-medium">✓ You confirmed handoff. Waiting for buyer to confirm receipt.</p>
+                                    )}
+
+                                    {/* Buyer: confirm receipt or dispute */}
+                                    {securePayTx.is_buyer && (
+                                        <div className="space-y-2">
+                                            {!securePayTx.seller_confirmed_at && (
+                                                <p className="text-xs text-gray-500">Waiting for seller to confirm they handed over the item before you can confirm receipt.</p>
+                                            )}
+                                            <button
+                                                onClick={handleConfirmReceipt}
+                                                disabled={!securePayTx.seller_confirmed_at || escrowAction === 'confirming-receipt'}
+                                                className="w-full py-2.5 bg-unicycle-green text-white rounded-lg font-semibold text-sm hover:bg-unicycle-green/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                            >
+                                                {escrowAction === 'confirming-receipt' ? 'Confirming...' : 'I Received the Item — Release Payment'}
+                                            </button>
+                                            <button
+                                                onClick={handleDispute}
+                                                disabled={!!escrowAction}
+                                                className="w-full py-2 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50 transition-colors disabled:opacity-40"
+                                            >
+                                                {escrowAction === 'disputing' ? 'Submitting...' : securePayTx.seller_confirmed_at ? 'Dispute — I Did Not Receive the Item' : 'Cancel & Get Refund'}
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {securePayTx.payment_status === 'disputed' && (
+                                <div className="flex items-start gap-2 text-sm text-orange-700">
+                                    <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                    <span>This transaction is under admin review. Funds are held securely until resolved.</span>
+                                </div>
+                            )}
                         </div>
                     )}
 

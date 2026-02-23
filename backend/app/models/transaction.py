@@ -7,9 +7,10 @@ from ..database import Base
 
 class TransactionStatus(str, enum.Enum):
     INTERESTED = "interested"  # Buyer expressed interest
-    AGREED = "agreed"  # Buyer and seller agreed on terms
-    COMPLETED = "completed"  # Transaction completed
-    CANCELLED = "cancelled"  # Transaction cancelled
+    AGREED = "agreed"          # Buyer and seller agreed on terms
+    COMPLETED = "completed"    # Transaction completed
+    CANCELLED = "cancelled"    # Transaction cancelled
+    DISPUTED = "disputed"      # Buyer disputed after seller confirmed handoff — pending admin review
 
 
 class Transaction(Base):
@@ -24,7 +25,10 @@ class Transaction(Base):
     # Payment (Secure Pay)
     payment_method = Column(String, default='cash')  # 'cash' or 'secure_pay'
     stripe_payment_intent_id = Column(String, nullable=True)
-    payment_status = Column(String, nullable=True)  # 'held', 'captured', 'refunded'
+    payment_status = Column(String, nullable=True)  # 'held', 'captured', 'refunded', 'disputed'
+
+    # Escrow confirmation
+    seller_confirmed_at = Column(DateTime(timezone=True), nullable=True)  # Seller confirmed they handed over the item
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
