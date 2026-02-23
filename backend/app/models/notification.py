@@ -12,10 +12,12 @@ class Notification(Base):
     message = Column(Text, nullable=False)
     type = Column(String, nullable=False, default="broadcast")
     target_university = Column(String, nullable=True)
+    recipient_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # null = broadcast
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     creator = relationship("User", foreign_keys=[created_by])
+    recipient = relationship("User", foreign_keys=[recipient_user_id])
 
 
 class NotificationRead(Base):

@@ -11,6 +11,7 @@ from ..schemas.message import (
     MessageCreate, MessageResponse
 )
 from ..utils.dependencies import get_current_user_required
+from .notifications import send_user_notification
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
 
@@ -230,9 +231,21 @@ def send_message(
     conversation.archived_by_buyer = False
     conversation.archived_by_seller = False
     
+    # Notify the recipient (the other participant)
+    recipient_id = conversation.seller_id if current_user.id == conversation.buyer_id else conversation.buyer_id
+    listing_title = conversation.listing.title if conversation.listing else "an item"
+    try:
+        send_user_notification(
+            db, recipient_id,
+            title=f"New message from {current_user.name}",
+            message=f"{current_user.name} sent you a message about \"{listing_title}\""
+        )
+    except Exception:
+        pass
+
     db.commit()
     db.refresh(message)
-    
+
     return message
 
 

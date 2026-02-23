@@ -52,6 +52,12 @@ with engine.connect() as conn:
     except Exception:
         conn.rollback()
 
+    # Notification personal recipient column
+    notification_columns = [col["name"] for col in inspector.get_columns("notifications")]
+    if "recipient_user_id" not in notification_columns:
+        conn.execute(text("ALTER TABLE notifications ADD COLUMN recipient_user_id INTEGER REFERENCES users(id)"))
+        conn.commit()
+
     if "is_admin" not in existing_columns:
         conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE"))
         conn.commit()

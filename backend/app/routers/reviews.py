@@ -7,6 +7,7 @@ from ..models.review import Review
 from ..models.user import User
 from ..schemas.review import ReviewCreate, ReviewResponse, UserReviewStats
 from ..utils.dependencies import get_current_user_required
+from .notifications import send_user_notification
 
 router = APIRouter(prefix="/reviews", tags=["Reviews"])
 
@@ -75,12 +76,25 @@ def create_review(
     
     # Update user's average rating
     update_user_rating(db, review_data.reviewed_user_id)
-    
+
+    # Notify the reviewed user
+    stars = "★" * review_data.rating + "☆" * (5 - review_data.rating)
+    try:
+        send_user_notification(
+            db, review_data.reviewed_user_id,
+            title=f"New review from {current_user.name}",
+            message=f"{current_user.name} rated you {stars}"
+            + (f": \"{review_data.text[:80]}\"" if review_data.text else "")
+        )
+        db.commit()
+    except Exception:
+        pass
+
     # Reload with relationships
     review = db.query(Review).options(
         joinedload(Review.reviewer)
     ).filter(Review.id == review.id).first()
-    
+
     return review
 
 

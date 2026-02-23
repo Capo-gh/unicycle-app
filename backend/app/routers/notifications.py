@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from ..database import get_db
@@ -8,6 +8,38 @@ from ..schemas.notification import NotificationCreate
 from ..utils.dependencies import get_admin_required, get_current_user_required
 
 router = APIRouter(tags=["Notifications"])
+
+
+def send_user_notification(db: Session, recipient_id: int, title: str, message: str):
+    """Create a personal notification for a specific user (triggered by system events).
+    NOTE: caller must commit the session after calling this."""
+    admin = db.query(User).filter(User.is_super_admin == True).first()
+    created_by = admin.id if admin else recipient_id
+
+    notification = Notification(
+        title=title,
+        message=message,
+        type="personal",
+        recipient_user_id=recipient_id,
+        created_by=created_by
+    )
+    db.add(notification)
+
+
+def _user_notification_filter(current_user: User):
+    """SQLAlchemy filter: notifications visible to current_user."""
+    return or_(
+        # Broadcasts (no recipient) scoped by university or global
+        and_(
+            Notification.recipient_user_id.is_(None),
+            or_(
+                Notification.target_university.is_(None),
+                Notification.target_university == current_user.university
+            )
+        ),
+        # Personal notifications addressed to this specific user
+        Notification.recipient_user_id == current_user.id
+    )
 
 
 @router.post("/admin/notifications/broadcast")
@@ -35,8 +67,10 @@ def get_admin_notifications(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_required)
 ):
-    """List all sent notifications (admin view)"""
-    notifications = db.query(Notification).order_by(Notification.created_at.desc()).all()
+    """List broadcast notifications (admin view — excludes personal)"""
+    notifications = db.query(Notification).filter(
+        Notification.type != "personal"
+    ).order_by(Notification.created_at.desc()).all()
     return [
         {
             "id": n.id,
@@ -56,12 +90,9 @@ def get_my_notifications(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_required)
 ):
-    """Get notifications for the current user"""
+    """Get notifications for the current user (broadcasts + personal)"""
     notifications = db.query(Notification).filter(
-        or_(
-            Notification.target_university.is_(None),
-            Notification.target_university == current_user.university
-        )
+        _user_notification_filter(current_user)
     ).order_by(Notification.created_at.desc()).limit(50).all()
 
     read_ids = set(
@@ -92,10 +123,7 @@ def get_unread_count(
 ):
     """Get count of unread notifications"""
     total = db.query(Notification).filter(
-        or_(
-            Notification.target_university.is_(None),
-            Notification.target_university == current_user.university
-        )
+        _user_notification_filter(current_user)
     ).count()
 
     read_count = db.query(NotificationRead).filter(
@@ -119,11 +147,7 @@ def mark_as_read(
         )
     ).first()
     if not existing:
-        read = NotificationRead(
-            notification_id=notification_id,
-            user_id=current_user.id
-        )
-        db.add(read)
+        db.add(NotificationRead(notification_id=notification_id, user_id=current_user.id))
         db.commit()
     return {"message": "Marked as read"}
 
@@ -135,10 +159,7 @@ def mark_all_as_read(
 ):
     """Mark all notifications as read"""
     notifications = db.query(Notification).filter(
-        or_(
-            Notification.target_university.is_(None),
-            Notification.target_university == current_user.university
-        )
+        _user_notification_filter(current_user)
     ).all()
 
     read_ids = set(
@@ -150,9 +171,6 @@ def mark_all_as_read(
 
     for n in notifications:
         if n.id not in read_ids:
-            db.add(NotificationRead(
-                notification_id=n.id,
-                user_id=current_user.id
-            ))
+            db.add(NotificationRead(notification_id=n.id, user_id=current_user.id))
     db.commit()
     return {"message": "All marked as read"}

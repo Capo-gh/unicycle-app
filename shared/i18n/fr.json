@@ -18,7 +18,9 @@
     "search": "Rechercher",
     "all": "Tout",
     "none": "Aucun",
-    "or": "ou"
+    "or": "ou",
+    "tryAgain": "Réessayer",
+    "filtered": "(filtré)"
   },
   "nav": {
     "browse": "Explorer",
@@ -56,23 +58,56 @@
   },
   "listings": {
     "title": "Explorer",
+    "browseMarketplace": "Explorer la Marketplace",
     "searchPlaceholder": "Rechercher des annonces...",
+    "searchItems": "Chercher des articles...",
     "filters": "Filtres",
     "clearFilters": "Effacer les filtres",
+    "clearAll": "Tout effacer",
+    "clearAllFilters": "Effacer tous les filtres",
     "minPrice": "Prix min",
     "maxPrice": "Prix max",
+    "priceRange": "Gamme de prix (CAD)",
     "condition": "État",
     "sortBy": "Trier par",
+    "applyFilters": "Appliquer les filtres",
     "noListings": "Aucune annonce trouvée",
     "noListingsSubtext": "Essayez de modifier vos filtres ou revenez plus tard",
+    "noItemsFound": "Aucun article trouvé",
+    "adjustFilters": "Essayez d'ajuster vos filtres ou termes de recherche",
+    "beFirst": "Soyez le premier à publier un article !",
+    "beFirstIn": "Soyez le premier à publier à {{university}} !",
     "postFirst": "Soyez le premier à publier !",
+    "postItem": "+ Publier un article",
     "category": "Catégorie",
     "price": "Prix",
     "newest": "Plus récent",
     "oldest": "Plus ancien",
     "priceLow": "Prix : croissant",
     "priceHigh": "Prix : décroissant",
-    "loadError": "Échec du chargement des annonces"
+    "loadError": "Échec du chargement des annonces",
+    "item": "article",
+    "items": "articles",
+    "found": "trouvé(s)",
+    "categories": {
+      "all": "Tout",
+      "textbooks": "Manuels & Cours",
+      "electronics": "Électronique & Gadgets",
+      "furniture": "Mobilier & Décoration",
+      "clothing": "Vêtements & Accessoires",
+      "sports": "Sport & Fitness",
+      "kitchen": "Cuisine & Vaisselle",
+      "school": "Fournitures scolaires",
+      "bikes": "Vélos & Transport",
+      "other": "Autre"
+    },
+    "conditions": {
+      "all": "Tout",
+      "new": "Neuf",
+      "likeNew": "Comme neuf",
+      "good": "Bon état",
+      "fair": "État correct"
+    }
   },
   "sell": {
     "title": "Vendre un article",

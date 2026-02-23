@@ -9,6 +9,7 @@ from ..models.listing import Listing
 from ..models.user import User
 from ..schemas.transaction import TransactionCreate, TransactionUpdate, TransactionResponse, UserStats
 from ..utils.dependencies import get_current_user_required
+from .notifications import send_user_notification
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
@@ -63,6 +64,17 @@ def create_transaction(
     )
 
     db.add(transaction)
+
+    # Notify seller that someone is interested
+    try:
+        send_user_notification(
+            db, listing.seller_id,
+            title=f"{current_user.name} is interested in your item",
+            message=f"{current_user.name} expressed interest in \"{listing.title}\". Check your Activity to respond."
+        )
+    except Exception:
+        pass
+
     db.commit()
     db.refresh(transaction)
 

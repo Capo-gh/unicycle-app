@@ -18,7 +18,9 @@
     "search": "Search",
     "all": "All",
     "none": "None",
-    "or": "or"
+    "or": "or",
+    "tryAgain": "Try again",
+    "filtered": "(filtered)"
   },
   "nav": {
     "browse": "Browse",
@@ -56,23 +58,56 @@
   },
   "listings": {
     "title": "Browse",
+    "browseMarketplace": "Browse Marketplace",
     "searchPlaceholder": "Search listings...",
+    "searchItems": "Search items...",
     "filters": "Filters",
     "clearFilters": "Clear Filters",
+    "clearAll": "Clear all",
+    "clearAllFilters": "Clear all filters",
     "minPrice": "Min Price",
     "maxPrice": "Max Price",
+    "priceRange": "Price Range (CAD)",
     "condition": "Condition",
     "sortBy": "Sort By",
+    "applyFilters": "Apply Filters",
     "noListings": "No listings found",
     "noListingsSubtext": "Try adjusting your filters or check back later",
+    "noItemsFound": "No items found",
+    "adjustFilters": "Try adjusting your filters or search terms",
+    "beFirst": "Be the first to list an item!",
+    "beFirstIn": "Be the first to list an item in {{university}}!",
     "postFirst": "Post the first listing!",
+    "postItem": "+ Post an Item",
     "category": "Category",
     "price": "Price",
     "newest": "Newest First",
     "oldest": "Oldest First",
     "priceLow": "Price: Low to High",
     "priceHigh": "Price: High to Low",
-    "loadError": "Failed to load listings"
+    "loadError": "Failed to load listings",
+    "item": "item",
+    "items": "items",
+    "found": "found",
+    "categories": {
+      "all": "All",
+      "textbooks": "Textbooks & Course Materials",
+      "electronics": "Electronics & Gadgets",
+      "furniture": "Furniture & Decor",
+      "clothing": "Clothing & Accessories",
+      "sports": "Sports & Fitness",
+      "kitchen": "Kitchen & Dining",
+      "school": "School Supplies",
+      "bikes": "Bikes & Transportation",
+      "other": "Other"
+    },
+    "conditions": {
+      "all": "All",
+      "new": "New",
+      "likeNew": "Like New",
+      "good": "Good",
+      "fair": "Fair"
+    }
   },
   "sell": {
     "title": "Sell an Item",

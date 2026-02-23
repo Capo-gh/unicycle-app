@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, MapPin, Package, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getListings } from '../api/listings';
 
 export default function Listings({ onItemClick, onNavigate, currentMarketplace, onMarketplaceChange }) {
+    const { t } = useTranslation();
+
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [listings, setListings] = useState([]);
@@ -10,7 +13,6 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
     const [error, setError] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
 
-    // Advanced filters
     const [filters, setFilters] = useState({
         minPrice: '',
         maxPrice: '',
@@ -18,36 +20,42 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
         sort: 'newest'
     });
 
-    // Track if any advanced filters are active
     const hasActiveFilters = filters.minPrice || filters.maxPrice || filters.condition !== 'All' || filters.sort !== 'newest';
 
+    // Category definitions: value (sent to API, always English) + translation key
     const categories = [
-        'All',
-        'Textbooks & Course Materials',
-        'Electronics & Gadgets',
-        'Furniture & Decor',
-        'Clothing & Accessories',
-        'Sports & Fitness',
-        'Kitchen & Dining',
-        'School Supplies',
-        'Bikes & Transportation',
-        'Other'
+        { value: 'All',                          key: 'listings.categories.all' },
+        { value: 'Textbooks & Course Materials', key: 'listings.categories.textbooks' },
+        { value: 'Electronics & Gadgets',        key: 'listings.categories.electronics' },
+        { value: 'Furniture & Decor',            key: 'listings.categories.furniture' },
+        { value: 'Clothing & Accessories',       key: 'listings.categories.clothing' },
+        { value: 'Sports & Fitness',             key: 'listings.categories.sports' },
+        { value: 'Kitchen & Dining',             key: 'listings.categories.kitchen' },
+        { value: 'School Supplies',              key: 'listings.categories.school' },
+        { value: 'Bikes & Transportation',       key: 'listings.categories.bikes' },
+        { value: 'Other',                        key: 'listings.categories.other' },
     ];
 
-    const conditions = ['All', 'New', 'Like New', 'Good', 'Fair'];
+    // Condition definitions: value (sent to API) + translation key
+    const conditions = [
+        { value: 'All',      key: 'listings.conditions.all' },
+        { value: 'New',      key: 'listings.conditions.new' },
+        { value: 'Like New', key: 'listings.conditions.likeNew' },
+        { value: 'Good',     key: 'listings.conditions.good' },
+        { value: 'Fair',     key: 'listings.conditions.fair' },
+    ];
 
     const sortOptions = [
-        { value: 'newest', label: 'Newest First' },
-        { value: 'oldest', label: 'Oldest First' },
-        { value: 'price_asc', label: 'Price: Low to High' },
-        { value: 'price_desc', label: 'Price: High to Low' }
+        { value: 'newest',     labelKey: 'listings.newest' },
+        { value: 'oldest',     labelKey: 'listings.oldest' },
+        { value: 'price_asc',  labelKey: 'listings.priceLow' },
+        { value: 'price_desc', labelKey: 'listings.priceHigh' },
     ];
 
     useEffect(() => {
         fetchListings();
     }, [selectedCategory, currentMarketplace, filters]);
 
-    // Debounce search
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchListings();
@@ -73,7 +81,6 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                 params.university = currentMarketplace;
             }
 
-            // Advanced filters
             if (filters.minPrice) {
                 params.min_price = parseFloat(filters.minPrice);
             }
@@ -94,7 +101,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
             if (err.response?.status === 403) {
                 setError('Please verify your email to browse listings. Check your inbox for the verification link!');
             } else {
-                setError('Failed to load listings');
+                setError(t('listings.loadError'));
             }
         } finally {
             setLoading(false);
@@ -106,12 +113,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
     };
 
     const clearFilters = () => {
-        setFilters({
-            minPrice: '',
-            maxPrice: '',
-            condition: 'All',
-            sort: 'newest'
-        });
+        setFilters({ minPrice: '', maxPrice: '', condition: 'All', sort: 'newest' });
     };
 
     const formatPrice = (price) => {
@@ -130,14 +132,19 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
         return imageList[0] || null;
     };
 
+    // Get translated label for a condition value (for the card badge)
+    const getConditionLabel = (conditionValue) => {
+        const found = conditions.find(c => c.value === conditionValue);
+        return found ? t(found.key) : conditionValue;
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
             {/* Header */}
             <div className="bg-white border-b border-gray-200 sticky top-14 lg:top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4">
-                    {/* Title Row */}
                     <div className="py-4">
-                        <h1 className="text-xl font-bold text-gray-900">Browse Marketplace</h1>
+                        <h1 className="text-xl font-bold text-gray-900">{t('listings.browseMarketplace')}</h1>
                     </div>
 
                     {/* Search Bar */}
@@ -147,7 +154,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                                 <input
                                     type="text"
-                                    placeholder="Search items..."
+                                    placeholder={t('listings.searchItems')}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
@@ -170,16 +177,16 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
 
                     {/* Category Pills */}
                     <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
-                        {categories.map((category) => (
+                        {categories.map((cat) => (
                             <button
-                                key={category}
-                                onClick={() => setSelectedCategory(category)}
-                                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === category
+                                key={cat.value}
+                                onClick={() => setSelectedCategory(cat.value)}
+                                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === cat.value
                                     ? 'bg-unicycle-green text-white'
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     }`}
                             >
-                                {category}
+                                {t(cat.key)}
                             </button>
                         ))}
                     </div>
@@ -191,20 +198,14 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                 <div className="bg-white border-b border-gray-200 shadow-sm">
                     <div className="max-w-7xl mx-auto px-4 py-4">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold text-gray-900">Filters</h3>
+                            <h3 className="font-semibold text-gray-900">{t('listings.filters')}</h3>
                             <div className="flex items-center gap-3">
                                 {hasActiveFilters && (
-                                    <button
-                                        onClick={clearFilters}
-                                        className="text-sm text-unicycle-blue hover:underline"
-                                    >
-                                        Clear all
+                                    <button onClick={clearFilters} className="text-sm text-unicycle-blue hover:underline">
+                                        {t('listings.clearAll')}
                                     </button>
                                 )}
-                                <button
-                                    onClick={() => setShowFilters(false)}
-                                    className="p-1 hover:bg-gray-100 rounded"
-                                >
+                                <button onClick={() => setShowFilters(false)} className="p-1 hover:bg-gray-100 rounded">
                                     <X className="w-5 h-5 text-gray-500" />
                                 </button>
                             </div>
@@ -214,12 +215,12 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                             {/* Price Range */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Price Range (CAD)
+                                    {t('listings.priceRange')}
                                 </label>
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="number"
-                                        placeholder="Min"
+                                        placeholder={t('listings.minPrice')}
                                         value={filters.minPrice}
                                         onChange={(e) => handleFilterChange('minPrice', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
@@ -227,7 +228,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                                     <span className="text-gray-400">—</span>
                                     <input
                                         type="number"
-                                        placeholder="Max"
+                                        placeholder={t('listings.maxPrice')}
                                         value={filters.maxPrice}
                                         onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
@@ -238,15 +239,15 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                             {/* Condition */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Condition
+                                    {t('listings.condition')}
                                 </label>
                                 <select
                                     value={filters.condition}
                                     onChange={(e) => handleFilterChange('condition', e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green bg-white"
                                 >
-                                    {conditions.map(condition => (
-                                        <option key={condition} value={condition}>{condition}</option>
+                                    {conditions.map(c => (
+                                        <option key={c.value} value={c.value}>{t(c.key)}</option>
                                     ))}
                                 </select>
                             </div>
@@ -254,15 +255,15 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                             {/* Sort */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Sort By
+                                    {t('listings.sortBy')}
                                 </label>
                                 <select
                                     value={filters.sort}
                                     onChange={(e) => handleFilterChange('sort', e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green bg-white"
                                 >
-                                    {sortOptions.map(option => (
-                                        <option key={option.value} value={option.value}>{option.label}</option>
+                                    {sortOptions.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
                                     ))}
                                 </select>
                             </div>
@@ -273,7 +274,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                                     onClick={() => setShowFilters(false)}
                                     className="w-full py-2 bg-unicycle-green text-white rounded-lg font-medium"
                                 >
-                                    Apply Filters
+                                    {t('listings.applyFilters')}
                                 </button>
                             </div>
                         </div>
@@ -286,27 +287,24 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                 {/* Results count */}
                 {!loading && !error && (
                     <p className="text-sm text-gray-600 mb-4">
-                        {listings.length} item{listings.length !== 1 ? 's' : ''} found
-                        {hasActiveFilters && <span className="text-unicycle-green ml-1">(filtered)</span>}
+                        {listings.length} {listings.length !== 1 ? t('listings.items') : t('listings.item')} {t('listings.found')}
+                        {hasActiveFilters && <span className="text-unicycle-green ml-1">{t('common.filtered')}</span>}
                     </p>
                 )}
 
-                {/* Loading State */}
+                {/* Loading */}
                 {loading && (
                     <div className="flex justify-center items-center py-20">
                         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-unicycle-green"></div>
                     </div>
                 )}
 
-                {/* Error State */}
+                {/* Error */}
                 {error && !loading && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
                         <p className="text-red-600">{error}</p>
-                        <button
-                            onClick={fetchListings}
-                            className="mt-2 text-sm text-unicycle-blue hover:underline"
-                        >
-                            Try again
+                        <button onClick={fetchListings} className="mt-2 text-sm text-unicycle-blue hover:underline">
+                            {t('common.tryAgain')}
                         </button>
                     </div>
                 )}
@@ -315,28 +313,25 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                 {!loading && !error && listings.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
                         <Package className="w-16 h-16 text-gray-300 mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No items found</h3>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('listings.noItemsFound')}</h3>
                         <p className="text-gray-500 mb-4">
                             {hasActiveFilters
-                                ? 'Try adjusting your filters or search terms'
+                                ? t('listings.adjustFilters')
                                 : currentMarketplace
-                                    ? `Be the first to list an item in ${currentMarketplace}!`
-                                    : 'Be the first to list an item!'
+                                    ? t('listings.beFirstIn', { university: currentMarketplace })
+                                    : t('listings.beFirst')
                             }
                         </p>
                         {hasActiveFilters ? (
-                            <button
-                                onClick={clearFilters}
-                                className="text-unicycle-blue hover:underline"
-                            >
-                                Clear all filters
+                            <button onClick={clearFilters} className="text-unicycle-blue hover:underline">
+                                {t('listings.clearAllFilters')}
                             </button>
                         ) : (
                             <button
                                 onClick={() => onNavigate('sell')}
                                 className="inline-flex items-center gap-2 px-4 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90"
                             >
-                                + Post an Item
+                                {t('listings.postItem')}
                             </button>
                         )}
                     </div>
@@ -368,7 +363,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                                     {item.is_sold && (
                                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                                             <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                                                SOLD
+                                                {t('itemDetail.soldBadge')}
                                             </span>
                                         </div>
                                     )}
@@ -376,7 +371,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                                     {/* Condition Badge */}
                                     {item.condition && !item.is_sold && (
                                         <div className="absolute top-2 right-2 bg-white/90 px-2 py-1 rounded text-xs font-medium">
-                                            {item.condition}
+                                            {getConditionLabel(item.condition)}
                                         </div>
                                     )}
                                 </div>
