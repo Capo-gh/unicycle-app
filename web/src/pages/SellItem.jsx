@@ -175,7 +175,7 @@ export default function SellItem({ onBack }) {
                     >
                         <ArrowLeft className="w-6 h-6 text-gray-700" />
                     </button>
-                    <h1 className="text-lg font-semibold text-gray-900">Sell an Item</h1>
+                    <h1 className="text-lg font-semibold text-unicycle-green">Sell an Item</h1>
                 </div>
             </div>
 

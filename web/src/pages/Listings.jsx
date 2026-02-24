@@ -144,7 +144,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
             <div className="bg-white border-b border-gray-200 sticky top-14 lg:top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="py-4">
-                        <h1 className="text-xl font-bold text-gray-900">{t('listings.browseMarketplace')}</h1>
+                        <h1 className="text-xl font-bold text-unicycle-green">{t('listings.browseMarketplace')}</h1>
                     </div>
 
                     {/* Search Bar */}

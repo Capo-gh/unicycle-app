@@ -434,7 +434,7 @@ export default function Settings({ user, onBack, onLogout }) {
                     >
                         <ArrowLeft className="w-6 h-6 text-gray-700" />
                     </button>
-                    <h1 className="text-lg font-semibold text-gray-900">Settings</h1>
+                    <h1 className="text-lg font-semibold text-unicycle-green">Settings</h1>
                 </div>
             </div>
 

@@ -89,7 +89,7 @@ export default function Profile({ user: signupUser, onNavigate }) {
             <div className="bg-gradient-to-r from-unicycle-blue to-unicycle-green text-white">
                 <div className="max-w-md lg:max-w-4xl mx-auto px-4 py-6">
                     <div className="flex items-center justify-between mb-4">
-                        <h1 className="text-xl font-bold">Profile</h1>
+                        <h1 className="text-xl font-bold text-unicycle-green">Profile</h1>
                         <button
                             onClick={() => onNavigate('settings')}
                             className="p-2 hover:bg-white/10 rounded-full transition-colors"

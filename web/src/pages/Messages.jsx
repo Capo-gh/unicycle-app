@@ -181,7 +181,7 @@ export default function Messages({ incomingRequest, user }) {
             {/* LEFT: Conversation List */}
             <div className={`w-full lg:w-96 bg-white flex flex-col border-r border-gray-200 ${selectedConvId ? 'hidden lg:flex' : 'flex'}`}>
                 <div className="px-4 py-4 border-b border-gray-200 flex-shrink-0">
-                    <h1 className="text-xl font-bold text-gray-900 mb-3">{t('messages.title')}</h1>
+                    <h1 className="text-xl font-bold text-unicycle-green mb-3">{t('messages.title')}</h1>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <input

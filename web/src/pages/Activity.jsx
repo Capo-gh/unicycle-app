@@ -106,7 +106,7 @@ export default function Transactions({ onNavigate }) {
                     >
                         <ArrowLeft className="w-6 h-6 text-gray-700" />
                     </button>
-                    <h1 className="text-lg font-semibold text-gray-900">Activity</h1>
+                    <h1 className="text-lg font-semibold text-unicycle-green">Activity</h1>
                 </div>
 
                 {/* Tabs */}

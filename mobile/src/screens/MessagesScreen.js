@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: COLORS.dark,
+        color: COLORS.green,
         marginBottom: 12,
     },
     searchContainer: {

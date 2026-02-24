@@ -89,7 +89,7 @@ export default function MyListings({ onNavigate }) {
                     >
                         <ArrowLeft className="w-6 h-6 text-gray-700" />
                     </button>
-                    <h1 className="text-lg font-semibold text-gray-900">My Listings</h1>
+                    <h1 className="text-lg font-semibold text-unicycle-green">My Listings</h1>
                     <div className="flex-1" />
                     <button
                         onClick={() => onNavigate('sell')}

@@ -132,7 +132,7 @@ export default function Requests({ user }) {
                     <div className="px-4 lg:px-6 py-4">
                         <div className="flex items-center justify-between mb-3">
                             <div>
-                                <h1 className="text-xl font-bold text-gray-900">Requests</h1>
+                                <h1 className="text-xl font-bold text-unicycle-green">Requests</h1>
                                 <p className="text-xs text-gray-500">Looking for something? Post it here!</p>
                             </div>
                             <button
