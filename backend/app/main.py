@@ -70,6 +70,12 @@ with engine.connect() as conn:
     if "is_super_admin" not in existing_columns:
         conn.execute(text("ALTER TABLE users ADD COLUMN is_super_admin BOOLEAN DEFAULT FALSE"))
         conn.commit()
+    if "is_sponsor" not in existing_columns:
+        conn.execute(text("ALTER TABLE users ADD COLUMN is_sponsor BOOLEAN DEFAULT FALSE"))
+        conn.commit()
+    if "sponsored_category" not in existing_columns:
+        conn.execute(text("ALTER TABLE users ADD COLUMN sponsored_category VARCHAR"))
+        conn.commit()
 
 # Seed super admin user
 def seed_admin():

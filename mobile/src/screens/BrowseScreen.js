@@ -136,6 +136,11 @@ export default function BrowseScreen({ navigation }) {
                     <Text style={styles.conditionBadgeText}>{item.condition}</Text>
                 </View>
             )}
+            {item.seller?.is_sponsor && item.seller?.sponsored_category === item.category && (
+                <View style={styles.sponsoredBadge}>
+                    <Text style={styles.sponsoredBadgeText}>Sponsored</Text>
+                </View>
+            )}
             <View style={styles.info}>
                 <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
                 <Text style={styles.price}>${item.price}</Text>
@@ -575,6 +580,20 @@ const styles = StyleSheet.create({
         fontSize: 10,
         fontWeight: '600',
         color: '#374151',
+    },
+    sponsoredBadge: {
+        position: 'absolute',
+        top: 8,
+        left: 8,
+        backgroundColor: '#f59e0b',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+    },
+    sponsoredBadgeText: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#ffffff',
     },
     info: {
         padding: 12,

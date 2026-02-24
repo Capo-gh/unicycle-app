@@ -18,6 +18,8 @@ class User(Base):
     is_admin = Column(Boolean, default=False)
     is_super_admin = Column(Boolean, default=False)
     is_suspended = Column(Boolean, default=False)
+    is_sponsor = Column(Boolean, default=False)
+    sponsored_category = Column(String, nullable=True)
 
     # Review stats (will be updated when reviews are added)
     avg_rating = Column(Float, default=0.0)

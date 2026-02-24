@@ -368,6 +368,13 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                                         </div>
                                     )}
 
+                                    {/* Sponsored Badge */}
+                                    {item.seller?.is_sponsor && item.seller?.sponsored_category === item.category && (
+                                        <div className="absolute top-2 left-2 bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">
+                                            Sponsored
+                                        </div>
+                                    )}
+
                                     {/* Condition Badge */}
                                     {item.condition && !item.is_sold && (
                                         <div className="absolute top-2 right-2 bg-white/90 px-2 py-1 rounded text-xs font-medium">

@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import {
     Users, Package, ArrowLeftRight, BarChart3, Search, Shield, ShieldOff, Ban, CheckCircle,
     Trash2, Eye, EyeOff, Bell, Megaphone, Send, Star, DollarSign, RotateCcw,
-    Flag, Mail, Activity, Download, X, TrendingUp
+    Flag, Mail, Activity, Download, X, TrendingUp, Building2
 } from 'lucide-react';
 import {
     getAdminStats, getAdminStatsHistory,
-    getAdminUsers, toggleUserAdmin, toggleUserSuspend, emailUser,
+    getAdminUsers, toggleUserAdmin, toggleUserSuspend, emailUser, setSponsor,
     getAdminListings, toggleListingActive, adminDeleteListing,
     getAdminTransactions, getUniversities, resolveDispute,
     getAdminReports, dismissReport, actionReport,
@@ -60,6 +60,11 @@ export default function Admin() {
     const [emailModal, setEmailModal] = useState(null); // { userId, userName }
     const [emailForm, setEmailForm] = useState({ subject: '', message: '' });
     const [sendingEmail, setSendingEmail] = useState(false);
+
+    // Sponsor modal
+    const [sponsorModal, setSponsorModal] = useState(null); // { userId, userName, isSponsor, currentCategory }
+    const [sponsorCategory, setSponsorCategory] = useState('');
+    const [settingSponsor, setSettingSponsor] = useState(false);
 
     // Notifications
     const [sentNotifications, setSentNotifications] = useState([]);
@@ -161,6 +166,27 @@ export default function Admin() {
         } catch (err) {
             alert(err.response?.data?.detail || 'Failed to toggle suspend');
         } finally { setActionLoading(null); }
+    };
+
+    const handleSetSponsor = async (e) => {
+        e.preventDefault();
+        setSettingSponsor(true);
+        try {
+            await setSponsor(sponsorModal.userId, true, sponsorCategory);
+            setUsers(prev => prev.map(u => u.id === sponsorModal.userId
+                ? { ...u, is_sponsor: true, sponsored_category: sponsorCategory } : u));
+            setSponsorModal(null);
+        } catch { alert('Failed to set sponsor'); }
+        finally { setSettingSponsor(false); }
+    };
+
+    const handleRemoveSponsor = async (userId) => {
+        try {
+            await setSponsor(userId, false, null);
+            setUsers(prev => prev.map(u => u.id === userId
+                ? { ...u, is_sponsor: false, sponsored_category: null } : u));
+            setSponsorModal(null);
+        } catch { alert('Failed to remove sponsor'); }
     };
 
     const handleEmailUser = async (e) => {
@@ -527,6 +553,14 @@ export default function Admin() {
                                                             className={`p-1.5 rounded-lg transition-colors ${u.is_suspended ? 'text-red-600 hover:bg-red-50' : 'text-gray-400 hover:bg-gray-100'}`}>
                                                             {u.is_suspended ? <CheckCircle className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
                                                         </button>
+                                                        {isSuperAdmin && (
+                                                            <button
+                                                                onClick={() => { setSponsorModal({ userId: u.id, userName: u.name, isSponsor: u.is_sponsor, currentCategory: u.sponsored_category }); setSponsorCategory(u.sponsored_category || ''); }}
+                                                                title={u.is_sponsor ? `Sponsor: ${u.sponsored_category}` : 'Set as category sponsor'}
+                                                                className={`p-1.5 rounded-lg transition-colors ${u.is_sponsor ? 'text-amber-500 hover:bg-amber-50' : 'text-gray-400 hover:bg-gray-100'}`}>
+                                                                <Building2 className="w-4 h-4" />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -1014,6 +1048,54 @@ export default function Admin() {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── SPONSOR MODAL ── */}
+            {sponsorModal && (
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setSponsorModal(null)}>
+                    <div className="bg-white rounded-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                <Building2 className="w-5 h-5 text-amber-500" />
+                                Sponsor: {sponsorModal.userName}
+                            </h2>
+                            <button onClick={() => setSponsorModal(null)} className="p-1.5 rounded-full hover:bg-gray-100">
+                                <X className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+                        {sponsorModal.isSponsor && (
+                            <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mb-3">
+                                Currently sponsoring: <strong>{sponsorModal.currentCategory}</strong>
+                            </p>
+                        )}
+                        <form onSubmit={handleSetSponsor} className="space-y-3">
+                            <div>
+                                <label className="text-sm font-medium text-gray-700 mb-1 block">Sponsored Category</label>
+                                <select value={sponsorCategory} onChange={e => setSponsorCategory(e.target.value)}
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green" required>
+                                    <option value="">Select category...</option>
+                                    {['Textbooks & Course Materials','Electronics & Gadgets','Furniture & Decor',
+                                      'Clothing & Accessories','Sports & Fitness','Kitchen & Dining',
+                                      'School Supplies','Bikes & Transportation','Other'].map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex gap-2">
+                                {sponsorModal.isSponsor && (
+                                    <button type="button" onClick={() => handleRemoveSponsor(sponsorModal.userId)}
+                                        className="flex-1 py-2 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-50">
+                                        Remove Sponsor
+                                    </button>
+                                )}
+                                <button type="submit" disabled={settingSponsor}
+                                    className="flex-1 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 disabled:opacity-50">
+                                    {settingSponsor ? 'Saving...' : sponsorModal.isSponsor ? 'Update' : 'Set Sponsor'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

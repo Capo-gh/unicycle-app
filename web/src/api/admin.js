@@ -101,3 +101,11 @@ export const getAdminLogs = async () => {
     const response = await apiClient.get('/admin/logs');
     return response.data;
 };
+
+export const setSponsor = async (userId, isSponsor, sponsoredCategory = null) => {
+    const response = await apiClient.put(`/admin/users/${userId}/set-sponsor`, {
+        is_sponsor: isSponsor,
+        sponsored_category: sponsoredCategory
+    });
+    return response.data;
+};

@@ -9,7 +9,9 @@ class SellerInfo(BaseModel):
     university: str
     avg_rating: Optional[float] = 0.0
     review_count: Optional[int] = 0
-    
+    is_sponsor: Optional[bool] = False
+    sponsored_category: Optional[str] = None
+
     class Config:
         from_attributes = True
 

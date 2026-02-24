@@ -99,7 +99,15 @@ def get_listings(
             Listing.created_at.desc()
         )
     
-    return query.all()
+    results = query.all()
+
+    # Sponsored listings appear first when browsing their specific category
+    if category and category != 'All':
+        sponsored = [l for l in results if l.seller and l.seller.is_sponsor and l.seller.sponsored_category == category]
+        regular = [l for l in results if not (l.seller and l.seller.is_sponsor and l.seller.sponsored_category == category)]
+        results = sponsored + regular
+
+    return results
 
 
 @router.get("/my", response_model=List[ListingResponse])

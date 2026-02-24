@@ -27,6 +27,11 @@ class EmailUserRequest(BaseModel):
     message: str
 
 
+class SetSponsorRequest(BaseModel):
+    is_sponsor: bool
+    sponsored_category: Optional[str] = None
+
+
 def log_action(db: Session, admin_id: int, action: str, target_type: str = None, target_id: int = None, details: str = None):
     """Record an admin action to the audit log"""
     entry = AdminLog(
@@ -214,6 +219,27 @@ def toggle_suspend(
     log_action(db, current_user.id, "suspend_user" if user.is_suspended else "unsuspend_user",
                "user", user_id, user.name)
     return {"message": f"User {user.name} {'suspended' if user.is_suspended else 'unsuspended'}"}
+
+
+@router.put("/users/{user_id}/set-sponsor")
+def set_sponsor(
+    user_id: int,
+    body: SetSponsorRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_super_admin_required)
+):
+    """Grant or revoke business sponsor status for a user"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.is_sponsor = body.is_sponsor
+    user.sponsored_category = body.sponsored_category if body.is_sponsor else None
+    db.commit()
+    log_action(db, current_user.id, "set_sponsor", "user", user_id,
+               f"{'granted' if body.is_sponsor else 'revoked'} sponsor for {user.name}" +
+               (f" in '{body.sponsored_category}'" if body.is_sponsor and body.sponsored_category else ""))
+    return {"message": f"Sponsor status updated for {user.name}"}
 
 
 @router.post("/users/{user_id}/email")
