@@ -286,6 +286,10 @@ function App() {
     }
   };
 
+  const goBack = () => {
+    window.history.back();
+  };
+
   const handleContactSeller = (request) => {
     setMessageRequest(request);
     setCurrentPage('messages');
@@ -302,8 +306,7 @@ function App() {
   };
 
   const handleViewSellerProfile = (userId) => {
-    setViewingUserId(userId);
-    setCurrentPage('user-profile');
+    handleNavigate('user-profile', userId);
   };
 
   if (currentPage === 'loading') {
@@ -357,10 +360,7 @@ function App() {
 
         {currentPage === 'listings' && (
           <Listings
-            onItemClick={(item) => {
-              setSelectedItem(item);
-              setCurrentPage('detail');
-            }}
+            onItemClick={(item) => handleNavigate('detail', item)}
             onNavigate={handleNavigate}
             currentMarketplace={currentMarketplace}
             onMarketplaceChange={setCurrentMarketplace}
@@ -370,7 +370,7 @@ function App() {
         {currentPage === 'detail' && (
           <ItemDetail
             item={selectedItem}
-            onBack={() => setCurrentPage('listings')}
+            onBack={goBack}
             onContactSeller={handleContactSeller}
             onNavigate={handleNavigate}
             onViewSellerProfile={handleViewSellerProfile}
@@ -381,29 +381,20 @@ function App() {
           <UserProfile
             userId={viewingUserId}
             currentUser={user}
-            onBack={() => {
-              if (selectedItem) {
-                setCurrentPage('detail');
-              } else {
-                setCurrentPage('listings');
-              }
-            }}
-            onItemClick={(item) => {
-              setSelectedItem(item);
-              setCurrentPage('detail');
-            }}
+            onBack={goBack}
+            onItemClick={(item) => handleNavigate('detail', item)}
           />
         )}
 
         {currentPage === 'sell' && (
-          <SellItem onBack={() => setCurrentPage('listings')} />
+          <SellItem onBack={goBack} />
         )}
 
         {currentPage === 'edit-listing' && (
           <EditListing
             listing={editingListing}
-            onBack={() => setCurrentPage('profile')}
-            onSuccess={() => setCurrentPage('profile')}
+            onBack={goBack}
+            onSuccess={goBack}
           />
         )}
 
@@ -414,7 +405,7 @@ function App() {
         {currentPage === 'settings' && (
           <Settings
             user={user}
-            onBack={() => setCurrentPage('profile')}
+            onBack={goBack}
             onLogout={() => {
               localStorage.removeItem('token');
               localStorage.removeItem('user');

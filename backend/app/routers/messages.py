@@ -240,8 +240,8 @@ def send_message(
             title=f"New message from {current_user.name}",
             message=f"{current_user.name} sent you a message about \"{listing_title}\""
         )
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[notifications] Failed to send message notification: {e}")
 
     db.commit()
     db.refresh(message)

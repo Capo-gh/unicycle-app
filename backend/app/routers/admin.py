@@ -520,13 +520,15 @@ def admin_delete_review(
 
 @router.get("/logs")
 def get_admin_logs(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_required)
 ):
     """Get admin audit log"""
     logs = db.query(AdminLog).options(
         joinedload(AdminLog.admin)
-    ).order_by(AdminLog.created_at.desc()).limit(500).all()
+    ).order_by(AdminLog.created_at.desc()).offset(skip).limit(limit).all()
     return [
         {
             "id": l.id,

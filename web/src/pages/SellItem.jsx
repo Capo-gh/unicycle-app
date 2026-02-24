@@ -127,8 +127,7 @@ export default function SellItem({ onBack }) {
                 images: images.join(',')
             };
 
-            const result = await createListing(listingData);
-            console.log('Listing created:', result);
+            await createListing(listingData);
             setSuccess(true);
 
             setTimeout(() => {

@@ -129,12 +129,12 @@ function ProfileStack() {
             <Stack.Screen
                 name="Notifications"
                 component={NotificationsScreen}
-                options={{ headerShown: false }}
+                options={{ headerShown: true, title: 'Notifications', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
                 name="Settings"
                 component={SettingsScreen}
-                options={{ headerShown: false }}
+                options={{ headerShown: true, title: 'Settings', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
                 name="MyListings"
@@ -175,17 +175,17 @@ function ProfileStack() {
             <Stack.Screen
                 name="PrivacySafety"
                 component={PrivacySafetyScreen}
-                options={{ headerShown: false }}
+                options={{ headerShown: true, title: 'Privacy & Safety', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
                 name="HelpSupport"
                 component={HelpSupportScreen}
-                options={{ headerShown: false }}
+                options={{ headerShown: true, title: 'Help & Support', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
                 name="About"
                 component={AboutScreen}
-                options={{ headerShown: false }}
+                options={{ headerShown: true, title: 'About', headerBackTitle: 'Back' }}
             />
         </Stack.Navigator>
     );

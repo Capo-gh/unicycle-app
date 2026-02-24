@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
+from ..utils.limiter import limiter
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
@@ -12,7 +13,8 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/signup")
-def signup(user_data: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+def signup(request: Request, user_data: UserCreate, db: Session = Depends(get_db)):
     """Register a new user and send verification email with password setup link"""
     # Check if user already exists
     existing_user = db.query(User).filter(User.email == user_data.email).first()
@@ -75,7 +77,8 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-def login(login_data: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login(request: Request, login_data: UserLogin, db: Session = Depends(get_db)):
     """Login with email and password"""
     # Find user
     user = db.query(User).filter(User.email == login_data.email).first()

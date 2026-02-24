@@ -1,6 +1,9 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from .utils.limiter import limiter
 from sqlalchemy import text, inspect
 from .database import engine, Base, SessionLocal
 from .routers import auth, listings, requests, messages, upload, reviews, users, transactions, admin, notifications, announcements, payments
@@ -70,9 +73,11 @@ with engine.connect() as conn:
 
 # Seed super admin user
 def seed_admin():
+    from .config import settings
+    admin_email = settings.super_admin_email or os.getenv("SUPER_ADMIN_EMAIL", "ibrahim.sabiku@mail.mcgill.ca")
     db = SessionLocal()
     try:
-        admin_user = db.query(User).filter(User.email == "ibrahim.sabiku@mail.mcgill.ca").first()
+        admin_user = db.query(User).filter(User.email == admin_email).first()
         if admin_user:
             changed = False
             if not admin_user.is_admin:
@@ -89,6 +94,8 @@ def seed_admin():
 seed_admin()
 
 app = FastAPI(title="UniCycle API", version="1.0.0")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS middleware - allow frontend origins
 allowed_origins = [
@@ -107,7 +114,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
