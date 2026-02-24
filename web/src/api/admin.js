@@ -109,3 +109,20 @@ export const setSponsor = async (userId, isSponsor, sponsoredCategory = null) =>
     });
     return response.data;
 };
+
+export const getSettings = async () => {
+    const response = await apiClient.get('/admin/settings');
+    return response.data;
+};
+
+export const updateSetting = async (key, value) => {
+    const response = await apiClient.put(`/admin/settings/${key}`, { value });
+    return response.data;
+};
+
+export const createBusinessUser = async (name, email, password, university) => {
+    const response = await apiClient.post('/admin/users/create-business', {
+        name, email, password, university
+    });
+    return response.data;
+};

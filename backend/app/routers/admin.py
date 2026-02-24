@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, text
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import datetime, timezone, timedelta
+from passlib.context import CryptContext
 from ..database import get_db
 from ..models.user import User
 from ..models.listing import Listing
@@ -11,9 +12,12 @@ from ..models.transaction import Transaction, TransactionStatus
 from ..models.review import Review
 from ..models.report import Report
 from ..models.admin_log import AdminLog
+from ..models.system_setting import SystemSetting
 from ..utils.dependencies import get_admin_required, get_super_admin_required
 from ..utils.email import send_suspension_email, send_direct_email
 from ..config import settings
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -30,6 +34,17 @@ class EmailUserRequest(BaseModel):
 class SetSponsorRequest(BaseModel):
     is_sponsor: bool
     sponsored_category: Optional[str] = None
+
+
+class UpdateSettingRequest(BaseModel):
+    value: str
+
+
+class CreateBusinessUserRequest(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    university: Optional[str] = "Business"
 
 
 def log_action(db: Session, admin_id: int, action: str, target_type: str = None, target_id: int = None, details: str = None):
@@ -568,3 +583,61 @@ def get_admin_logs(
         }
         for l in logs
     ]
+
+
+# ─── System Settings ───────────────────────────────────────────────────────────
+
+@router.get("/settings")
+def get_settings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_admin_required)
+):
+    """Get all system settings as a key-value dict"""
+    settings_rows = db.query(SystemSetting).all()
+    return {row.key: row.value for row in settings_rows}
+
+
+@router.put("/settings/{key}")
+def update_setting(
+    key: str,
+    body: UpdateSettingRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_super_admin_required)
+):
+    """Update a system setting (super admin only)"""
+    setting = db.query(SystemSetting).filter(SystemSetting.key == key).first()
+    if not setting:
+        raise HTTPException(status_code=404, detail="Setting not found")
+    setting.value = body.value
+    db.commit()
+    log_action(db, current_user.id, "update_setting", "setting", None, f"{key} = {body.value}")
+    return {"key": key, "value": body.value}
+
+
+# ─── Business Account Creation ─────────────────────────────────────────────────
+
+@router.post("/users/create-business")
+def create_business_user(
+    body: CreateBusinessUserRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_super_admin_required)
+):
+    """Create a pre-verified business account (super admin only)"""
+    existing = db.query(User).filter(User.email == body.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    hashed_pw = pwd_context.hash(body.password)
+    new_user = User(
+        name=body.name,
+        email=body.email,
+        hashed_password=hashed_pw,
+        university=body.university or "Business",
+        is_verified=True,
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    log_action(db, current_user.id, "create_business_user", "user", new_user.id,
+               f"Created business account: {body.email}")
+    return {"message": f"Business account created for {body.name}", "user_id": new_user.id}

@@ -8,7 +8,8 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Alert
+    Alert,
+    Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
@@ -51,7 +52,7 @@ export default function LoginScreen({ navigation }) {
                 <ScrollView contentContainerStyle={styles.scrollContent}>
                     {/* Header */}
                     <View style={styles.header}>
-                        <Text style={styles.logo}>🚲</Text>
+                        <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
                         <Text style={styles.title}>UniCycle</Text>
                         <Text style={styles.subtitle}>Verified Student Marketplace</Text>
                     </View>
@@ -135,7 +136,8 @@ const styles = StyleSheet.create({
         marginBottom: 48,
     },
     logo: {
-        fontSize: 64,
+        width: 80,
+        height: 80,
         marginBottom: 16,
     },
     title: {

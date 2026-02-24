@@ -66,8 +66,10 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                 {/* Logo + Marketplace Picker */}
                 <div className="p-6 border-b border-gray-200">
                     <div className="flex items-center gap-3 mb-3">
-                        <img src={icon} alt="UniCycle" className="w-10 h-10 object-contain flex-shrink-0" />
-                        <h1 className="text-xl font-bold text-gray-900 flex-1 min-w-0">UniCycle</h1>
+                        <button onClick={() => onNavigate('listings')} className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity">
+                            <img src={icon} alt="UniCycle" className="w-10 h-10 object-contain flex-shrink-0" />
+                            <h1 className="text-xl font-bold text-gray-900 min-w-0">UniCycle</h1>
+                        </button>
                         <NotificationBell />
                     </div>
                     <div className="flex items-center gap-2">
@@ -112,7 +114,9 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
             {/* Mobile Top Bar (Small + Medium only) — fixed overlay */}
             <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 h-14 px-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
-                    <img src={icon} alt="UniCycle" className="w-8 h-8 object-contain flex-shrink-0" />
+                    <button onClick={() => onNavigate('listings')} className="hover:opacity-80 transition-opacity flex-shrink-0">
+                        <img src={icon} alt="UniCycle" className="w-8 h-8 object-contain" />
+                    </button>
                     <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} compact />
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">

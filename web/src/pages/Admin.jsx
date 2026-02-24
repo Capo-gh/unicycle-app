@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
     Users, Package, ArrowLeftRight, BarChart3, Search, Shield, ShieldOff, Ban, CheckCircle,
     Trash2, Eye, EyeOff, Bell, Megaphone, Send, Star, DollarSign, RotateCcw,
-    Flag, Mail, Activity, Download, X, TrendingUp, Building2
+    Flag, Mail, Activity, Download, X, TrendingUp, Building2, Settings, UserPlus
 } from 'lucide-react';
 import {
     getAdminStats, getAdminStatsHistory,
@@ -11,7 +11,7 @@ import {
     getAdminTransactions, getUniversities, resolveDispute,
     getAdminReports, dismissReport, actionReport,
     getAdminReviews, adminDeleteReview,
-    getAdminLogs
+    getAdminLogs, getSettings, updateSetting, createBusinessUser
 } from '../api/admin';
 import { sendBroadcast, getAdminNotifications } from '../api/notifications';
 import { createAnnouncement, getAdminAnnouncements, toggleAnnouncement, deleteAnnouncement } from '../api/announcements';
@@ -26,6 +26,7 @@ const TABS = [
     { id: 'notifications', label: 'Notifications', Icon: Bell },
     { id: 'announcements', label: 'Announcements', Icon: Megaphone },
     { id: 'logs', label: 'Audit Log', Icon: Activity },
+    { id: 'settings', label: 'Settings', Icon: Settings },
 ];
 
 export default function Admin() {
@@ -78,12 +79,22 @@ export default function Admin() {
     });
     const [creatingAnnouncement, setCreatingAnnouncement] = useState(false);
 
+    // System settings
+    const [systemSettings, setSystemSettings] = useState({});
+    const [savingSetting, setSavingSetting] = useState(null);
+
+    // Create business user modal
+    const [businessModal, setBusinessModal] = useState(false);
+    const [businessForm, setBusinessForm] = useState({ name: '', email: '', password: '', university: '' });
+    const [creatingBusiness, setCreatingBusiness] = useState(false);
+
     useEffect(() => {
         try {
             const userData = JSON.parse(localStorage.getItem('user') || '{}');
             setIsSuperAdmin(userData.is_super_admin === true);
         } catch {}
         getUniversities().then(setUniversities).catch(() => {});
+        getSettings().then(setSystemSettings).catch(() => {});
     }, []);
 
     useEffect(() => {
@@ -123,6 +134,9 @@ export default function Admin() {
                     break;
                 case 'logs':
                     setLogs(await getAdminLogs());
+                    break;
+                case 'settings':
+                    setSystemSettings(await getSettings());
                     break;
             }
         } catch (err) {
@@ -187,6 +201,31 @@ export default function Admin() {
                 ? { ...u, is_sponsor: false, sponsored_category: null } : u));
             setSponsorModal(null);
         } catch { alert('Failed to remove sponsor'); }
+    };
+
+    const handleToggleSetting = async (key, currentValue) => {
+        const newValue = currentValue === 'true' ? 'false' : 'true';
+        setSavingSetting(key);
+        try {
+            await updateSetting(key, newValue);
+            setSystemSettings(prev => ({ ...prev, [key]: newValue }));
+        } catch { alert('Failed to update setting'); }
+        finally { setSavingSetting(null); }
+    };
+
+    const handleCreateBusiness = async (e) => {
+        e.preventDefault();
+        if (!businessForm.name || !businessForm.email || !businessForm.password) return;
+        setCreatingBusiness(true);
+        try {
+            await createBusinessUser(businessForm.name, businessForm.email, businessForm.password, businessForm.university || 'Business');
+            setBusinessModal(false);
+            setBusinessForm({ name: '', email: '', password: '', university: '' });
+            alert(`Business account created! They can log in immediately with the password you set.`);
+            setUsers(await getAdminUsers('', selectedUniversity));
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Failed to create business account');
+        } finally { setCreatingBusiness(false); }
     };
 
     const handleEmailUser = async (e) => {
@@ -500,6 +539,13 @@ export default function Admin() {
                             ])} className="p-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600" title="Export CSV">
                                 <Download className="w-4 h-4" />
                             </button>
+                            {isSuperAdmin && (
+                                <button onClick={() => setBusinessModal(true)}
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+                                    <UserPlus className="w-4 h-4" />
+                                    Add Business
+                                </button>
+                            )}
                         </div>
                         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                             <div className="overflow-x-auto">
@@ -994,6 +1040,37 @@ export default function Admin() {
                         {logs.length === 0 && <div className="text-center py-8 text-gray-500 text-sm">No admin actions recorded yet</div>}
                     </div>
                 )}
+
+                {/* ── SETTINGS ── */}
+                {!loading && activeTab === 'settings' && (
+                    <div className="space-y-4">
+                        <div className="bg-white rounded-xl border border-gray-200 p-6">
+                            <h3 className="font-semibold text-gray-900 mb-1">Sponsored Listings</h3>
+                            <p className="text-sm text-gray-500 mb-4">Control how sponsored business listings behave in the marketplace.</p>
+                            <div className="flex items-center justify-between py-4 border-b border-gray-100">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-800">Pin sponsored listings in "All" view</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">When enabled, sponsored business listings float to the top even when browsing all categories. When off, they only pin within their specific category.</p>
+                                </div>
+                                <button
+                                    onClick={() => isSuperAdmin && handleToggleSetting('sponsored_pins_in_all', systemSettings.sponsored_pins_in_all)}
+                                    disabled={savingSetting === 'sponsored_pins_in_all' || !isSuperAdmin}
+                                    title={!isSuperAdmin ? 'Super admin only' : ''}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ml-6 ${
+                                        systemSettings.sponsored_pins_in_all === 'true' ? 'bg-amber-500' : 'bg-gray-300'
+                                    } ${!isSuperAdmin ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                                        systemSettings.sponsored_pins_in_all === 'true' ? 'translate-x-6' : 'translate-x-1'
+                                    }`} />
+                                </button>
+                            </div>
+                        </div>
+                        {!isSuperAdmin && (
+                            <p className="text-xs text-gray-400 text-center">Settings can only be changed by the super admin.</p>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* ── LISTING PREVIEW MODAL ── */}
@@ -1095,6 +1172,37 @@ export default function Admin() {
                                     {settingSponsor ? 'Saving...' : sponsorModal.isSponsor ? 'Update' : 'Set Sponsor'}
                                 </button>
                             </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ── CREATE BUSINESS USER MODAL ── */}
+            {businessModal && (
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setBusinessModal(false)}>
+                    <div className="bg-white rounded-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-gray-900">Create Business Account</h2>
+                            <button onClick={() => setBusinessModal(false)} className="p-1.5 rounded-full hover:bg-gray-100">
+                                <X className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+                        <p className="text-sm text-gray-500 mb-4">Creates a pre-verified account for a local business. They can log in immediately and you can then set them as a sponsor.</p>
+                        <form onSubmit={handleCreateBusiness} className="space-y-3">
+                            <input type="text" placeholder="Business name" value={businessForm.name}
+                                onChange={e => setBusinessForm(p => ({ ...p, name: e.target.value }))} className={inputClass} required />
+                            <input type="email" placeholder="Business email" value={businessForm.email}
+                                onChange={e => setBusinessForm(p => ({ ...p, email: e.target.value }))} className={inputClass} required />
+                            <input type="password" placeholder="Temporary password" value={businessForm.password}
+                                onChange={e => setBusinessForm(p => ({ ...p, password: e.target.value }))} className={inputClass} required minLength={6} />
+                            <select value={businessForm.university} onChange={e => setBusinessForm(p => ({ ...p, university: e.target.value }))} className={inputClass}>
+                                <option value="">Which campus do they serve? (optional)</option>
+                                {universities.map(u => <option key={u} value={u}>{u}</option>)}
+                            </select>
+                            <button type="submit" disabled={creatingBusiness}
+                                className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60">
+                                {creatingBusiness ? 'Creating…' : 'Create Account'}
+                            </button>
                         </form>
                     </div>
                 </div>

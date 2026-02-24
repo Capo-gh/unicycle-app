@@ -8,7 +8,8 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Alert
+    Alert,
+    Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
@@ -70,7 +71,7 @@ export default function SignupScreen({ navigation }) {
                 <ScrollView contentContainerStyle={styles.scrollContent}>
                     {/* Header */}
                     <View style={styles.header}>
-                        <Text style={styles.logo}>🚲</Text>
+                        <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
                         <Text style={styles.title}>Create Account</Text>
                         <Text style={styles.subtitle}>Join your campus marketplace</Text>
                     </View>
@@ -173,7 +174,8 @@ const styles = StyleSheet.create({
         marginBottom: 32,
     },
     logo: {
-        fontSize: 48,
+        width: 72,
+        height: 72,
         marginBottom: 12,
     },
     title: {

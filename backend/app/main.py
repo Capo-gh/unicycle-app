@@ -12,6 +12,7 @@ from .models.notification import Notification, NotificationRead
 from .models.announcement import Announcement, AnnouncementDismissal
 from .models.report import Report
 from .models.admin_log import AdminLog
+from .models.system_setting import SystemSetting
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -75,6 +76,16 @@ with engine.connect() as conn:
         conn.commit()
     if "sponsored_category" not in existing_columns:
         conn.execute(text("ALTER TABLE users ADD COLUMN sponsored_category VARCHAR"))
+        conn.commit()
+
+    # Seed default system settings
+    existing_setting = conn.execute(
+        text("SELECT key FROM system_settings WHERE key = 'sponsored_pins_in_all'")
+    ).fetchone()
+    if not existing_setting:
+        conn.execute(
+            text("INSERT INTO system_settings (key, value) VALUES ('sponsored_pins_in_all', 'false')")
+        )
         conn.commit()
 
 # Seed super admin user

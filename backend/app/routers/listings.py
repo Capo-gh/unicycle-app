@@ -7,6 +7,7 @@ from ..database import get_db
 from ..models.listing import Listing
 from ..models.user import User
 from ..models.transaction import Transaction
+from ..models.system_setting import SystemSetting
 from ..schemas.listing import ListingCreate, ListingUpdate, ListingResponse
 from ..utils.dependencies import get_current_user_optional, get_current_user_required
 
@@ -101,10 +102,25 @@ def get_listings(
     
     results = query.all()
 
-    # Sponsored listings appear first when browsing their specific category
+    # Check settings for sponsored behaviour
+    pins_in_all_setting = db.query(SystemSetting).filter(
+        SystemSetting.key == "sponsored_pins_in_all"
+    ).first()
+    sponsored_pins_in_all = pins_in_all_setting and pins_in_all_setting.value == "true"
+
+    def is_sponsored_for(listing, cat):
+        return (listing.seller and listing.seller.is_sponsor
+                and listing.seller.sponsored_category == cat)
+
     if category and category != 'All':
-        sponsored = [l for l in results if l.seller and l.seller.is_sponsor and l.seller.sponsored_category == category]
-        regular = [l for l in results if not (l.seller and l.seller.is_sponsor and l.seller.sponsored_category == category)]
+        # Always pin sponsored to top within their category
+        sponsored = [l for l in results if is_sponsored_for(l, category)]
+        regular = [l for l in results if not is_sponsored_for(l, category)]
+        results = sponsored + regular
+    elif sponsored_pins_in_all:
+        # Only pin in All view if the toggle is on
+        sponsored = [l for l in results if l.seller and l.seller.is_sponsor]
+        regular = [l for l in results if not (l.seller and l.seller.is_sponsor)]
         results = sponsored + regular
 
     return results
