@@ -153,7 +153,10 @@ export default function BrowseScreen({ navigation }) {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <View style={styles.headerTop}>
-                    <Text style={styles.headerTitle}>UniCycle</Text>
+                    <View style={styles.headerBrand}>
+                        <Image source={require('../../assets/logo.png')} style={styles.headerLogo} resizeMode="contain" />
+                        <Text style={styles.headerTitle}>UniCycle</Text>
+                    </View>
                     <View style={styles.headerTopRight}>
                         <NotificationBell
                             onPress={() => navigation.navigate('Profile', { screen: 'Notifications' })}
@@ -436,6 +439,15 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
+    },
+    headerBrand: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    headerLogo: {
+        width: 28,
+        height: 28,
     },
     headerTitle: {
         fontSize: 24,
