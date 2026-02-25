@@ -32,10 +32,7 @@ export default function SecurePayModal({ item, onClose, onProceed }) {
                             <p className="text-xs text-gray-600">Escrow for your safety</p>
                         </div>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    >
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                         <X className="w-5 h-5 text-gray-600" />
                     </button>
                 </div>
@@ -57,12 +54,15 @@ export default function SecurePayModal({ item, onClose, onProceed }) {
 
                     {/* Why Secure-Pay */}
                     <div className="bg-gradient-to-r from-unicycle-blue/10 to-unicycle-green/10 rounded-lg p-4 border border-unicycle-blue/30">
-                        <div className="flex items-start gap-3 mb-3">
+                        <div className="flex items-start gap-3">
                             <Lock className="w-5 h-5 text-unicycle-blue flex-shrink-0 mt-0.5" />
                             <div>
                                 <h4 className="font-semibold text-gray-900 mb-1">Why Secure-Pay?</h4>
                                 <p className="text-sm text-gray-700">
-                                    This item qualifies for escrow protection because it's over $80. Your money stays safe until you verify the item in person.
+                                    Your money is held securely in escrow and only released to the seller after you verify the item in person.
+                                    {item.price >= 80
+                                        ? ' We especially recommend it for this item.'
+                                        : ' We recommend it for items over $80, but you can use it anytime.'}
                                 </p>
                             </div>
                         </div>
@@ -72,66 +72,35 @@ export default function SecurePayModal({ item, onClose, onProceed }) {
                     <div>
                         <h4 className="font-semibold text-gray-900 mb-4">How It Works</h4>
                         <div className="space-y-4">
-                            {/* Step 1 */}
-                            <div className="flex gap-3">
-                                <div className="w-8 h-8 bg-unicycle-green rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                                    1
+                            {[
+                                { label: 'You pay through UniCycle', sub: 'Your payment is held securely in escrow' },
+                                { label: 'Meet at the Safe Zone', sub: `Inspect the item at ${item.safeZone || item.safe_zone || 'a safe location'}` },
+                                { label: 'Confirm or decline', sub: 'Accept if satisfied, or get a full refund' },
+                                { label: 'Seller gets paid', sub: 'Payment released after your confirmation' },
+                            ].map((step, i) => (
+                                <div key={i} className="flex gap-3">
+                                    <div className="w-8 h-8 bg-unicycle-green rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">{i + 1}</div>
+                                    <div className="flex-1">
+                                        <p className="font-medium text-gray-900 mb-1">{step.label}</p>
+                                        <p className="text-sm text-gray-600">{step.sub}</p>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <p className="font-medium text-gray-900 mb-1">You pay through UniCycle</p>
-                                    <p className="text-sm text-gray-600">Your payment is held securely in escrow</p>
-                                </div>
-                            </div>
-
-                            {/* Step 2 */}
-                            <div className="flex gap-3">
-                                <div className="w-8 h-8 bg-unicycle-green rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                                    2
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-medium text-gray-900 mb-1">Meet at the Safe Zone</p>
-                                    <p className="text-sm text-gray-600">Inspect the item at {item.safeZone || item.safe_zone}</p>
-                                </div>
-                            </div>
-
-                            {/* Step 3 */}
-                            <div className="flex gap-3">
-                                <div className="w-8 h-8 bg-unicycle-green rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                                    3
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-medium text-gray-900 mb-1">Confirm or decline</p>
-                                    <p className="text-sm text-gray-600">Accept if satisfied, or get a full refund</p>
-                                </div>
-                            </div>
-
-                            {/* Step 4 */}
-                            <div className="flex gap-3">
-                                <div className="w-8 h-8 bg-unicycle-green rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                                    4
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-medium text-gray-900 mb-1">Seller gets paid</p>
-                                    <p className="text-sm text-gray-600">Payment released after your confirmation</p>
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
 
                     {/* Protection Features */}
                     <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            <span className="text-gray-700">Full refund if item doesn't match description</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            <span className="text-gray-700">Seller doesn't get paid until you approve</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            <span className="text-gray-700">Dispute resolution if issues arise</span>
-                        </div>
+                        {[
+                            'Full refund if item doesn\'t match description',
+                            'Seller doesn\'t get paid until you approve',
+                            'Dispute resolution if issues arise',
+                        ].map((f) => (
+                            <div key={f} className="flex items-center gap-2 text-sm">
+                                <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                <span className="text-gray-700">{f}</span>
+                            </div>
+                        ))}
                     </div>
 
                     {/* Fee Info */}
@@ -143,31 +112,36 @@ export default function SecurePayModal({ item, onClose, onProceed }) {
 
                 {/* Footer Actions */}
                 <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 space-y-2">
-                    {error && (
-                        <p className="text-red-600 text-xs text-center">{error}</p>
+                    {onProceed ? (
+                        /* Opened from "Message Seller" — informational, payment is on the listing page */
+                        <>
+                            <button
+                                onClick={onProceed}
+                                className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors"
+                            >
+                                Continue to Chat
+                            </button>
+                            <button onClick={onClose} className="w-full text-gray-500 py-1.5 text-sm hover:text-gray-700 transition-colors">
+                                Maybe Later
+                            </button>
+                        </>
+                    ) : (
+                        /* Opened from "Pay Securely" button on listing — full payment flow */
+                        <>
+                            {error && <p className="text-red-600 text-xs text-center">{error}</p>}
+                            <button
+                                onClick={handleSecurePay}
+                                disabled={loading}
+                                className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                            >
+                                {loading && <Loader className="w-4 h-4 animate-spin" />}
+                                {loading ? 'Redirecting to payment...' : `Pay Securely ($${((item.price || 0) * 1.07).toFixed(2)} CAD)`}
+                            </button>
+                            <button onClick={onClose} className="w-full text-gray-500 py-1.5 text-sm hover:text-gray-700 transition-colors">
+                                Maybe Later
+                            </button>
+                        </>
                     )}
-                    <button
-                        onClick={handleSecurePay}
-                        disabled={loading}
-                        className="w-full bg-unicycle-green text-white py-3 rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
-                    >
-                        {loading ? <Loader className="w-4 h-4 animate-spin" /> : null}
-                        {loading ? 'Redirecting to payment...' : `Pay Securely ($${((item.price || 0) * 1.07).toFixed(2)} CAD)`}
-                    </button>
-                    {onProceed && (
-                        <button
-                            onClick={onProceed}
-                            className="w-full bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm"
-                        >
-                            Continue to Chat
-                        </button>
-                    )}
-                    <button
-                        onClick={onClose}
-                        className="w-full text-gray-500 py-1.5 text-sm hover:text-gray-700 transition-colors"
-                    >
-                        Maybe Later
-                    </button>
                 </div>
             </div>
         </div>

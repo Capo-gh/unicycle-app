@@ -23,6 +23,7 @@ async function translateText(text, targetLang) {
 export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, onViewSellerProfile }) {
     const { i18n } = useTranslation();
     const [showSecurePayModal, setShowSecurePayModal] = useState(false);
+    const [securePayFromMessage, setSecurePayFromMessage] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [sellerReviews, setSellerReviews] = useState(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -148,6 +149,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
 
     const handleContactSeller = () => {
         if (item.price >= 80) {
+            setSecurePayFromMessage(true);
             setShowSecurePayModal(true);
         } else {
             onContactSeller({
@@ -633,7 +635,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                                         This item qualifies for escrow protection. Your payment is held securely until you verify the item in person.
                                     </p>
                                     <button
-                                        onClick={() => setShowSecurePayModal(true)}
+                                        onClick={() => { setSecurePayFromMessage(false); setShowSecurePayModal(true); }}
                                         className="mt-2 inline-flex items-center gap-1.5 text-xs text-unicycle-blue font-semibold hover:underline"
                                     >
                                         <ShieldCheck className="w-3.5 h-3.5" />
@@ -842,7 +844,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                 <SecurePayModal
                     item={item}
                     onClose={() => setShowSecurePayModal(false)}
-                    onProceed={handleSecurePayProceed}
+                    onProceed={securePayFromMessage ? handleSecurePayProceed : null}
                 />
             )}
         </div>
