@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../../../shared/constants/colors';
 import { markAsSold, markAsUnsold } from '../api/listings';
@@ -25,7 +26,7 @@ import { createTransaction, getMyTransactions, deleteTransaction } from '../api/
 import { getUserReviews } from '../api/reviews';
 import { reportUser } from '../api/users';
 import SecurePayModal from '../components/SecurePayModal';
-import { getListingSecurePay, confirmHandoff, confirmReceipt, disputeTransaction } from '../api/payments';
+import { getListingSecurePay, confirmHandoff, confirmReceipt, disputeTransaction, createBoostSession, activateBoost } from '../api/payments';
 
 const { width } = Dimensions.get('window');
 
@@ -50,6 +51,11 @@ export default function ItemDetailScreen({ route, navigation }) {
     const [submittingReport, setSubmittingReport] = useState(false);
     const [reportSuccess, setReportSuccess] = useState(false);
 
+    // Boost state
+    const [boosting, setBoosting] = useState(false);
+    const [isBoosted, setIsBoosted] = useState(listing?.is_boosted || false);
+    const [boostedUntil, setBoostedUntil] = useState(listing?.boosted_until || null);
+
     // Auto-translation state
     const [translatedTitle, setTranslatedTitle] = useState(null);
     const [translatedDescription, setTranslatedDescription] = useState(null);
@@ -57,6 +63,7 @@ export default function ItemDetailScreen({ route, navigation }) {
 
     // Check if current user is the owner
     const isOwner = currentUser && listing?.seller_id === currentUser.id;
+    const isActiveBoosted = isBoosted && boostedUntil && new Date(boostedUntil) > new Date();
 
     // Get images array
     const getImages = () => {
@@ -311,6 +318,27 @@ export default function ItemDetailScreen({ route, navigation }) {
         Linking.openURL(url);
     };
 
+    const handleBoost = async () => {
+        if (isActiveBoosted) return;
+        setBoosting(true);
+        try {
+            const { checkout_url, session_id } = await createBoostSession(listing.id);
+            await WebBrowser.openBrowserAsync(checkout_url);
+            try {
+                await activateBoost(listing.id, session_id);
+                setIsBoosted(true);
+                setBoostedUntil(new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString());
+                Alert.alert('Boosted!', 'Your listing is now at the top of Browse for 48 hours.');
+            } catch {
+                // Payment not completed — user cancelled
+            }
+        } catch (err) {
+            Alert.alert('Error', err.response?.data?.detail || 'Failed to start boost payment');
+        } finally {
+            setBoosting(false);
+        }
+    };
+
     const handleTranslate = async () => {
         if (translatedTitle) {
             setTranslatedTitle(null);
@@ -496,6 +524,48 @@ export default function ItemDetailScreen({ route, navigation }) {
                         <Text style={styles.directionsButtonText}>Get Directions</Text>
                     </TouchableOpacity>
                 </View>
+
+                {/* Boost Card - owner only */}
+                {isOwner && !isSold && (
+                    <View style={styles.boostCard}>
+                        <View style={styles.boostCardHeader}>
+                            <View style={styles.boostIconCircle}>
+                                <Ionicons name="flash" size={18} color="#b45309" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.boostCardTitle}>Boost this listing</Text>
+                                <Text style={styles.boostCardSubtitle}>
+                                    {isActiveBoosted
+                                        ? `Boosted until ${new Date(boostedUntil).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                                        : 'Appear at the top of Browse for 48 hours'}
+                                </Text>
+                            </View>
+                            {isActiveBoosted ? (
+                                <View style={styles.boostedActiveBadge}>
+                                    <Text style={styles.boostedActiveBadgeText}>Active</Text>
+                                </View>
+                            ) : (
+                                <Text style={styles.boostPrice}>$2</Text>
+                            )}
+                        </View>
+                        {!isActiveBoosted && (
+                            <TouchableOpacity
+                                style={[styles.boostCardButton, boosting && { opacity: 0.6 }]}
+                                onPress={handleBoost}
+                                disabled={boosting}
+                            >
+                                {boosting ? (
+                                    <ActivityIndicator color="#b45309" size="small" />
+                                ) : (
+                                    <>
+                                        <Ionicons name="flash" size={15} color="#b45309" />
+                                        <Text style={styles.boostCardButtonText}>Boost for $2 / 48h</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                )}
 
                 {/* Secure-Pay Info (only for buyers when no active escrow) */}
                 {!isOwner && !isSold && listing.price >= 80 && !securePayTx && (
@@ -1065,6 +1135,72 @@ const styles = StyleSheet.create({
     },
     relistButton: {
         backgroundColor: '#6b7280',
+    },
+    boostCard: {
+        backgroundColor: '#fffbeb',
+        margin: 8,
+        borderRadius: 12,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: '#fde68a',
+    },
+    boostCardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 10,
+    },
+    boostIconCircle: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#fef3c7',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    boostCardTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#92400e',
+        marginBottom: 2,
+    },
+    boostCardSubtitle: {
+        fontSize: 12,
+        color: '#b45309',
+    },
+    boostPrice: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#92400e',
+    },
+    boostedActiveBadge: {
+        backgroundColor: '#fef3c7',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#fde68a',
+    },
+    boostedActiveBadgeText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#b45309',
+    },
+    boostCardButton: {
+        backgroundColor: '#fff',
+        borderWidth: 1.5,
+        borderColor: '#fcd34d',
+        borderRadius: 8,
+        paddingVertical: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+    },
+    boostCardButtonText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#b45309',
     },
     actionButtonText: {
         color: '#fff',

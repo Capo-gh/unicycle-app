@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, ShieldCheck, MessageCircle, Share2, Edit, Star, CheckCircle, ChevronRight, Heart, Flag, X, AlertTriangle, Languages } from 'lucide-react';
+import { ArrowLeft, MapPin, ShieldCheck, MessageCircle, Share2, Edit, Star, CheckCircle, ChevronRight, Heart, Flag, X, AlertTriangle, Languages, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import SecurePayModal from './SecurePayModal';
 import { getUserReviews } from '../api/reviews';
 import { markAsSold, markAsUnsold } from '../api/listings';
 import { createTransaction, getMyTransactions, deleteTransaction } from '../api/transactions';
 import { reportUser } from '../api/users';
-import { getListingSecurePay, confirmHandoff, confirmReceipt, disputeTransaction } from '../api/payments';
+import { getListingSecurePay, confirmHandoff, confirmReceipt, disputeTransaction, createBoostSession } from '../api/payments';
 
 async function translateText(text, targetLang) {
     try {
@@ -44,6 +44,9 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
     const [securePayTx, setSecurePayTx] = useState(null);
     const [escrowAction, setEscrowAction] = useState(null); // 'confirming-handoff' | 'confirming-receipt' | 'disputing'
     const [escrowMessage, setEscrowMessage] = useState(null);
+
+    // Boost state
+    const [boosting, setBoosting] = useState(false);
 
     // Share state
     const [linkCopied, setLinkCopied] = useState(false);
@@ -126,6 +129,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
     // Check if current user is the seller
     const isOwner = currentUser && item?.seller_id === currentUser.id;
     const canReport = currentUser && !isOwner;
+    const isActiveBoosted = item?.is_boosted && item?.boosted_until && new Date(item.boosted_until) > new Date();
 
     const handleReport = async () => {
         if (!reportReason) return;
@@ -289,6 +293,18 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
             setLinkCopied(true);
             setTimeout(() => setLinkCopied(false), 2000);
         });
+    };
+
+    const handleBoost = async () => {
+        if (isActiveBoosted) return;
+        setBoosting(true);
+        try {
+            const { checkout_url } = await createBoostSession(item.id);
+            window.location.href = checkout_url;
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Failed to start boost payment');
+            setBoosting(false);
+        }
     };
 
     // Touch swipe handlers for image navigation
@@ -755,6 +771,20 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                                 <CheckCircle className="w-5 h-5" />
                                 {updating ? 'Updating...' : isSold ? 'Mark as Available' : 'Mark as Sold'}
                             </button>
+                            {!isSold && (
+                                <button
+                                    onClick={handleBoost}
+                                    disabled={boosting || isActiveBoosted}
+                                    className={`w-full py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-60 ${
+                                        isActiveBoosted
+                                            ? 'bg-yellow-100 text-yellow-700 cursor-default'
+                                            : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+                                    }`}
+                                >
+                                    <Zap className="w-5 h-5" />
+                                    {boosting ? 'Redirecting...' : isActiveBoosted ? 'Boosted' : 'Boost Listing ($2 / 48h)'}
+                                </button>
+                            )}
                         </div>
                     )}
 
