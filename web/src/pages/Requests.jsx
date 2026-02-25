@@ -606,7 +606,7 @@ function PostRequestForm({ user, onBack, onAddRequest }) {
                                 className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
                             />
                         </div>
-                        <span className="text-gray-400 font-medium">—</span>
+                        <span className="text-gray-400 font-medium">to</span>
                         <div className="flex-1 relative">
                             <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <input

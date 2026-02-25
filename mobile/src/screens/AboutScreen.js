@@ -61,7 +61,7 @@ export default function AboutScreen({ navigation }) {
                             UniCycle was built to make student life a little easier and a lot more sustainable. Moving into residence? Graduating and clearing out? UniCycle connects students within the same campus so items get a second life instead of ending up in the trash.
                         </Text>
                         <Text style={[styles.bodyText, { marginTop: 12 }]}>
-                            Every transaction stays on campus — verified student emails, university-specific marketplaces, and Safe Zone meetups keep the community trustworthy and the process simple.
+                            Every transaction stays on campus. Verified student emails, university-specific marketplaces, and Safe Zone meetups keep the community trustworthy and the process simple.
                         </Text>
                     </View>
                 </View>

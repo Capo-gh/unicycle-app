@@ -120,11 +120,11 @@ function NotificationsPage({ onBack }) {
 // ─── Privacy & Safety Sub-Page ────────────────────────────────────────────────
 function PrivacySafetyPage({ onBack }) {
     const tips = [
-        { title: 'Meet at Safe Zones only', desc: 'All transactions should happen at designated campus Safe Zones — well-lit, public locations on campus like library lobbies, student union buildings, and main building atria.' },
+        { title: 'Meet at Safe Zones only', desc: 'All transactions should happen at designated campus Safe Zones, like library lobbies, student union buildings, and main building atria.' },
         { title: 'Inspect before you pay', desc: 'Always inspect the item in person before handing over any money. Test electronics, check for damage, and make sure the item matches the listing.' },
         { title: 'Bring a friend', desc: 'Whenever possible, bring a friend along for meetups. There is safety in numbers.' },
         { title: 'Use in-app messaging', desc: "Keep all communication within the UniCycle chat. Never share personal contact details (phone number, social media) with buyers or sellers you don't know." },
-        { title: 'Trust your instincts', desc: 'If something feels off — a deal that seems too good, pressure to meet somewhere unusual, or strange messages — trust your gut and cancel the transaction.' },
+        { title: 'Trust your instincts', desc: 'If something feels off, like a deal that seems too good, pressure to meet somewhere unusual, or strange messages, trust your gut and cancel the transaction.' },
     ];
 
     return (
@@ -150,19 +150,19 @@ function PrivacySafetyPage({ onBack }) {
                     <div className="space-y-3 text-sm text-gray-600">
                         <div className="flex items-start gap-2">
                             <span className="text-unicycle-green font-bold mt-0.5">✓</span>
-                            <p><span className="font-medium text-gray-800">University email verification</span> — every account is verified with a real university email address. You only interact with fellow students.</p>
+                            <p><span className="font-medium text-gray-800">University email verification:</span> every account is verified with a real university email address. You only interact with fellow students.</p>
                         </div>
                         <div className="flex items-start gap-2">
                             <span className="text-unicycle-green font-bold mt-0.5">✓</span>
-                            <p><span className="font-medium text-gray-800">Campus-only marketplace</span> — listings are only visible to students at the same university, keeping the community tight-knit and trustworthy.</p>
+                            <p><span className="font-medium text-gray-800">Campus-only marketplace:</span> listings are only visible to students at the same university, keeping the community tight-knit and trustworthy.</p>
                         </div>
                         <div className="flex items-start gap-2">
                             <span className="text-unicycle-green font-bold mt-0.5">✓</span>
-                            <p><span className="font-medium text-gray-800">Safe Zones</span> — every listing includes a designated Safe Zone meeting spot on campus, so you always know exactly where to meet.</p>
+                            <p><span className="font-medium text-gray-800">Safe Zones:</span> every listing includes a designated Safe Zone meeting spot on campus, so you always know exactly where to meet.</p>
                         </div>
                         <div className="flex items-start gap-2">
                             <span className="text-unicycle-green font-bold mt-0.5">✓</span>
-                            <p><span className="font-medium text-gray-800">Admin moderation</span> — our admin team can suspend accounts or remove listings that violate our community guidelines.</p>
+                            <p><span className="font-medium text-gray-800">Admin moderation:</span> our admin team can suspend accounts or remove listings that violate our community guidelines.</p>
                         </div>
                     </div>
                 </div>
@@ -215,7 +215,7 @@ function HelpSupportPage({ onBack }) {
         },
         {
             q: 'What are Safe Zones?',
-            a: 'Safe Zones are designated public locations on campus (library lobbies, student union buildings, etc.) where buyers and sellers agree to meet. All listings must include a Safe Zone — this keeps transactions safe and predictable.'
+            a: 'Safe Zones are designated public locations on campus (library lobbies, student union buildings, etc.) where buyers and sellers agree to meet. All listings must include a Safe Zone, which keeps transactions safe and predictable.'
         },
         {
             q: 'How do I mark my item as sold?',
@@ -235,7 +235,7 @@ function HelpSupportPage({ onBack }) {
         },
         {
             q: "I didn't receive my verification email. What do I do?",
-            a: "Check your spam/junk folder first. Make sure you used your university email address. If the email still isn't there, try signing up again — a new verification link will be sent. Contact support@unicycle.ca if the problem persists."
+            a: "Check your spam/junk folder first. Make sure you used your university email address. If the email still isn't there, try signing up again and a new verification link will be sent. Contact support@unicycle.ca if the problem persists."
         },
         {
             q: 'Is UniCycle available on mobile?',
@@ -257,7 +257,7 @@ function HelpSupportPage({ onBack }) {
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
                 {/* Quick tip */}
                 <div className="bg-unicycle-green/10 border border-unicycle-green/20 rounded-lg p-4">
-                    <p className="text-sm text-gray-700">Have a question not answered here? Email us at <span className="font-medium text-unicycle-green">support@unicycle.ca</span> — we typically respond within one business day.</p>
+                    <p className="text-sm text-gray-700">Have a question not answered here? Email us at <span className="font-medium text-unicycle-green">support@unicycle.ca</span>. We typically respond within one business day.</p>
                 </div>
 
                 {/* FAQ */}
@@ -340,7 +340,7 @@ function AboutPage({ onBack }) {
                         UniCycle was built to make student life a little easier and a lot more sustainable. Moving into residence? Graduating and clearing out? UniCycle connects students within the same campus so items get a second life instead of ending up in the trash.
                     </p>
                     <p className="text-sm text-gray-600 leading-relaxed mt-3">
-                        Every transaction stays on campus — verified student emails, university-specific marketplaces, and Safe Zone meetups keep the community trustworthy and the process simple.
+                        Every transaction stays on campus. Verified student emails, university-specific marketplaces, and Safe Zone meetups keep the community trustworthy and the process simple.
                     </p>
                 </div>
 
@@ -350,7 +350,7 @@ function AboutPage({ onBack }) {
                     <div className="space-y-3">
                         {[
                             { icon: '🎓', title: 'University-verified accounts', desc: 'Every user is verified with a real campus email.' },
-                            { icon: '🏫', title: 'Campus-specific marketplaces', desc: 'Browse listings from your own university only — no noise from across the country.' },
+                            { icon: '🏫', title: 'Campus-specific marketplaces', desc: 'Browse listings from your own university only, with no noise from across the country.' },
                             { icon: '📍', title: 'Safe Zone meetups', desc: 'Every listing has a designated on-campus meeting spot.' },
                             { icon: '💬', title: 'In-app messaging', desc: 'Chat with buyers and sellers without sharing personal contact info.' },
                             { icon: '📱', title: 'Web + mobile', desc: 'Available as a web app and native iOS/Android app.' },

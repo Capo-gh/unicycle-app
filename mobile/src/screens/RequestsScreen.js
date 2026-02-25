@@ -593,7 +593,7 @@ function PostRequestForm({ user, onBack, onAddRequest }) {
                             value={formData.budgetMin}
                             onChangeText={(text) => setFormData({ ...formData, budgetMin: text })}
                         />
-                        <Text style={styles.budgetDash}>—</Text>
+                        <Text style={styles.budgetDash}>to</Text>
                         <TextInput
                             style={[styles.formInput, { flex: 1 }]}
                             placeholder="Max"

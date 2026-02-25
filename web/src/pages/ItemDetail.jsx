@@ -266,7 +266,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
     const handleDispute = async () => {
         const hasSellerConfirmed = !!securePayTx?.seller_confirmed_at;
         const msg = hasSellerConfirmed
-            ? 'The seller confirmed handoff. Disputing will hold funds for admin review — you will NOT get an immediate refund. Continue?'
+            ? 'The seller confirmed handoff. Disputing will hold funds for admin review. You will NOT get an immediate refund. Continue?'
             : 'Cancel this Secure-Pay transaction? You will get a full refund.';
         if (!window.confirm(msg)) return;
         setEscrowAction('disputing');
@@ -661,10 +661,10 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                                     'text-unicycle-blue'
                                 }`} />
                                 <span className="font-semibold text-gray-900">
-                                    {securePayTx.payment_status === 'held' && 'Secure-Pay — Funds Held'}
-                                    {securePayTx.payment_status === 'captured' && 'Secure-Pay — Complete ✓'}
-                                    {securePayTx.payment_status === 'disputed' && 'Secure-Pay — Under Review'}
-                                    {securePayTx.payment_status === 'refunded' && 'Secure-Pay — Refunded'}
+                                    {securePayTx.payment_status === 'held' && 'Secure-Pay: Funds Held'}
+                                    {securePayTx.payment_status === 'captured' && 'Secure-Pay: Complete ✓'}
+                                    {securePayTx.payment_status === 'disputed' && 'Secure-Pay: Under Review'}
+                                    {securePayTx.payment_status === 'refunded' && 'Secure-Pay: Refunded'}
                                 </span>
                             </div>
 
@@ -711,14 +711,14 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                                                 disabled={!securePayTx.seller_confirmed_at || escrowAction === 'confirming-receipt'}
                                                 className="w-full py-2.5 bg-unicycle-green text-white rounded-lg font-semibold text-sm hover:bg-unicycle-green/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                             >
-                                                {escrowAction === 'confirming-receipt' ? 'Confirming...' : 'I Received the Item — Release Payment'}
+                                                {escrowAction === 'confirming-receipt' ? 'Confirming...' : 'I Received the Item, Release Payment'}
                                             </button>
                                             <button
                                                 onClick={handleDispute}
                                                 disabled={!!escrowAction}
                                                 className="w-full py-2 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50 transition-colors disabled:opacity-40"
                                             >
-                                                {escrowAction === 'disputing' ? 'Submitting...' : securePayTx.seller_confirmed_at ? 'Dispute — I Did Not Receive the Item' : 'Cancel & Get Refund'}
+                                                {escrowAction === 'disputing' ? 'Submitting...' : securePayTx.seller_confirmed_at ? 'Dispute: I Did Not Receive the Item' : 'Cancel & Get Refund'}
                                             </button>
                                         </div>
                                     )}

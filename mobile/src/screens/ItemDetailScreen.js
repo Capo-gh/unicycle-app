@@ -75,7 +75,7 @@ export default function ItemDetailScreen({ route, navigation }) {
                     onPress={() => {
                         const WEB_BASE = 'https://unicycle-app.vercel.app';
                         Share.share({
-                            message: `${listing.title} — $${listing.price}\n${WEB_BASE}?listing=${listing.id}`,
+                            message: `${listing.title} - $${listing.price}\n${WEB_BASE}?listing=${listing.id}`,
                             url: `${WEB_BASE}?listing=${listing.id}`,
                         });
                     }}
@@ -252,7 +252,7 @@ export default function ItemDetailScreen({ route, navigation }) {
     const handleDispute = async () => {
         const hasSellerConfirmed = !!securePayTx?.seller_confirmed_at;
         const msg = hasSellerConfirmed
-            ? 'The seller confirmed handoff. Disputing will hold funds for admin review — you will NOT get an immediate refund. Continue?'
+            ? 'The seller confirmed handoff. Disputing will hold funds for admin review. You will NOT get an immediate refund. Continue?'
             : 'Cancel this Secure-Pay transaction? You will get a full refund.';
         Alert.alert('Confirm', msg, [
             { text: 'Cancel', style: 'cancel' },
@@ -540,10 +540,10 @@ export default function ItemDetailScreen({ route, navigation }) {
                                 }
                             />
                             <Text style={styles.escrowTitle}>
-                                {securePayTx.payment_status === 'held' && 'Secure-Pay — Funds Held'}
-                                {securePayTx.payment_status === 'captured' && 'Secure-Pay — Complete ✓'}
-                                {securePayTx.payment_status === 'disputed' && 'Secure-Pay — Under Review'}
-                                {securePayTx.payment_status === 'refunded' && 'Secure-Pay — Refunded'}
+                                {securePayTx.payment_status === 'held' && 'Secure-Pay: Funds Held'}
+                                {securePayTx.payment_status === 'captured' && 'Secure-Pay: Complete ✓'}
+                                {securePayTx.payment_status === 'disputed' && 'Secure-Pay: Under Review'}
+                                {securePayTx.payment_status === 'refunded' && 'Secure-Pay: Refunded'}
                             </Text>
                         </View>
 
@@ -601,7 +601,7 @@ export default function ItemDetailScreen({ route, navigation }) {
                                             disabled={!securePayTx.seller_confirmed_at || !!escrowAction}
                                         >
                                             <Text style={styles.escrowButtonText}>
-                                                {escrowAction === 'confirming-receipt' ? 'Confirming...' : 'I Received the Item — Release Payment'}
+                                                {escrowAction === 'confirming-receipt' ? 'Confirming...' : 'I Received the Item, Release Payment'}
                                             </Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity
@@ -610,7 +610,7 @@ export default function ItemDetailScreen({ route, navigation }) {
                                             disabled={!!escrowAction}
                                         >
                                             <Text style={styles.escrowButtonOutlineRedText}>
-                                                {escrowAction === 'disputing' ? 'Submitting...' : securePayTx.seller_confirmed_at ? 'Dispute — I Did Not Receive the Item' : 'Cancel & Get Refund'}
+                                                {escrowAction === 'disputing' ? 'Submitting...' : securePayTx.seller_confirmed_at ? 'Dispute: I Did Not Receive the Item' : 'Cancel & Get Refund'}
                                             </Text>
                                         </TouchableOpacity>
                                     </>

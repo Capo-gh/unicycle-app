@@ -60,8 +60,8 @@ export default function SecurePayModal({ item, onClose, onProceed }) {
                                 <p className="font-semibold text-amber-800 text-sm">We recommend Secure-Pay for this item</p>
                                 <p className="text-xs text-amber-700 mt-0.5">
                                     {item.price >= 80
-                                        ? 'High-value purchases are best protected through escrow — pay only after you inspect and approve the item in person.'
-                                        : 'Escrow protection gives you peace of mind — pay only after you inspect and approve the item in person.'}
+                                        ? 'High-value purchases are best protected through escrow. Pay only after you inspect and approve the item in person.'
+                                        : 'Escrow protection gives you peace of mind. Pay only after you inspect and approve the item in person.'}
                                 </p>
                             </div>
                         </div>

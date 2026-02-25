@@ -570,7 +570,7 @@ export default function Admin() {
                                                 <td className="px-4 py-3 text-gray-600 text-xs">{u.university}</td>
                                                 <td className="px-4 py-3 text-gray-700 font-medium">{u.listing_count}</td>
                                                 <td className="px-4 py-3 text-gray-600 text-xs">
-                                                    {u.review_count > 0 ? `★ ${(u.avg_rating || 0).toFixed(1)} (${u.review_count})` : '—'}
+                                                    {u.review_count > 0 ? `★ ${(u.avg_rating || 0).toFixed(1)} (${u.review_count})` : '-'}
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex flex-wrap gap-1">
@@ -859,7 +859,7 @@ export default function Admin() {
                                                 <td className="px-4 py-3">
                                                     <span className="text-yellow-500">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
                                                 </td>
-                                                <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate text-xs">{r.text || '—'}</td>
+                                                <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate text-xs">{r.text || '-'}</td>
                                                 <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(r.created_at)}</td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex justify-end">
@@ -1030,7 +1030,7 @@ export default function Admin() {
                                             <td className="px-4 py-3 text-gray-600 text-xs">
                                                 {l.target_type && `${l.target_type} #${l.target_id}`}
                                             </td>
-                                            <td className="px-4 py-3 text-gray-600 text-xs max-w-[200px] truncate">{l.details || '—'}</td>
+                                            <td className="px-4 py-3 text-gray-600 text-xs max-w-[200px] truncate">{l.details || '-'}</td>
                                             <td className="px-4 py-3 text-gray-500 text-xs">{formatDateTime(l.created_at)}</td>
                                         </tr>
                                     ))}

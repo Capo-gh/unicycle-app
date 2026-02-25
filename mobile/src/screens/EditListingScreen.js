@@ -209,7 +209,7 @@ export default function EditListingScreen({ route, navigation }) {
                         />
                     )}
                     <Text style={[styles.soldToggleText, listing.is_sold && styles.soldToggleTextActive]}>
-                        {listing.is_sold ? 'Marked as Sold — Tap to Mark Available' : 'Tap to Mark as Sold'}
+                        {listing.is_sold ? 'Marked as Sold. Tap to Mark Available' : 'Tap to Mark as Sold'}
                     </Text>
                 </TouchableOpacity>
 

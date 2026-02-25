@@ -13,7 +13,7 @@ import { COLORS } from '../../../shared/constants/colors';
 const tips = [
     {
         title: 'Meet at Safe Zones only',
-        desc: 'All transactions should happen at designated campus Safe Zones — well-lit, public locations like library lobbies, student union buildings, and main building atria.',
+        desc: 'All transactions should happen at designated campus Safe Zones, like library lobbies, student union buildings, and main building atria.',
     },
     {
         title: 'Inspect before you pay',
@@ -29,7 +29,7 @@ const tips = [
     },
     {
         title: 'Trust your instincts',
-        desc: 'If something feels off — a deal too good to be true, pressure to meet somewhere unusual, or strange messages — trust your gut and cancel the transaction.',
+        desc: 'If something feels off, like a deal too good to be true, pressure to meet somewhere unusual, or strange messages, trust your gut and cancel the transaction.',
     },
 ];
 

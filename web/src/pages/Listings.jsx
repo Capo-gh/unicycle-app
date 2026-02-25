@@ -225,7 +225,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                                         onChange={(e) => handleFilterChange('minPrice', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
                                     />
-                                    <span className="text-gray-400">—</span>
+                                    <span className="text-gray-400">to</span>
                                     <input
                                         type="number"
                                         placeholder={t('listings.maxPrice')}

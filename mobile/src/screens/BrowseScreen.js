@@ -349,7 +349,7 @@ export default function BrowseScreen({ navigation }) {
                                     value={filters.minPrice}
                                     onChangeText={(val) => setFilters(prev => ({ ...prev, minPrice: val }))}
                                 />
-                                <Text style={styles.priceDash}>—</Text>
+                                <Text style={styles.priceDash}>to</Text>
                                 <TextInput
                                     style={styles.priceInput}
                                     placeholder="Max"

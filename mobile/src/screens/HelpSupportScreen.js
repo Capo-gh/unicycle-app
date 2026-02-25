@@ -88,7 +88,7 @@ export default function HelpSupportScreen({ navigation }) {
                         <Text style={styles.tipBannerText}>
                             Have a question not answered here? Email{' '}
                             <Text style={styles.tipBannerLink}>support@unicycle.ca</Text>
-                            {' '}— we typically respond within one business day.
+                            {'. We typically respond within one business day.'}
                         </Text>
                     </View>
                 </View>
