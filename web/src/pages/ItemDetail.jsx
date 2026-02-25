@@ -638,6 +638,36 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                         </div>
                     </div>
 
+                    {/* Boost Card — owner only, small/medium screens (desktop has sidebar) */}
+                    {isOwner && !isSold && (
+                        <div className="lg:hidden bg-amber-50 rounded-lg p-4 border border-amber-200">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0">
+                                    <Zap className="w-5 h-5 text-amber-700" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-gray-900 text-sm">Boost this listing</h3>
+                                    <p className="text-xs text-amber-700">
+                                        {isActiveBoosted
+                                            ? `Boosted — active until ${new Date(item.boosted_until).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                                            : 'Appear at the top of Browse for 48 hours'}
+                                    </p>
+                                </div>
+                                {!isActiveBoosted && <span className="text-lg font-bold text-amber-800">$2</span>}
+                            </div>
+                            {!isActiveBoosted && (
+                                <button
+                                    onClick={handleBoost}
+                                    disabled={boosting}
+                                    className="w-full py-2 bg-white border-2 border-amber-300 text-amber-800 rounded-lg text-sm font-semibold hover:bg-amber-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                                >
+                                    <Zap className="w-4 h-4" />
+                                    {boosting ? 'Redirecting...' : 'Boost for $2 / 48h'}
+                                </button>
+                            )}
+                        </div>
+                    )}
+
                     {/* Secure-Pay Info (only for buyers, not sold) */}
                     {!isOwner && !isSold && item.price >= 80 && (
                         <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
