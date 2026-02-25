@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, DollarSign, Save, X, Image } from 'lucide-react';
-import { updateListing } from '../api/listings';
+import { ArrowLeft, MapPin, DollarSign, Save, X, Image, Tag } from 'lucide-react';
+import { updateListing, markAsSold, markAsUnsold } from '../api/listings';
 import { uploadImage } from '../api/upload';
 import { getSafeZones } from '../constants/safeZones';
 
@@ -15,6 +15,7 @@ export default function EditListing({ listing, onBack, onSuccess }) {
         safeZoneAddress: ''
     });
     const [images, setImages] = useState([]);
+    const [isSold, setIsSold] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -57,6 +58,7 @@ export default function EditListing({ listing, onBack, onSuccess }) {
             if (listing.images) {
                 setImages(listing.images.split(',').filter(Boolean));
             }
+            setIsSold(!!listing.is_sold);
         }
     }, [listing]);
 
@@ -133,6 +135,16 @@ export default function EditListing({ listing, onBack, onSuccess }) {
             };
 
             await updateListing(listing.id, updateData);
+
+            // Handle sold status change separately
+            if (isSold !== !!listing.is_sold) {
+                if (isSold) {
+                    await markAsSold(listing.id);
+                } else {
+                    await markAsUnsold(listing.id);
+                }
+            }
+
             setSuccess(true);
 
             // Redirect after 1.5 seconds
@@ -354,6 +366,26 @@ export default function EditListing({ listing, onBack, onSuccess }) {
                         {formData.safeZoneAddress && (
                             <p className="text-sm text-gray-600">{formData.safeZoneAddress}</p>
                         )}
+                    </div>
+
+                    {/* Sold Status */}
+                    <div className="bg-white rounded-lg p-6 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Tag className="w-5 h-5 text-gray-600" />
+                                <div>
+                                    <p className="text-sm font-semibold text-gray-900">Mark as Sold</p>
+                                    <p className="text-xs text-gray-500">Sold items are hidden from the marketplace</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsSold(prev => !prev)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isSold ? 'bg-unicycle-green' : 'bg-gray-200'}`}
+                            >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isSold ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Error Message */}

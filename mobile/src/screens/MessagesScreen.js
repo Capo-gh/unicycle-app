@@ -14,13 +14,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../../../shared/constants/colors';
-import { getConversations, getConversation, sendMessage, archiveConversation } from '../api/messages';
+import { getConversations, getConversation, sendMessage, createConversation, archiveConversation } from '../api/messages';
 
-export default function MessagesScreen() {
+export default function MessagesScreen({ route }) {
     const [conversations, setConversations] = useState([]);
     const [filteredConversations, setFilteredConversations] = useState([]);
     const [selectedConvId, setSelectedConvId] = useState(null);
     const [activeConversation, setActiveConversation] = useState(null);
+    const [newConvRequest, setNewConvRequest] = useState(null);
     const [messageText, setMessageText] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
@@ -51,6 +52,19 @@ export default function MessagesScreen() {
     useEffect(() => {
         fetchConversations();
     }, []);
+
+    // Handle incoming route params (from "Message Seller" on item detail)
+    useEffect(() => {
+        if (!route?.params?.listingId || loading) return;
+        const { listingId, listingTitle, listingPrice, initialMessage } = route.params;
+        const existing = conversations.find(c => c.listing?.id === listingId);
+        if (existing) {
+            handleSelectConversation(existing.id);
+        } else {
+            setNewConvRequest({ listingId, listingTitle, listingPrice, initialMessage });
+            setSelectedConvId('new');
+        }
+    }, [route?.params?.listingId, loading]);
 
     useEffect(() => {
         if (activeConversation?.messages) {
@@ -121,17 +135,25 @@ export default function MessagesScreen() {
 
         setSending(true);
         try {
-            const newMessage = await sendMessage(selectedConvId, text);
-            setActiveConversation(prev => ({
-                ...prev,
-                messages: [...prev.messages, newMessage]
-            }));
-            setConversations(prev => prev.map(c =>
-                c.id === selectedConvId
-                    ? { ...c, last_message: newMessage, updated_at: newMessage.created_at }
-                    : c
-            ));
-            setMessageText('');
+            if (selectedConvId === 'new' && newConvRequest?.listingId) {
+                const conv = await createConversation(newConvRequest.listingId, text);
+                setNewConvRequest(null);
+                setMessageText('');
+                await fetchConversations();
+                handleSelectConversation(conv.id);
+            } else {
+                const newMessage = await sendMessage(selectedConvId, text);
+                setActiveConversation(prev => ({
+                    ...prev,
+                    messages: [...prev.messages, newMessage]
+                }));
+                setConversations(prev => prev.map(c =>
+                    c.id === selectedConvId
+                        ? { ...c, last_message: newMessage, updated_at: newMessage.created_at }
+                        : c
+                ));
+                setMessageText('');
+            }
         } catch (error) {
             console.error('Error sending message:', error);
             Alert.alert('Error', 'Failed to send message');
@@ -184,6 +206,86 @@ export default function MessagesScreen() {
         if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
         return date.toLocaleDateString();
     };
+
+    if (selectedConvId === 'new' && newConvRequest) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1 }}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                >
+                    <View style={styles.chatHeader}>
+                        <TouchableOpacity
+                            onPress={() => { setSelectedConvId(null); setNewConvRequest(null); }}
+                            style={styles.backButton}
+                        >
+                            <Ionicons name="arrow-back" size={24} color={COLORS.dark} />
+                        </TouchableOpacity>
+                        <View style={styles.chatHeaderContent}>
+                            <View style={styles.chatAvatar}>
+                                <Ionicons name="chatbubble-outline" size={20} color="#fff" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.chatHeaderName}>New Conversation</Text>
+                                <Text style={styles.chatHeaderListing} numberOfLines={1}>
+                                    {newConvRequest.listingTitle || 'Item'}
+                                    {newConvRequest.listingPrice ? ` • $${newConvRequest.listingPrice}` : ''}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    <FlatList
+                        data={[]}
+                        keyExtractor={() => ''}
+                        contentContainerStyle={styles.messagesContainer}
+                        ListEmptyComponent={(
+                            <View style={styles.quickRepliesContainer}>
+                                <Text style={styles.quickRepliesLabel}>Quick replies:</Text>
+                                {[
+                                    "Hi, is this still available?",
+                                    "Hi! I'm interested. Can we meet on campus?",
+                                    "Hello! What condition is this in?",
+                                    "Hi! Is the price negotiable?",
+                                    "Hi! When would you be available to meet?",
+                                ].map((suggestion, index) => (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={styles.quickReplyButton}
+                                        onPress={() => handleSendMessage(suggestion)}
+                                        disabled={sending}
+                                    >
+                                        <Text style={styles.quickReplyText}>{suggestion}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                                <Text style={styles.quickRepliesOr}>Or type your own message below</Text>
+                            </View>
+                        )}
+                        renderItem={() => null}
+                    />
+
+                    <View style={styles.messageInput}>
+                        <TextInput
+                            style={styles.messageTextInput}
+                            placeholder="Type a message..."
+                            value={messageText}
+                            onChangeText={setMessageText}
+                            multiline
+                            maxLength={1000}
+                        />
+                        <TouchableOpacity
+                            style={[styles.sendButton, (!messageText.trim() || sending) && styles.sendButtonDisabled]}
+                            onPress={() => handleSendMessage()}
+                            disabled={!messageText.trim() || sending}
+                        >
+                            <Ionicons name="send" size={20} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                </KeyboardAvoidingView>
+            </SafeAreaView>
+        );
+    }
 
     if (selectedConvId && activeConversation) {
         const otherPerson = getOtherPerson(activeConversation);

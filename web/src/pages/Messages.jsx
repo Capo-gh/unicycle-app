@@ -22,6 +22,7 @@ export default function Messages({ incomingRequest, user }) {
     const [sending, setSending] = useState(false);
     const [error, setError] = useState(null);
     const [newConversationRequest, setNewConversationRequest] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
     const [translatedMessages, setTranslatedMessages] = useState({});
     const [translatingId, setTranslatingId] = useState(null);
     const messagesEndRef = useRef(null);
@@ -187,8 +188,18 @@ export default function Messages({ incomingRequest, user }) {
                         <input
                             type="text"
                             placeholder="Search conversations..."
-                            className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-8 py-2.5 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
                         />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                                ✕
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -219,7 +230,13 @@ export default function Messages({ incomingRequest, user }) {
 
                 {!loading && !error && conversations.length > 0 && (
                     <div className="flex-1 overflow-y-auto">
-                        {conversations.map(conv => {
+                        {conversations.filter(conv => {
+                            if (!searchQuery.trim()) return true;
+                            const q = searchQuery.toLowerCase();
+                            const otherPerson = getOtherPerson(conv);
+                            return (otherPerson?.name || '').toLowerCase().includes(q) ||
+                                   (conv.listing?.title || '').toLowerCase().includes(q);
+                        }).map(conv => {
                             const otherPerson = getOtherPerson(conv);
                             return (
                                 <button

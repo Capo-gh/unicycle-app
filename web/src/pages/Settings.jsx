@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, LogOut, Bell, Shield, HelpCircle, Info, ChevronRight, Check, CheckCheck, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, LogOut, Bell, Shield, HelpCircle, Info, ChevronRight, Check, CheckCheck, ChevronDown, ChevronUp, Languages } from 'lucide-react';
 import { logout } from '../api/auth';
 import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from '../api/notifications';
+import LanguageToggle from '../components/LanguageToggle';
 
 // ─── Notifications Sub-Page ───────────────────────────────────────────────────
 function NotificationsPage({ onBack }) {
@@ -470,6 +471,14 @@ export default function Settings({ user, onBack, onLogout }) {
                         </div>
                         <ChevronRight className="w-4 h-4 text-gray-400" />
                     </button>
+
+                    <div className="px-4 py-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Languages className="w-5 h-5 text-gray-600" />
+                            <span className="font-medium text-gray-900">Language</span>
+                        </div>
+                        <LanguageToggle />
+                    </div>
 
                     <button
                         onClick={() => setSubPage('privacy')}

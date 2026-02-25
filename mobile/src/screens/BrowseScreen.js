@@ -141,6 +141,11 @@ export default function BrowseScreen({ navigation }) {
                     <Text style={styles.sponsoredBadgeText}>Sponsored</Text>
                 </View>
             )}
+            {item.is_sold && (
+                <View style={styles.soldOverlay}>
+                    <Text style={styles.soldOverlayText}>SOLD</Text>
+                </View>
+            )}
             <View style={styles.info}>
                 <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
                 <Text style={styles.price}>${item.price}</Text>
@@ -606,6 +611,22 @@ const styles = StyleSheet.create({
         fontSize: 10,
         fontWeight: '700',
         color: '#ffffff',
+    },
+    soldOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 150,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    soldOverlayText: {
+        color: '#fff',
+        fontSize: 20,
+        fontWeight: 'bold',
+        letterSpacing: 3,
     },
     info: {
         padding: 12,

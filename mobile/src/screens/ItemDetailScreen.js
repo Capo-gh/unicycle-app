@@ -205,6 +205,8 @@ export default function ItemDetailScreen({ route, navigation }) {
         } else {
             navigation.navigate('Messages', {
                 listingId: listing.id,
+                listingTitle: listing.title,
+                listingPrice: listing.price,
                 initialMessage: `Hi! Is "${listing.title}" still available?`
             });
         }
@@ -214,6 +216,8 @@ export default function ItemDetailScreen({ route, navigation }) {
         setShowSecurePayModal(false);
         navigation.navigate('Messages', {
             listingId: listing.id,
+            listingTitle: listing.title,
+            listingPrice: listing.price,
             initialMessage: `Hi! I'm interested in "${listing.title}" ($${listing.price}). Is it still available?`
         });
     };
