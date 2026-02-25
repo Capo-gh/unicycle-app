@@ -5,6 +5,7 @@ import {
     TouchableOpacity,
     StyleSheet,
     ScrollView,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -250,7 +251,7 @@ const styles = StyleSheet.create({
         color: '#ccc',
     },
     langActive: {
-        color: COLORS.primary,
+        color: COLORS.green,
     },
     langSep: {
         fontSize: 13,
