@@ -159,7 +159,7 @@ export default function SecurePayModal({ item, onClose, onProceed }) {
                             onClick={onProceed}
                             className="w-full bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm"
                         >
-                            Contact Seller Without Secure Pay
+                            Continue to Chat
                         </button>
                     )}
                     <button

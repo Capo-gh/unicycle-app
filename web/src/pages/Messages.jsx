@@ -176,7 +176,7 @@ export default function Messages({ incomingRequest, user }) {
     const translateLabel = t('messages.translate');
 
     return (
-        <div className="h-screen flex flex-col lg:flex-row bg-gray-50 overflow-hidden">
+        <div className="h-[calc(100vh-8.5rem)] lg:h-screen flex flex-col lg:flex-row bg-gray-50 overflow-hidden">
 
             {/* LEFT: Conversation List */}
             <div className={`w-full lg:w-96 bg-white flex flex-col border-r border-gray-200 ${selectedConvId ? 'hidden lg:flex' : 'flex'}`}>

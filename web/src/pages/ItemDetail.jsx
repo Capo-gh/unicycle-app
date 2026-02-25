@@ -624,7 +624,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                     {!isOwner && !isSold && item.price >= 80 && (
                         <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                             <div className="flex items-start gap-3">
-                                <div className="p-2 bg-unicycle-blue rounded-lg">
+                                <div className="p-2 bg-unicycle-blue rounded-lg flex-shrink-0">
                                     <ShieldCheck className="w-5 h-5 text-white" />
                                 </div>
                                 <div className="flex-1">
@@ -632,6 +632,13 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                                     <p className="text-xs text-gray-600">
                                         This item qualifies for escrow protection. Your payment is held securely until you verify the item in person.
                                     </p>
+                                    <button
+                                        onClick={() => setShowSecurePayModal(true)}
+                                        className="mt-2 inline-flex items-center gap-1.5 text-xs text-unicycle-blue font-semibold hover:underline"
+                                    >
+                                        <ShieldCheck className="w-3.5 h-3.5" />
+                                        Pay Securely with Escrow →
+                                    </button>
                                 </div>
                             </div>
                         </div>

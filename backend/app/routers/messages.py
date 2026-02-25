@@ -226,12 +226,16 @@ def send_message(
         sender_id=current_user.id
     )
     db.add(message)
-    
+
     # Update conversation timestamp and unarchive for both parties
     conversation.archived_by_buyer = False
     conversation.archived_by_seller = False
-    
-    # Notify the recipient (the other participant)
+
+    # Commit message first so a notification failure can't block the send
+    db.commit()
+    db.refresh(message)
+
+    # Notify the recipient (non-critical — separate commit)
     recipient_id = conversation.seller_id if current_user.id == conversation.buyer_id else conversation.buyer_id
     listing_title = conversation.listing.title if conversation.listing else "an item"
     try:
@@ -240,11 +244,10 @@ def send_message(
             title=f"New message from {current_user.name}",
             message=f"{current_user.name} sent you a message about \"{listing_title}\""
         )
+        db.commit()
     except Exception as e:
+        db.rollback()
         print(f"[notifications] Failed to send message notification: {e}")
-
-    db.commit()
-    db.refresh(message)
 
     return message
 
