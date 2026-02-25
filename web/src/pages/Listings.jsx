@@ -284,8 +284,8 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
 
             {/* Content */}
             <div className="max-w-7xl mx-auto px-4 py-6">
-                {/* Results count */}
-                {!loading && !error && (
+                {/* Results count — only shown when searching or filtering */}
+                {!loading && !error && (searchQuery || hasActiveFilters) && (
                     <p className="text-sm text-gray-600 mb-4">
                         {listings.length} {listings.length !== 1 ? t('listings.items') : t('listings.item')} {t('listings.found')}
                         {hasActiveFilters && <span className="text-unicycle-green ml-1">{t('common.filtered')}</span>}

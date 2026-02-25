@@ -219,8 +219,8 @@ export default function BrowseScreen({ navigation }) {
                 </ScrollView>
             </View>
 
-            {/* Results count */}
-            {!loading && (
+            {/* Results count — only shown when searching or filtering */}
+            {!loading && (searchQuery || hasActiveFilters) && (
                 <View style={styles.resultsRow}>
                     <Text style={styles.resultsText}>
                         {listings.length} item{listings.length !== 1 ? 's' : ''} found
