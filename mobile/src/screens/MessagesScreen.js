@@ -115,12 +115,13 @@ export default function MessagesScreen() {
         }
     };
 
-    const handleSendMessage = async () => {
-        if (!messageText.trim() || sending || !selectedConvId) return;
+    const handleSendMessage = async (quickText) => {
+        const text = quickText || messageText.trim();
+        if (!text || sending || !selectedConvId) return;
 
         setSending(true);
         try {
-            const newMessage = await sendMessage(selectedConvId, messageText.trim());
+            const newMessage = await sendMessage(selectedConvId, text);
             setActiveConversation(prev => ({
                 ...prev,
                 messages: [...prev.messages, newMessage]
@@ -238,6 +239,28 @@ export default function MessagesScreen() {
                         data={activeConversation.messages || []}
                         keyExtractor={(item) => item.id.toString()}
                         contentContainerStyle={styles.messagesContainer}
+                        ListEmptyComponent={(
+                            <View style={styles.quickRepliesContainer}>
+                                <Text style={styles.quickRepliesLabel}>Quick replies:</Text>
+                                {[
+                                    "Hi, is this still available?",
+                                    "Hi! I'm interested. Can we meet on campus?",
+                                    "Hello! What condition is this in?",
+                                    "Hi! Is the price negotiable?",
+                                    "Hi! When would you be available to meet?",
+                                ].map((suggestion, index) => (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={styles.quickReplyButton}
+                                        onPress={() => handleSendMessage(suggestion)}
+                                        disabled={sending}
+                                    >
+                                        <Text style={styles.quickReplyText}>{suggestion}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                                <Text style={styles.quickRepliesOr}>Or type your own message below</Text>
+                            </View>
+                        )}
                         renderItem={({ item }) => {
                             const isMe = item.sender_id === user?.id;
                             return (
@@ -581,6 +604,37 @@ const styles = StyleSheet.create({
     messagesContainer: {
         padding: 16,
         flexGrow: 1,
+    },
+    quickRepliesContainer: {
+        flex: 1,
+        paddingVertical: 24,
+        paddingHorizontal: 8,
+        justifyContent: 'center',
+    },
+    quickRepliesLabel: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#374151',
+        marginBottom: 12,
+    },
+    quickReplyButton: {
+        backgroundColor: '#fff',
+        borderWidth: 2,
+        borderColor: '#e5e7eb',
+        borderRadius: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        marginBottom: 8,
+    },
+    quickReplyText: {
+        fontSize: 14,
+        color: '#374151',
+    },
+    quickRepliesOr: {
+        fontSize: 12,
+        color: '#9ca3af',
+        textAlign: 'center',
+        marginTop: 8,
     },
     messageRow: {
         flexDirection: 'row',

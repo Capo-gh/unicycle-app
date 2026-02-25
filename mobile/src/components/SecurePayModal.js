@@ -80,6 +80,21 @@ export default function SecurePayModal({ visible, item, onClose, onProceed }) {
                             </View>
                         </View>
 
+                        {/* Recommendation Banner — shown when opened from "Message Seller" */}
+                        {onProceed && (
+                            <View style={styles.recommendBanner}>
+                                <Text style={styles.recommendStar}>⭐</Text>
+                                <View style={styles.recommendContent}>
+                                    <Text style={styles.recommendTitle}>We recommend Secure-Pay for this item</Text>
+                                    <Text style={styles.recommendDesc}>
+                                        {item.price >= 80
+                                            ? 'High-value purchases are best protected through escrow — pay only after you inspect and approve the item in person.'
+                                            : 'Escrow protection gives you peace of mind — pay only after you inspect and approve the item in person.'}
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+
                         {/* Why Secure-Pay */}
                         <View style={styles.whySection}>
                             <View style={styles.whyHeader}>
@@ -133,24 +148,34 @@ export default function SecurePayModal({ visible, item, onClose, onProceed }) {
 
                     {/* Footer Actions */}
                     <View style={styles.footer}>
-                        <TouchableOpacity
-                            style={[styles.proceedButton, loading && styles.proceedButtonDisabled]}
-                            onPress={handleSecurePay}
-                            disabled={loading}
-                        >
-                            {loading
-                                ? <ActivityIndicator color="#fff" size="small" />
-                                : <Text style={styles.proceedText}>{t('securePay.paySecurely')} (${((item.price || 0) * 1.07).toFixed(2)} CAD)</Text>
-                            }
-                        </TouchableOpacity>
-                        {onProceed && (
-                            <TouchableOpacity style={styles.contactButton} onPress={onProceed}>
-                                <Text style={styles.contactText}>{t('securePay.contactWithout')}</Text>
-                            </TouchableOpacity>
+                        {onProceed ? (
+                            /* Opened from "Message Seller" — informational, payment is on the listing page */
+                            <>
+                                <TouchableOpacity style={styles.proceedButton} onPress={onProceed}>
+                                    <Text style={styles.proceedText}>Continue to Chat</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.laterButton} onPress={onClose}>
+                                    <Text style={styles.laterText}>{t('securePay.maybeLater')}</Text>
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            /* Opened from "Pay Securely" button on listing — full payment flow */
+                            <>
+                                <TouchableOpacity
+                                    style={[styles.proceedButton, loading && styles.proceedButtonDisabled]}
+                                    onPress={handleSecurePay}
+                                    disabled={loading}
+                                >
+                                    {loading
+                                        ? <ActivityIndicator color="#fff" size="small" />
+                                        : <Text style={styles.proceedText}>{t('securePay.paySecurely')} (${((item.price || 0) * 1.07).toFixed(2)} CAD)</Text>
+                                    }
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.laterButton} onPress={onClose}>
+                                    <Text style={styles.laterText}>{t('securePay.maybeLater')}</Text>
+                                </TouchableOpacity>
+                            </>
                         )}
-                        <TouchableOpacity style={styles.laterButton} onPress={onClose}>
-                            <Text style={styles.laterText}>{t('securePay.maybeLater')}</Text>
-                        </TouchableOpacity>
                     </View>
                 </View>
             </View>
@@ -230,6 +255,33 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: 'bold',
         color: COLORS.green,
+    },
+    recommendBanner: {
+        backgroundColor: '#fffbeb',
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#fcd34d',
+        flexDirection: 'row',
+        gap: 10,
+    },
+    recommendStar: {
+        fontSize: 18,
+    },
+    recommendContent: {
+        flex: 1,
+    },
+    recommendTitle: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#92400e',
+        marginBottom: 3,
+    },
+    recommendDesc: {
+        fontSize: 12,
+        color: '#b45309',
+        lineHeight: 17,
     },
     whySection: {
         backgroundColor: 'rgba(76,175,80,0.08)',

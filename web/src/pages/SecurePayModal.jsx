@@ -52,6 +52,21 @@ export default function SecurePayModal({ item, onClose, onProceed }) {
                         </div>
                     </div>
 
+                    {/* Recommendation Banner — shown when opened from "Message Seller" */}
+                    {onProceed && (
+                        <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 flex items-start gap-3">
+                            <span className="text-amber-500 text-lg flex-shrink-0">⭐</span>
+                            <div>
+                                <p className="font-semibold text-amber-800 text-sm">We recommend Secure-Pay for this item</p>
+                                <p className="text-xs text-amber-700 mt-0.5">
+                                    {item.price >= 80
+                                        ? 'High-value purchases are best protected through escrow — pay only after you inspect and approve the item in person.'
+                                        : 'Escrow protection gives you peace of mind — pay only after you inspect and approve the item in person.'}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Why Secure-Pay */}
                     <div className="bg-gradient-to-r from-unicycle-blue/10 to-unicycle-green/10 rounded-lg p-4 border border-unicycle-blue/30">
                         <div className="flex items-start gap-3">

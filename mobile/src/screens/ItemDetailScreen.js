@@ -40,6 +40,7 @@ export default function ItemDetailScreen({ route, navigation }) {
     const [interestTransactionId, setInterestTransactionId] = useState(null);
     const [sellerReviews, setSellerReviews] = useState(null);
     const [showSecurePayModal, setShowSecurePayModal] = useState(false);
+    const [securePayFromMessage, setSecurePayFromMessage] = useState(false);
     const [securePayTx, setSecurePayTx] = useState(null);
     const [escrowAction, setEscrowAction] = useState(null); // 'confirming-handoff' | 'confirming-receipt' | 'disputing'
     const [escrowMessage, setEscrowMessage] = useState(null);
@@ -192,6 +193,7 @@ export default function ItemDetailScreen({ route, navigation }) {
 
     const handleContactSeller = () => {
         if (listing.price >= 80) {
+            setSecurePayFromMessage(true);
             setShowSecurePayModal(true);
         } else {
             navigation.navigate('Messages', {
@@ -275,7 +277,7 @@ export default function ItemDetailScreen({ route, navigation }) {
         ]);
     };
 
-    const reportReasons = ['Fake listing', 'Inappropriate content', 'Spam or scam', 'Harassment', 'Other'];
+    const reportReasons = ['Scam / Fraud', 'Suspicious or fake account', 'Inappropriate listing or content', 'Harassment or threatening behaviour', 'Other'];
 
     const handleReport = () => {
         setShowReportModal(true);
@@ -509,6 +511,13 @@ export default function ItemDetailScreen({ route, navigation }) {
                                 </Text>
                             </View>
                         </View>
+                        <TouchableOpacity
+                            style={styles.securePayLink}
+                            onPress={() => { setSecurePayFromMessage(false); setShowSecurePayModal(true); }}
+                        >
+                            <Ionicons name="shield-checkmark" size={14} color={COLORS.green} />
+                            <Text style={styles.securePayLinkText}>Pay Securely with Escrow →</Text>
+                        </TouchableOpacity>
                     </View>
                 )}
 
@@ -696,7 +705,7 @@ export default function ItemDetailScreen({ route, navigation }) {
                 visible={showSecurePayModal}
                 item={listing}
                 onClose={() => setShowSecurePayModal(false)}
-                onProceed={handleSecurePayProceed}
+                onProceed={securePayFromMessage ? handleSecurePayProceed : null}
             />
 
             {/* Report Modal */}
@@ -1148,6 +1157,18 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#666',
         lineHeight: 16,
+    },
+    securePayLink: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        marginTop: 10,
+        alignSelf: 'flex-start',
+    },
+    securePayLinkText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: COLORS.green,
     },
     reportButton: {
         flexDirection: 'row',
