@@ -7,7 +7,8 @@ import {
     FlatList,
     Image,
     Alert,
-    RefreshControl
+    RefreshControl,
+    ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
@@ -197,7 +198,7 @@ export default function MyListingsScreen({ navigation }) {
         <View style={styles.container}>
             {loading ? (
                 <View style={styles.centerContainer}>
-                    <Text style={styles.loadingText}>Loading...</Text>
+                    <ActivityIndicator size="large" color={COLORS.green} />
                 </View>
             ) : listings.length === 0 ? (
                 <View style={styles.centerContainer}>

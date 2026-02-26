@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, MapPin, Package, X } from 'lucide-react';
+import { Search, SlidersHorizontal, Package, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getListings } from '../api/listings';
 
@@ -116,14 +116,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
         setFilters({ minPrice: '', maxPrice: '', condition: 'All', sort: 'newest' });
     };
 
-    const formatPrice = (price) => {
-        return new Intl.NumberFormat('en-CA', {
-            style: 'currency',
-            currency: 'CAD',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(price);
-    };
+    const formatPrice = (price) => `$${price}`;
 
     const getFirstImage = (images) => {
         if (!images) return null;
@@ -385,10 +378,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                                 <div className="p-3">
                                     <h3 className="font-medium text-gray-900 text-sm truncate">{item.title}</h3>
                                     <p className="text-unicycle-green font-bold mt-1">{formatPrice(item.price)}</p>
-                                    <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
-                                        <MapPin className="w-3 h-3" />
-                                        <span className="truncate">{item.safe_zone || item.safeZone || 'Campus'}</span>
-                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1 truncate">{item.category || 'Other'}</p>
                                 </div>
                             </button>
                         ))}

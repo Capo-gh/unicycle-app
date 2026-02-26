@@ -423,7 +423,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
 
                         {/* Owner badge */}
                         {isOwner && (
-                            <div className="absolute top-4 left-4 bg-unicycle-blue text-white px-3 py-1 rounded-full text-sm font-medium">
+                            <div className="absolute top-4 left-4 bg-unicycle-green text-white px-3 py-1 rounded-full text-sm font-medium">
                                 Your Listing
                             </div>
                         )}
@@ -501,7 +501,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                                     <span className="font-medium text-gray-900">{item.seller?.name || 'Unknown'}</span>
                                     <ShieldCheck className="w-4 h-4 text-unicycle-blue" />
                                     {isOwner && (
-                                        <span className="text-xs bg-unicycle-blue/10 text-unicycle-blue px-2 py-0.5 rounded">
+                                        <span className="text-xs bg-unicycle-green/10 text-unicycle-green px-2 py-0.5 rounded">
                                             You
                                         </span>
                                     )}
