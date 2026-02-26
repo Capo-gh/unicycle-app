@@ -377,7 +377,7 @@ export default function MessagesScreen({ route }) {
                                             </Text>
                                         </View>
                                     )}
-                                    <View>
+                                    <View style={{ maxWidth: '78%', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
                                         <View style={[
                                             styles.messageBubble,
                                             isMe ? styles.myMessage : styles.theirMessage
@@ -769,7 +769,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     messageBubble: {
-        maxWidth: '70%',
         padding: 12,
         borderRadius: 16,
     },
