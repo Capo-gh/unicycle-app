@@ -391,6 +391,125 @@ def send_direct_email(email: str, name: str, subject: str, message: str):
         raise Exception(f"Failed to send email: {str(e)}")
 
 
+def send_message_email(
+    recipient_email: str,
+    recipient_name: str,
+    sender_name: str,
+    listing_title: str,
+):
+    """Notify a user by email that they have a new message."""
+    html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: #16a34a; color: white; padding: 24px 30px; border-radius: 8px 8px 0 0; }}
+                .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #16a34a; color: white; padding: 12px 28px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }}
+                .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2 style="margin:0;">New message on UniCycle</h2>
+                </div>
+                <div class="content">
+                    <p>Hi {recipient_name},</p>
+                    <p><strong>{sender_name}</strong> sent you a message about <strong>{listing_title}</strong>.</p>
+                    <center>
+                        <a href="{FRONTEND_URL}" class="button">View Message</a>
+                    </center>
+                    <p style="font-size:13px; color:#666;">Reply quickly to keep the deal moving!</p>
+                </div>
+                <div class="footer">
+                    <p>&copy; 2025 UniCycle &mdash; Student Marketplace</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    """
+
+    if not SENDGRID_API_KEY:
+        print(f"[email] No SendGrid key - skipping message notification to {recipient_email}")
+        return None
+
+    try:
+        message = Mail(
+            from_email=SENDGRID_FROM_EMAIL,
+            to_emails=recipient_email,
+            subject=f"{sender_name} sent you a message on UniCycle",
+            html_content=html_content,
+        )
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        sg.send(message)
+    except Exception as e:
+        print(f"[email] Failed to send message notification: {e}")
+
+
+def send_listing_expiry_email(
+    seller_email: str,
+    seller_name: str,
+    listing_title: str,
+    listing_id: int,
+    days_left: int,
+):
+    """Warn a seller that their listing is expiring soon."""
+    day_word = "day" if days_left == 1 else "days"
+    html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: #d97706; color: white; padding: 24px 30px; border-radius: 8px 8px 0 0; }}
+                .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #16a34a; color: white; padding: 12px 28px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }}
+                .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2 style="margin:0;">Your listing is expiring soon</h2>
+                </div>
+                <div class="content">
+                    <p>Hi {seller_name},</p>
+                    <p>Your listing <strong>{listing_title}</strong> will be automatically deactivated in <strong>{days_left} {day_word}</strong>.</p>
+                    <p>Renew it from your My Listings page to keep it visible to buyers.</p>
+                    <center>
+                        <a href="{FRONTEND_URL}" class="button">Renew Listing</a>
+                    </center>
+                    <p style="font-size:13px; color:#666;">Renewing is free and extends your listing for another 60 days.</p>
+                </div>
+                <div class="footer">
+                    <p>&copy; 2025 UniCycle &mdash; Student Marketplace</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    """
+
+    if not SENDGRID_API_KEY:
+        print(f"[email] No SendGrid key - skipping expiry warning to {seller_email}")
+        return None
+
+    try:
+        message = Mail(
+            from_email=SENDGRID_FROM_EMAIL,
+            to_emails=seller_email,
+            subject=f"Your listing '{listing_title}' expires in {days_left} {day_word}",
+            html_content=html_content,
+        )
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        sg.send(message)
+    except Exception as e:
+        print(f"[email] Failed to send expiry warning: {e}")
+
+
 def is_token_expired(token_created_at: datetime) -> bool:
     """Check if verification token is expired (24 hours)"""
     if not token_created_at:

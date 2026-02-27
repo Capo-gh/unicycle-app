@@ -12,7 +12,7 @@ from ..schemas.message import (
 )
 from ..utils.dependencies import get_current_user_required
 from .notifications import send_user_notification
-from ..utils.email_resend import send_message_email
+from ..utils.email import send_message_email
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
 

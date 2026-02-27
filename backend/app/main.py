@@ -138,7 +138,7 @@ seed_admin()
 # APScheduler: daily job to send expiry warning emails and deactivate expired listings
 def run_expiry_job():
     from datetime import datetime, timedelta, timezone
-    from .utils.email_resend import send_listing_expiry_email
+    from .utils.email import send_listing_expiry_email
 
     now = datetime.now(timezone.utc)
     warning_threshold = now + timedelta(days=7)
