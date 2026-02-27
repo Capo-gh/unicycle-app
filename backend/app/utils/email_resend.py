@@ -5,8 +5,6 @@ from datetime import datetime, timedelta, timezone
 
 # Initialize Resend
 resend.api_key = os.getenv("RESEND_API_KEY")
-if not resend.api_key:
-    raise ValueError("RESEND_API_KEY environment variable is not set")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
