@@ -239,21 +239,17 @@ export default function UserProfile({ userId, onBack, onItemClick, currentUser, 
                         Member since {formatDate(user.created_at)}
                     </p>
 
-                    {/* Message User Button */}
-                    {currentUser && currentUser.id !== userId && onContact && (
+                    {/* Message User Button — only shown when they have at least one active listing */}
+                    {currentUser && currentUser.id !== userId && onContact && listings.some(l => !l.is_sold) && (
                         <button
                             onClick={() => {
                                 const activeListing = listings.find(l => !l.is_sold);
-                                if (activeListing) {
-                                    onContact({
-                                        listingId: activeListing.id,
-                                        listingTitle: activeListing.title,
-                                        listingPrice: activeListing.price,
-                                        sellerId: userId
-                                    });
-                                } else {
-                                    alert('This user has no active listings to message about.');
-                                }
+                                onContact({
+                                    listingId: activeListing.id,
+                                    listingTitle: activeListing.title,
+                                    listingPrice: activeListing.price,
+                                    sellerId: userId
+                                });
                             }}
                             className="mt-4 w-full py-2.5 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 transition-colors font-medium flex items-center justify-center gap-2"
                         >
