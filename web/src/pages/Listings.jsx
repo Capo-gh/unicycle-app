@@ -6,6 +6,11 @@ import { getListings } from '../api/listings';
 export default function Listings({ onItemClick, onNavigate, currentMarketplace, onMarketplaceChange }) {
     const { t } = useTranslation();
 
+    const userUniversity = (() => {
+        try { return JSON.parse(localStorage.getItem('user') || '{}').university || ''; } catch { return ''; }
+    })();
+    const isOwnSchool = !currentMarketplace || currentMarketplace === userUniversity;
+
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [listings, setListings] = useState([]);
@@ -319,14 +324,14 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                             <button onClick={clearFilters} className="text-unicycle-blue hover:underline">
                                 {t('listings.clearAllFilters')}
                             </button>
-                        ) : (
+                        ) : isOwnSchool ? (
                             <button
                                 onClick={() => onNavigate('sell')}
                                 className="inline-flex items-center gap-2 px-4 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90"
                             >
                                 {t('listings.postItem')}
                             </button>
-                        )}
+                        ) : null}
                     </div>
                 )}
 

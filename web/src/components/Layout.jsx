@@ -73,9 +73,11 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                         <NotificationBell />
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="flex-1 min-w-0">
-                            <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} />
-                        </div>
+                        {currentPage === 'listings' && (
+                            <div className="flex-1 min-w-0">
+                                <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} />
+                            </div>
+                        )}
                         <LanguageToggle />
                     </div>
                 </div>
@@ -117,7 +119,9 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                     <button onClick={() => onNavigate('listings')} className="hover:opacity-80 transition-opacity flex-shrink-0">
                         <img src={icon} alt="UniCycle" className="w-8 h-8 object-contain" />
                     </button>
-                    <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} compact />
+                    {currentPage === 'listings' && (
+                        <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} compact />
+                    )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                     <LanguageToggle />
