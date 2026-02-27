@@ -22,6 +22,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../../../shared/constants/colors';
 import { markAsSold, markAsUnsold } from '../api/listings';
+import { toggleSave, getSavedIds } from '../api/saved';
 import { createTransaction, getMyTransactions, deleteTransaction } from '../api/transactions';
 import { getUserReviews } from '../api/reviews';
 import { reportUser } from '../api/users';
@@ -51,6 +52,8 @@ export default function ItemDetailScreen({ route, navigation }) {
     const [submittingReport, setSubmittingReport] = useState(false);
     const [reportSuccess, setReportSuccess] = useState(false);
 
+    const [isSaved, setIsSaved] = useState(false);
+
     // Boost state
     const [boosting, setBoosting] = useState(false);
     const [isBoosted, setIsBoosted] = useState(listing?.is_boosted || false);
@@ -74,25 +77,52 @@ export default function ItemDetailScreen({ route, navigation }) {
 
     const images = getImages();
 
-    // Add share button to navigation header
+    // Load saved state on mount
+    useEffect(() => {
+        if (!isOwner) {
+            getSavedIds().then(ids => setIsSaved(ids.includes(listing?.id))).catch(() => {});
+        }
+    }, [listing?.id]);
+
+    const handleToggleSave = async () => {
+        try {
+            await toggleSave(listing.id);
+            setIsSaved(prev => !prev);
+        } catch (err) {
+            console.error('toggleSave error', err);
+        }
+    };
+
+    // Add share + save buttons to navigation header
     useEffect(() => {
         navigation.setOptions({
             headerRight: () => (
-                <TouchableOpacity
-                    onPress={() => {
-                        const WEB_BASE = 'https://unicycle-app.vercel.app';
-                        Share.share({
-                            message: `${listing.title} - $${listing.price}\n${WEB_BASE}?listing=${listing.id}`,
-                            url: `${WEB_BASE}?listing=${listing.id}`,
-                        });
-                    }}
-                    style={{ marginRight: 12 }}
-                >
-                    <Ionicons name="share-outline" size={24} color="#374151" />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8, gap: 4 }}>
+                    {!isOwner && (
+                        <TouchableOpacity onPress={handleToggleSave} style={{ padding: 4 }}>
+                            <Ionicons
+                                name={isSaved ? 'heart' : 'heart-outline'}
+                                size={24}
+                                color={isSaved ? '#ef4444' : '#374151'}
+                            />
+                        </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                        onPress={() => {
+                            const WEB_BASE = 'https://unicycle-app.vercel.app';
+                            Share.share({
+                                message: `${listing.title} - $${listing.price}\n${WEB_BASE}?listing=${listing.id}`,
+                                url: `${WEB_BASE}?listing=${listing.id}`,
+                            });
+                        }}
+                        style={{ padding: 4 }}
+                    >
+                        <Ionicons name="share-outline" size={24} color="#374151" />
+                    </TouchableOpacity>
+                </View>
             ),
         });
-    }, [navigation, listing?.id]);
+    }, [navigation, listing?.id, isSaved, isOwner]);
 
     // Fetch seller reviews
     useEffect(() => {

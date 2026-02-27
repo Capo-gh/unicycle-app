@@ -44,6 +44,7 @@ export default function EditListingScreen({ route, navigation }) {
     });
 
     const categories = [
+        'Free',
         'Textbooks & Course Materials',
         'Electronics & Gadgets',
         'Furniture & Decor',
@@ -106,7 +107,7 @@ export default function EditListingScreen({ route, navigation }) {
             Alert.alert('Error', 'Please select a condition');
             return;
         }
-        if (!formData.price || parseFloat(formData.price) <= 0) {
+        if (formData.category !== 'Free' && (!formData.price || parseFloat(formData.price) < 0)) {
             Alert.alert('Error', 'Please enter a valid price');
             return;
         }
@@ -125,7 +126,7 @@ export default function EditListingScreen({ route, navigation }) {
                 title: formData.title.trim(),
                 category: formData.category,
                 condition: formData.condition,
-                price: parseFloat(formData.price),
+                price: formData.category === 'Free' ? 0 : parseFloat(formData.price),
                 description: formData.description.trim(),
                 safe_zone: formData.safeZone,
                 safe_zone_address: formData.safeZoneAddress,
@@ -260,19 +261,27 @@ export default function EditListingScreen({ route, navigation }) {
                 </View>
 
                 {/* Price */}
-                <View style={styles.section}>
-                    <Text style={styles.label}>Price (CAD) *</Text>
-                    <View style={styles.priceInputContainer}>
-                        <Text style={styles.priceDollar}>$</Text>
-                        <TextInput
-                            style={styles.priceInput}
-                            placeholder="0"
-                            value={formData.price}
-                            onChangeText={(text) => setFormData({ ...formData, price: text })}
-                            keyboardType="decimal-pad"
-                        />
+                {formData.category === 'Free' ? (
+                    <View style={styles.section}>
+                        <View style={{ backgroundColor: '#f0fdf4', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#86efac' }}>
+                            <Text style={{ color: '#16a34a', fontWeight: '600', textAlign: 'center' }}>This item is free — no price needed</Text>
+                        </View>
                     </View>
-                </View>
+                ) : (
+                    <View style={styles.section}>
+                        <Text style={styles.label}>Price (CAD) *</Text>
+                        <View style={styles.priceInputContainer}>
+                            <Text style={styles.priceDollar}>$</Text>
+                            <TextInput
+                                style={styles.priceInput}
+                                placeholder="0"
+                                value={formData.price}
+                                onChangeText={(text) => setFormData({ ...formData, price: text })}
+                                keyboardType="decimal-pad"
+                            />
+                        </View>
+                    </View>
+                )}
 
                 {/* Description */}
                 <View style={styles.section}>

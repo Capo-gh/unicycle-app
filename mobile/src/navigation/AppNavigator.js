@@ -25,6 +25,7 @@ import PrivacySafetyScreen from '../screens/PrivacySafetyScreen';
 import HelpSupportScreen from '../screens/HelpSupportScreen';
 import AboutScreen from '../screens/AboutScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
+import SavedScreen from '../screens/SavedScreen';
 import AnnouncementModal from '../components/AnnouncementModal';
 
 const Stack = createNativeStackNavigator();
@@ -57,6 +58,8 @@ function MainTabs() {
                         iconName = focused ? 'add-circle' : 'add-circle-outline';
                     } else if (route.name === 'Messages') {
                         iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+                    } else if (route.name === 'Saved') {
+                        iconName = focused ? 'heart' : 'heart-outline';
                     } else if (route.name === 'Profile') {
                         iconName = focused ? 'person' : 'person-outline';
                     }
@@ -72,6 +75,7 @@ function MainTabs() {
             <Tab.Screen name="Requests" component={RequestsScreen} />
             <Tab.Screen name="Sell" component={SellScreen} />
             <Tab.Screen name="Messages" component={MessagesScreen} />
+            <Tab.Screen name="Saved" component={SavedStack} />
             <Tab.Screen name="Profile" component={ProfileStack} />
         </Tab.Navigator>
     );
@@ -103,6 +107,24 @@ function BrowseStack() {
                     title: 'Seller Profile',
                     headerBackTitle: 'Back'
                 }}
+            />
+        </Stack.Navigator>
+    );
+}
+
+// Saved Stack
+function SavedStack() {
+    return (
+        <Stack.Navigator>
+            <Stack.Screen
+                name="SavedList"
+                component={SavedScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="ItemDetail"
+                component={ItemDetailScreen}
+                options={{ headerShown: true, title: 'Item Details', headerBackTitle: 'Back' }}
             />
         </Stack.Navigator>
     );

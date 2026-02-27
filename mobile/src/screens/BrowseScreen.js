@@ -15,13 +15,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getListings } from '../api/listings';
+import { toggleSave, getSavedIds } from '../api/saved';
 import { COLORS } from '../../../shared/constants/colors';
 import NotificationBell from '../components/NotificationBell';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
 
+const ALL_MONTREAL = 'all';
+
 const marketplaces = [
+    { fullName: ALL_MONTREAL, shortName: 'All Montreal' },
     { fullName: 'McGill University', shortName: 'McGill' },
     { fullName: 'Concordia University', shortName: 'Concordia' },
     { fullName: 'École de technologie supérieure (ÉTS)', shortName: 'ÉTS' },
@@ -34,6 +38,7 @@ const marketplaces = [
 
 const categories = [
     { label: 'All', value: 'All' },
+    { label: 'Free', value: 'Free' },
     { label: 'Textbooks', value: 'Textbooks & Course Materials' },
     { label: 'Electronics', value: 'Electronics & Gadgets' },
     { label: 'Furniture', value: 'Furniture & Decor' },
@@ -63,6 +68,8 @@ export default function BrowseScreen({ navigation }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
 
+    const [savedIds, setSavedIds] = useState(new Set());
+
     // Advanced filters
     const [filters, setFilters] = useState({
         minPrice: '',
@@ -72,6 +79,23 @@ export default function BrowseScreen({ navigation }) {
     });
 
     const hasActiveFilters = filters.minPrice || filters.maxPrice || filters.condition !== 'All' || filters.sort !== 'newest';
+
+    useEffect(() => {
+        getSavedIds().then(ids => setSavedIds(new Set(ids))).catch(() => {});
+    }, []);
+
+    const handleToggleSave = useCallback(async (id) => {
+        try {
+            await toggleSave(id);
+            setSavedIds(prev => {
+                const next = new Set(prev);
+                if (next.has(id)) next.delete(id); else next.add(id);
+                return next;
+            });
+        } catch (err) {
+            console.error('toggleSave error', err);
+        }
+    }, []);
 
     // Debounced search
     useEffect(() => {
@@ -88,7 +112,8 @@ export default function BrowseScreen({ navigation }) {
     const fetchListings = async () => {
         setLoading(true);
         try {
-            const params = { university: currentMarketplace };
+            const params = {};
+            if (currentMarketplace !== ALL_MONTREAL) params.university = currentMarketplace;
             if (searchQuery.trim()) params.search = searchQuery.trim();
             if (selectedCategory !== 'All') params.category = selectedCategory;
             if (filters.minPrice) params.min_price = parseFloat(filters.minPrice);
@@ -114,7 +139,9 @@ export default function BrowseScreen({ navigation }) {
         setFilters({ minPrice: '', maxPrice: '', condition: 'All', sort: 'newest' });
     };
 
-    const currentMarketplaceShortName = marketplaces.find(m => m.fullName === currentMarketplace)?.shortName || 'UniCycle';
+    const currentMarketplaceShortName = currentMarketplace === ALL_MONTREAL
+        ? 'All Montreal'
+        : (marketplaces.find(m => m.fullName === currentMarketplace)?.shortName || 'UniCycle');
 
     const renderItem = ({ item }) => (
         <TouchableOpacity
@@ -146,9 +173,20 @@ export default function BrowseScreen({ navigation }) {
                     <Text style={styles.soldOverlayText}>SOLD</Text>
                 </View>
             )}
+            <TouchableOpacity
+                style={styles.heartBtn}
+                onPress={() => handleToggleSave(item.id)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+                <Ionicons
+                    name={savedIds.has(item.id) ? 'heart' : 'heart-outline'}
+                    size={20}
+                    color={savedIds.has(item.id) ? '#ef4444' : '#fff'}
+                />
+            </TouchableOpacity>
             <View style={styles.info}>
                 <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-                <Text style={styles.price}>${item.price}</Text>
+                <Text style={styles.price}>{item.price === 0 ? 'Free' : `$${item.price}`}</Text>
                 <Text style={styles.category}>{item.category}</Text>
             </View>
         </TouchableOpacity>
@@ -304,10 +342,10 @@ export default function BrowseScreen({ navigation }) {
                                             styles.marketplaceItemTitle,
                                             currentMarketplace === marketplace.fullName && styles.marketplaceItemTitleActive
                                         ]}>
-                                            {marketplace.shortName} Marketplace
+                                            {marketplace.fullName === ALL_MONTREAL ? 'All Montreal' : `${marketplace.shortName} Marketplace`}
                                         </Text>
                                         <Text style={styles.marketplaceItemSubtitle}>
-                                            {marketplace.fullName}
+                                            {marketplace.fullName === ALL_MONTREAL ? 'Browse all universities' : marketplace.fullName}
                                         </Text>
                                     </View>
                                     {currentMarketplace === marketplace.fullName && (
@@ -627,6 +665,14 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         letterSpacing: 3,
+    },
+    heartBtn: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: 'rgba(0,0,0,0.35)',
+        borderRadius: 16,
+        padding: 4,
     },
     info: {
         padding: 12,

@@ -74,7 +74,7 @@ export default function ProfileScreen({ navigation }) {
         if (!trimmed) return;
         setSavingName(true);
         try {
-            const updated = await updateProfile(trimmed);
+            const updated = await updateProfile({ name: trimmed });
             await updateUser({ name: updated.name });
             setShowEditModal(false);
         } catch {
@@ -134,7 +134,11 @@ export default function ProfileScreen({ navigation }) {
 
                     <View style={styles.profileInfo}>
                         <View style={styles.avatarContainer}>
-                            <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text>
+                            {user?.avatar_url ? (
+                                <Image source={{ uri: user.avatar_url }} style={{ width: 80, height: 80, borderRadius: 40 }} />
+                            ) : (
+                                <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text>
+                            )}
                         </View>
                         <View style={styles.profileDetails}>
                             <View style={styles.nameRow}>
