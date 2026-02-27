@@ -25,6 +25,7 @@ export default function Messages({ incomingRequest, user }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [translatedMessages, setTranslatedMessages] = useState({});
     const [translatingId, setTranslatingId] = useState(null);
+    const [loadingConv, setLoadingConv] = useState(false);
     const messagesEndRef = useRef(null);
 
     const currentUserId = user?.id;
@@ -45,6 +46,19 @@ export default function Messages({ incomingRequest, user }) {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [activeConversation?.messages]);
+
+    // Browser back button support: push history when opening a conversation,
+    // then popstate resets back to the conversation list
+    useEffect(() => {
+        const handlePopState = () => {
+            setSelectedConvId(null);
+            setActiveConversation(null);
+            setNewConversationRequest(null);
+            setLoadingConv(false);
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
 
     // Poll active conversation for new messages every 5 seconds
     useEffect(() => {
@@ -73,7 +87,10 @@ export default function Messages({ incomingRequest, user }) {
     };
 
     const handleSelectConversation = async (convId) => {
+        window.history.pushState({ msgConv: true }, '');
         setSelectedConvId(convId);
+        setActiveConversation(null);
+        setLoadingConv(true);
         setTranslatedMessages({});
         try {
             const data = await getConversation(convId);
@@ -83,6 +100,8 @@ export default function Messages({ incomingRequest, user }) {
             ));
         } catch (err) {
             console.error('Error fetching conversation:', err);
+        } finally {
+            setLoadingConv(false);
         }
     };
 
@@ -267,7 +286,7 @@ export default function Messages({ incomingRequest, user }) {
                                             </span>
                                         </div>
                                         <p className="text-xs text-gray-500 mb-1 truncate">
-                                            Re: {conv.listing?.title || 'Item'} • ${conv.listing?.price || 0}
+                                            {conv.listing?.title || 'Unknown item'}
                                         </p>
                                         <p className={`text-sm truncate ${conv.unread_count > 0 ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
                                             {conv.last_message?.text || 'No messages yet'}
@@ -298,7 +317,7 @@ export default function Messages({ incomingRequest, user }) {
                             <div className="flex-1">
                                 <h3 className="font-semibold text-gray-900">New Conversation</h3>
                                 <p className="text-xs text-gray-500">
-                                    Re: {newConversationRequest.listingTitle || 'Item'} • ${newConversationRequest.listingPrice || 0}
+                                    {newConversationRequest.listingTitle || 'Item'}{newConversationRequest.listingPrice > 0 ? ` • $${newConversationRequest.listingPrice}` : ''}
                                 </p>
                             </div>
                         </div>
@@ -349,15 +368,26 @@ export default function Messages({ incomingRequest, user }) {
                             </div>
                         </div>
                     </>
+                ) : loadingConv ? (
+                    <>
+                        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 flex-shrink-0">
+                            <button
+                                onClick={() => window.history.back()}
+                                className="lg:hidden p-2 -ml-2 hover:bg-gray-100 rounded-full"
+                            >
+                                <ArrowLeft className="w-5 h-5 text-gray-700" />
+                            </button>
+                        </div>
+                        <div className="flex-1 flex items-center justify-center bg-gray-50">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-unicycle-green" />
+                        </div>
+                    </>
                 ) : activeConversation ? (
                     <>
                         {/* Header */}
                         <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 flex-shrink-0">
                             <button
-                                onClick={() => {
-                                    setSelectedConvId(null);
-                                    setActiveConversation(null);
-                                }}
+                                onClick={() => window.history.back()}
                                 className="lg:hidden p-2 -ml-2 hover:bg-gray-100 rounded-full"
                             >
                                 <ArrowLeft className="w-5 h-5 text-gray-700" />
@@ -371,7 +401,7 @@ export default function Messages({ incomingRequest, user }) {
                                 </h3>
                                 <div className="flex items-center gap-2">
                                     <p className="text-xs text-gray-500">
-                                        Re: {activeConversation.listing?.title || 'Item'} • ${activeConversation.listing?.price || 0}
+                                        {activeConversation.listing?.title || 'Item'}{activeConversation.listing?.price > 0 ? ` • $${activeConversation.listing?.price}` : ''}
                                     </p>
                                     {activeConversation.listing?.price >= 80 && (
                                         <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-unicycle-blue bg-unicycle-blue/10 px-1.5 py-0.5 rounded">
