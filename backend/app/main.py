@@ -78,6 +78,12 @@ with engine.connect() as conn:
         conn.execute(text("ALTER TABLE users ADD COLUMN sponsored_category VARCHAR"))
         conn.commit()
 
+    # Request university column (for university-specific request filtering)
+    request_columns = [col["name"] for col in inspector.get_columns("requests")]
+    if "university" not in request_columns:
+        conn.execute(text("ALTER TABLE requests ADD COLUMN university VARCHAR"))
+        conn.commit()
+
     # Seed default system settings
     existing_setting = conn.execute(
         text("SELECT key FROM system_settings WHERE key = 'sponsored_pins_in_all'")

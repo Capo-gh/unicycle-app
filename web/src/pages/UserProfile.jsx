@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ShieldCheck, Star, MapPin, Package, Flag, X, Pencil } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Star, MapPin, Package, Flag, X, Pencil, MessageCircle } from 'lucide-react';
 import { getUserProfile, reportUser } from '../api/users';
 import { getUserListings } from '../api/listings';
 import { getUserReviews, createReview, updateReview } from '../api/reviews';
 
-export default function UserProfile({ userId, onBack, onItemClick, currentUser }) {
+export default function UserProfile({ userId, onBack, onItemClick, currentUser, onContact }) {
     const [user, setUser] = useState(null);
     const [listings, setListings] = useState([]);
     const [reviews, setReviews] = useState(null);
@@ -238,6 +238,29 @@ export default function UserProfile({ userId, onBack, onItemClick, currentUser }
                     <p className="text-sm text-gray-500">
                         Member since {formatDate(user.created_at)}
                     </p>
+
+                    {/* Message User Button */}
+                    {currentUser && currentUser.id !== userId && onContact && (
+                        <button
+                            onClick={() => {
+                                const activeListing = listings.find(l => !l.is_sold);
+                                if (activeListing) {
+                                    onContact({
+                                        listingId: activeListing.id,
+                                        listingTitle: activeListing.title,
+                                        listingPrice: activeListing.price,
+                                        sellerId: userId
+                                    });
+                                } else {
+                                    alert('This user has no active listings to message about.');
+                                }
+                            }}
+                            className="mt-4 w-full py-2.5 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 transition-colors font-medium flex items-center justify-center gap-2"
+                        >
+                            <MessageCircle className="w-4 h-4" />
+                            Message User
+                        </button>
+                    )}
 
                     {/* Leave Review Button */}
                     {canReview && (

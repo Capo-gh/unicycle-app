@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, Plus, MessageCircle, Clock, TrendingUp, ArrowLeft, DollarSign, Send, Trash2, X, CornerDownRight } from 'lucide-react';
 import { getAllRequests, getRequest, createRequest, createReply, deleteRequest, deleteReply } from '../api/requests';
 
-export default function Requests({ user }) {
+export default function Requests({ user, onNavigate }) {
     const [selectedFilter, setSelectedFilter] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [showPostForm, setShowPostForm] = useState(false);
@@ -217,9 +217,17 @@ export default function Requests({ user }) {
                                 className={`w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${selectedRequest?.id === request.id ? 'bg-unicycle-green/10' : ''}`}
                             >
                                 <div className="flex items-start gap-3">
-                                    <div className="w-10 h-10 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onNavigate && request.author_id !== user?.id) {
+                                                onNavigate('user-profile', request.author_id);
+                                            }
+                                        }}
+                                        className="w-10 h-10 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 hover:opacity-80 transition-opacity"
+                                    >
                                         {request.author?.name?.charAt(0) || '?'}
-                                    </div>
+                                    </button>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex flex-wrap items-center gap-1.5 mb-1">
                                             {request.urgent && (
@@ -239,6 +247,12 @@ export default function Requests({ user }) {
                                         </p>
                                         <div className="flex items-center gap-3 text-xs text-gray-500">
                                             <span>{request.author?.name}</span>
+                                            {request.author?.university && (
+                                                <>
+                                                    <span>·</span>
+                                                    <span className="text-unicycle-blue font-medium">{request.author.university}</span>
+                                                </>
+                                            )}
                                             <span>•</span>
                                             <span className="flex items-center gap-1">
                                                 <Clock className="w-3 h-3" />
@@ -269,6 +283,7 @@ export default function Requests({ user }) {
                         onDelete={handleDeleteRequest}
                         onDeleteReply={handleDeleteReply}
                         formatTimeAgo={formatTimeAgo}
+                        onNavigate={onNavigate}
                     />
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
@@ -286,7 +301,7 @@ export default function Requests({ user }) {
 // ═══════════════════════════════════════════════════════════════════
 // REQUEST DETAIL COMPONENT
 // ═══════════════════════════════════════════════════════════════════
-function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteReply, formatTimeAgo }) {
+function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteReply, formatTimeAgo, onNavigate }) {
     const [replyText, setReplyText] = useState('');
     const [replyingTo, setReplyingTo] = useState(null); // { id, authorName } for nested reply
     const [sending, setSending] = useState(false);
@@ -307,6 +322,11 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteRe
     const isOwner = user?.id === request.author_id;
     const canDeleteReply = (reply) => user?.id === reply.author_id || isOwner;
 
+    const countAllReplies = (replies) => {
+        if (!replies?.length) return 0;
+        return replies.reduce((sum, r) => sum + 1 + countAllReplies(r.child_replies), 0);
+    };
+
     // Recursive reply renderer
     const renderReply = (reply, depth = 0) => {
         const maxDepth = 3; // Limit nesting depth for UI
@@ -315,12 +335,15 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteRe
             <div key={reply.id} className={`${depth > 0 ? 'ml-8 border-l-2 border-gray-200 pl-3' : ''}`}>
                 <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 group mb-2">
                     <div className="flex items-start gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${reply.author_id === request.author_id
-                            ? 'bg-gradient-to-br from-unicycle-blue to-unicycle-green'
-                            : 'bg-gray-400'
-                            }`}>
+                        <button
+                            onClick={() => onNavigate && reply.author_id !== user?.id && onNavigate('user-profile', reply.author_id)}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${reply.author_id === request.author_id
+                                ? 'bg-gradient-to-br from-unicycle-blue to-unicycle-green'
+                                : 'bg-gray-400'
+                            } ${reply.author_id !== user?.id ? 'hover:opacity-80 transition-opacity cursor-pointer' : 'cursor-default'}`}
+                        >
                             {reply.author?.name?.charAt(0) || '?'}
-                        </div>
+                        </button>
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                                 <span className="font-medium text-sm text-gray-900">
@@ -402,9 +425,12 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteRe
                 {/* Request Card */}
                 <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
                     <div className="flex items-start gap-3 mb-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0">
+                        <button
+                            onClick={() => onNavigate && request.author_id !== user?.id && onNavigate('user-profile', request.author_id)}
+                            className={`w-12 h-12 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0 ${request.author_id !== user?.id ? 'hover:opacity-80 transition-opacity cursor-pointer' : 'cursor-default'}`}
+                        >
                             {request.author?.name?.charAt(0) || '?'}
-                        </div>
+                        </button>
                         <div className="flex-1">
                             <h3 className="font-semibold text-gray-900">{request.author?.name}</h3>
                             <p className="text-xs text-gray-500">{request.author?.university}</p>
@@ -436,7 +462,7 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteRe
                 <div>
                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <MessageCircle className="w-5 h-5" />
-                        Replies ({request.replies?.length || 0})
+                        Replies ({countAllReplies(request.replies)})
                     </h3>
 
                     {(!request.replies || request.replies.length === 0) && (
@@ -471,7 +497,7 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteRe
                         type="text"
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && !sending && handleSendReply()}
+                        onKeyDown={(e) => e.key === 'Enter' && !sending && handleSendReply()}
                         placeholder={replyingTo ? `Reply to ${replyingTo.authorName}...` : "Write a reply..."}
                         className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
                         disabled={sending}

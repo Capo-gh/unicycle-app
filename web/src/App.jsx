@@ -383,6 +383,7 @@ function App() {
             currentUser={user}
             onBack={goBack}
             onItemClick={(item) => handleNavigate('detail', item)}
+            onContact={handleContactSeller}
           />
         )}
 
@@ -424,7 +425,7 @@ function App() {
         )}
 
         {currentPage === 'requests' && (
-          <Requests user={user} />
+          <Requests user={user} onNavigate={handleNavigate} />
         )}
 
         {currentPage === 'my-interests' && (

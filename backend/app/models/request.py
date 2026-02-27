@@ -15,7 +15,10 @@ class Request(Base):
     urgent = Column(Boolean, default=False)
     budget_min = Column(Float, nullable=True)
     budget_max = Column(Float, nullable=True)
-    
+
+    # University this request belongs to (auto-set from author's university on creation)
+    university = Column(String, nullable=True)
+
     # Status
     is_active = Column(Boolean, default=True)
     

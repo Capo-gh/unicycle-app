@@ -95,3 +95,12 @@ html {
 button:active {
   transform: scale(0.98);
 }
+
+/* Prevent iOS Safari auto-zoom when focusing input fields.
+   iOS zooms in when an input's font-size < 16px. This rule
+   overrides text-sm (14px) only on iOS WebKit. */
+@supports (-webkit-touch-callout: none) {
+  input, textarea, select {
+    font-size: 16px;
+  }
+}

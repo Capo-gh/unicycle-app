@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from typing import List, Optional
 from ..database import get_db
 from ..models.request import Request, Reply
@@ -59,7 +59,8 @@ def create_request(
     """Create a new request"""
     db_request = Request(
         **request_data.model_dump(),
-        author_id=current_user.id
+        author_id=current_user.id,
+        university=current_user.university
     )
     db.add(db_request)
     db.commit()
@@ -93,7 +94,13 @@ def get_requests(
     query = db.query(Request).options(
         joinedload(Request.author)
     ).filter(Request.is_active == True)
-    
+
+    # Always filter by the requesting user's university.
+    # OR university IS NULL for backwards-compat with pre-migration requests.
+    query = query.filter(
+        or_(Request.university == current_user.university, Request.university == None)
+    )
+
     if category and category != 'All':
         if category == 'Urgent':
             query = query.filter(Request.urgent == True)
