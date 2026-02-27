@@ -110,3 +110,118 @@ def is_token_expired(token_created_at: datetime) -> bool:
         return True
     expiry_time = token_created_at + timedelta(hours=24)
     return datetime.now(timezone.utc) > expiry_time
+
+
+def send_message_email(
+    recipient_email: str,
+    recipient_name: str,
+    sender_name: str,
+    listing_title: str,
+):
+    """
+    Notify a user by email that they have a new message.
+    Only called when the recipient has not replied yet in the conversation,
+    to avoid spamming active back-and-forth threads.
+    """
+    messages_link = FRONTEND_URL
+    try:
+        params = {
+            "from": "UniCycle <onboarding@resend.dev>",
+            "to": [recipient_email],
+            "subject": f"{sender_name} sent you a message on UniCycle",
+            "html": f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                        .header {{ background: #16a34a; color: white; padding: 24px 30px; border-radius: 8px 8px 0 0; }}
+                        .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                        .button {{ display: inline-block; background: #16a34a; color: white; padding: 12px 28px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }}
+                        .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h2 style="margin:0;">New message on UniCycle</h2>
+                        </div>
+                        <div class="content">
+                            <p>Hi {recipient_name},</p>
+                            <p><strong>{sender_name}</strong> sent you a message about <strong>{listing_title}</strong>.</p>
+                            <center>
+                                <a href="{messages_link}" class="button">View Message</a>
+                            </center>
+                            <p style="font-size:13px; color:#666;">
+                                Reply quickly to keep the deal moving!
+                            </p>
+                        </div>
+                        <div class="footer">
+                            <p>&copy; 2025 UniCycle &mdash; Student Marketplace</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            """
+        }
+        resend.Emails.send(params)
+    except Exception as e:
+        print(f"[email] Failed to send message notification: {e}")
+
+
+def send_listing_expiry_email(
+    seller_email: str,
+    seller_name: str,
+    listing_title: str,
+    listing_id: int,
+    days_left: int,
+):
+    """Warn a seller that their listing is expiring soon."""
+    renew_link = FRONTEND_URL
+    day_word = "day" if days_left == 1 else "days"
+    try:
+        params = {
+            "from": "UniCycle <onboarding@resend.dev>",
+            "to": [seller_email],
+            "subject": f"Your listing '{listing_title}' expires in {days_left} {day_word}",
+            "html": f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                        .header {{ background: #d97706; color: white; padding: 24px 30px; border-radius: 8px 8px 0 0; }}
+                        .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                        .button {{ display: inline-block; background: #16a34a; color: white; padding: 12px 28px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }}
+                        .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h2 style="margin:0;">Your listing is expiring soon</h2>
+                        </div>
+                        <div class="content">
+                            <p>Hi {seller_name},</p>
+                            <p>Your listing <strong>{listing_title}</strong> will be automatically deactivated in <strong>{days_left} {day_word}</strong>.</p>
+                            <p>Renew it from your My Listings page to keep it visible to buyers.</p>
+                            <center>
+                                <a href="{renew_link}" class="button">Renew Listing</a>
+                            </center>
+                            <p style="font-size:13px; color:#666;">
+                                Renewing is free and extends your listing for another 60 days.
+                            </p>
+                        </div>
+                        <div class="footer">
+                            <p>&copy; 2025 UniCycle &mdash; Student Marketplace</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            """
+        }
+        resend.Emails.send(params)
+    except Exception as e:
+        print(f"[email] Failed to send expiry warning: {e}")

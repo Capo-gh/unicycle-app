@@ -211,8 +211,11 @@ export default function UserProfile({ userId, onBack, onItemClick, currentUser, 
                 {/* Profile Card */}
                 <div className="bg-white rounded-lg p-6 shadow-sm">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="w-16 h-16 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-bold text-2xl">
-                            {user.name.charAt(0)}
+                        <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-unicycle-blue to-unicycle-green flex items-center justify-center text-white font-bold text-2xl flex-shrink-0">
+                            {user.avatar_url
+                                ? <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
+                                : user.name.charAt(0)
+                            }
                         </div>
                         <div className="flex-1">
                             <div className="flex items-center gap-2">

@@ -59,3 +59,13 @@ export const getMyListings = async () => {
     const response = await apiClient.get('/listings/my');
     return response.data;
 };
+
+export const renewListing = async (id) => {
+    const response = await apiClient.post(`/listings/${id}/renew`);
+    return response.data;
+};
+
+export const bumpListing = async (id) => {
+    const response = await apiClient.post(`/listings/${id}/bump`);
+    return response.data;
+};

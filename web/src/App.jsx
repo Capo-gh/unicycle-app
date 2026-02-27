@@ -11,6 +11,7 @@ import Messages from './pages/Messages';
 import Requests from './pages/Requests';
 import Transactions from './pages/Activity';
 import MyListings from './pages/MyListings';
+import Saved from './pages/Saved';
 import Admin from './pages/Admin';
 import AnnouncementModal from './components/AnnouncementModal';
 import Signup from './pages/Signup';
@@ -430,6 +431,10 @@ function App() {
 
         {currentPage === 'my-interests' && (
           <Transactions onNavigate={handleNavigate} />
+        )}
+
+        {currentPage === 'saved' && (
+          <Saved onItemClick={(item) => handleNavigate('detail', item)} />
         )}
 
         {currentPage === 'my-listings' && (

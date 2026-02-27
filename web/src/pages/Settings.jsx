@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, LogOut, Bell, Shield, HelpCircle, Info, ChevronRight, Check, CheckCheck, ChevronDown, ChevronUp, Languages } from 'lucide-react';
+import { ArrowLeft, LogOut, Bell, Shield, HelpCircle, Info, ChevronRight, Check, CheckCheck, ChevronDown, ChevronUp, Languages, Camera } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 import { logout } from '../api/auth';
+import { updateProfile } from '../api/users';
+import { uploadImage } from '../api/upload';
 import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from '../api/notifications';
 import LanguageToggle from '../components/LanguageToggle';
 
@@ -413,6 +416,29 @@ function AboutPage({ onBack }) {
 // ─── Main Settings Page ───────────────────────────────────────────────────────
 export default function Settings({ user, onBack, onLogout }) {
     const [subPage, setSubPage] = useState(null);
+    const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+    const handleAvatarChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadingAvatar(true);
+        try {
+            let fileToUpload = file;
+            if (file.size > 500 * 1024) {
+                fileToUpload = await imageCompression(file, { maxSizeMB: 1, maxWidthOrHeight: 512, useWebWorker: true });
+            }
+            const url = await uploadImage(fileToUpload);
+            await updateProfile({ avatar_url: url });
+            setAvatarUrl(url);
+            const stored = JSON.parse(localStorage.getItem('user') || '{}');
+            localStorage.setItem('user', JSON.stringify({ ...stored, avatar_url: url }));
+        } catch {
+            // ignore
+        } finally {
+            setUploadingAvatar(false);
+        }
+    };
 
     const handleLogout = () => {
         logout();
@@ -443,6 +469,29 @@ export default function Settings({ user, onBack, onLogout }) {
                 {/* Account Info */}
                 <div className="bg-white rounded-lg p-4 shadow-sm">
                     <h2 className="font-semibold text-gray-900 mb-4">Account Information</h2>
+
+                    {/* Avatar */}
+                    <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-100">
+                        <div className="relative flex-shrink-0">
+                            <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-unicycle-blue to-unicycle-green flex items-center justify-center text-white font-bold text-2xl">
+                                {avatarUrl
+                                    ? <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                    : (user?.name?.charAt(0) || '?')
+                                }
+                            </div>
+                            {uploadingAvatar && (
+                                <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                </div>
+                            )}
+                        </div>
+                        <label className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors">
+                            <Camera className="w-4 h-4" />
+                            Change photo
+                            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={uploadingAvatar} />
+                        </label>
+                    </div>
+
                     <div className="space-y-3">
                         <div>
                             <label className="text-sm text-gray-500">Name</label>

@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { ChevronDown, MapPin } from 'lucide-react';
 
+const ALL_MONTREAL = 'all';
+
 const marketplaces = [
+    { fullName: ALL_MONTREAL, shortName: 'All Montreal' },
     { fullName: 'McGill University', shortName: 'McGill' },
     { fullName: 'Concordia University', shortName: 'Concordia' },
     { fullName: 'École de technologie supérieure (ÉTS)', shortName: 'ÉTS' },
@@ -17,7 +20,9 @@ export default function MarketplacePicker({ currentMarketplace, onMarketplaceCha
     const [isOpen, setIsOpen] = useState(false);
 
     const current = marketplaces.find(m => m.fullName === currentMarketplace);
-    const displayName = current ? current.shortName : 'UniCycle';
+    const displayName = current
+        ? (current.fullName === ALL_MONTREAL ? 'All Montreal' : current.shortName)
+        : 'UniCycle';
 
     return (
         <div className="relative">
@@ -44,29 +49,32 @@ export default function MarketplacePicker({ currentMarketplace, onMarketplaceCha
                     <div className={`absolute top-full mt-2 left-0 bg-white rounded-xl shadow-lg border border-gray-200 z-40 overflow-hidden ${compact ? 'w-56' : 'w-64'}`}>
                         <div className="p-2">
                             <p className="text-xs text-gray-400 font-medium px-3 py-1.5">Switch Marketplace</p>
-                            {marketplaces.map((mp) => (
+                            {marketplaces.map((mp) => {
+                                const isAllMontreal = mp.fullName === ALL_MONTREAL;
+                                const isSelected = currentMarketplace === mp.fullName;
+                                return (
                                 <button
                                     key={mp.fullName}
                                     onClick={() => {
                                         onMarketplaceChange(mp.fullName);
                                         setIsOpen(false);
                                     }}
-                                    className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center justify-between ${currentMarketplace === mp.fullName
-                                            ? 'bg-unicycle-green/10'
-                                            : 'hover:bg-gray-50'
-                                        }`}
+                                    className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center justify-between ${isSelected ? 'bg-unicycle-green/10' : 'hover:bg-gray-50'}`}
                                 >
                                     <div>
-                                        <p className={`text-sm font-medium ${currentMarketplace === mp.fullName ? 'text-unicycle-green' : 'text-gray-900'}`}>
-                                            {mp.shortName} Marketplace
+                                        <p className={`text-sm font-medium ${isSelected ? 'text-unicycle-green' : 'text-gray-900'}`}>
+                                            {isAllMontreal ? 'All Montreal' : `${mp.shortName} Marketplace`}
                                         </p>
-                                        <p className="text-xs text-gray-400 mt-0.5">{mp.fullName}</p>
+                                        <p className="text-xs text-gray-400 mt-0.5">
+                                            {isAllMontreal ? 'Browse all universities' : mp.fullName}
+                                        </p>
                                     </div>
-                                    {currentMarketplace === mp.fullName && (
+                                    {isSelected && (
                                         <div className="w-2.5 h-2.5 bg-unicycle-green rounded-full flex-shrink-0"></div>
                                     )}
                                 </button>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </>

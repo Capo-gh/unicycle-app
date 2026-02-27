@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, Package, X } from 'lucide-react';
+import { Search, SlidersHorizontal, Package, X, Heart } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getListings } from '../api/listings';
+import { getSavedIds, toggleSave } from '../api/saved';
 
 export default function Listings({ onItemClick, onNavigate, currentMarketplace, onMarketplaceChange }) {
     const { t } = useTranslation();
@@ -17,6 +18,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
+    const [savedIds, setSavedIds] = useState(new Set());
 
     const [filters, setFilters] = useState({
         minPrice: '',
@@ -30,6 +32,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
     // Category definitions: value (sent to API, always English) + translation key
     const categories = [
         { value: 'All',                          key: 'listings.categories.all' },
+        { value: 'Free',                         key: 'listings.categories.free' },
         { value: 'Textbooks & Course Materials', key: 'listings.categories.textbooks' },
         { value: 'Electronics & Gadgets',        key: 'listings.categories.electronics' },
         { value: 'Furniture & Decor',            key: 'listings.categories.furniture' },
@@ -62,6 +65,10 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
     }, [selectedCategory, currentMarketplace, filters]);
 
     useEffect(() => {
+        getSavedIds().then(ids => setSavedIds(new Set(ids))).catch(() => {});
+    }, []);
+
+    useEffect(() => {
         const timer = setTimeout(() => {
             fetchListings();
         }, 300);
@@ -82,7 +89,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                 params.search = searchQuery;
             }
 
-            if (currentMarketplace) {
+            if (currentMarketplace && currentMarketplace !== 'all') {
                 params.university = currentMarketplace;
             }
 
@@ -128,6 +135,18 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
         if (Array.isArray(images)) return images[0];
         const imageList = images.split(',');
         return imageList[0] || null;
+    };
+
+    const handleToggleSave = async (listingId) => {
+        try {
+            const result = await toggleSave(listingId);
+            setSavedIds(prev => {
+                const next = new Set(prev);
+                if (result.saved) next.add(listingId);
+                else next.delete(listingId);
+                return next;
+            });
+        } catch { /* not logged in or other error — silently ignore */ }
     };
 
     // Get translated label for a condition value (for the card badge)
@@ -339,53 +358,69 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                 {!loading && !error && listings.length > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                         {listings.map((item) => (
-                            <button
+                            <div
                                 key={item.id}
-                                onClick={() => onItemClick(item)}
-                                className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow text-left"
+                                className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                             >
-                                <div className="aspect-square relative bg-gray-100">
-                                    {getFirstImage(item.images) ? (
-                                        <img
-                                            src={getFirstImage(item.images)}
-                                            alt={item.title}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                            <span className="text-4xl">📦</span>
-                                        </div>
-                                    )}
+                                <button
+                                    onClick={() => onItemClick(item)}
+                                    className="w-full text-left"
+                                >
+                                    <div className="aspect-square relative bg-gray-100">
+                                        {getFirstImage(item.images) ? (
+                                            <img
+                                                src={getFirstImage(item.images)}
+                                                alt={item.title}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                <span className="text-4xl">📦</span>
+                                            </div>
+                                        )}
 
-                                    {/* Sold Badge */}
-                                    {item.is_sold && (
-                                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                            <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                                                {t('itemDetail.soldBadge')}
-                                            </span>
-                                        </div>
-                                    )}
+                                        {/* Sold Badge */}
+                                        {item.is_sold && (
+                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                                <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                                                    {t('itemDetail.soldBadge')}
+                                                </span>
+                                            </div>
+                                        )}
 
-                                    {/* Sponsored Badge */}
-                                    {item.seller?.is_sponsor && item.seller?.sponsored_category === item.category && (
-                                        <div className="absolute top-2 left-2 bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">
-                                            Sponsored
-                                        </div>
-                                    )}
+                                        {/* Sponsored Badge */}
+                                        {item.seller?.is_sponsor && item.seller?.sponsored_category === item.category && (
+                                            <div className="absolute top-2 left-2 bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">
+                                                Sponsored
+                                            </div>
+                                        )}
 
-                                    {/* Condition Badge */}
-                                    {item.condition && !item.is_sold && (
-                                        <div className="absolute top-2 right-2 bg-white/90 px-2 py-1 rounded text-xs font-medium">
-                                            {getConditionLabel(item.condition)}
-                                        </div>
-                                    )}
+                                        {/* Condition Badge */}
+                                        {item.condition && !item.is_sold && (
+                                            <div className="absolute top-2 right-2 bg-white/90 px-2 py-1 rounded text-xs font-medium">
+                                                {getConditionLabel(item.condition)}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="p-3">
+                                        <h3 className="font-medium text-gray-900 text-sm truncate">{item.title}</h3>
+                                        <p className="text-unicycle-green font-bold mt-1">
+                                            {item.price === 0 ? 'Free' : formatPrice(item.price)}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1 truncate">{item.category || 'Other'}</p>
+                                    </div>
+                                </button>
+                                {/* Heart button */}
+                                <div className="px-3 pb-3 -mt-2 flex justify-end">
+                                    <button
+                                        onClick={() => handleToggleSave(item.id)}
+                                        className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                                        aria-label={savedIds.has(item.id) ? 'Remove from saved' : 'Save item'}
+                                    >
+                                        <Heart className={`w-4 h-4 ${savedIds.has(item.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
+                                    </button>
                                 </div>
-                                <div className="p-3">
-                                    <h3 className="font-medium text-gray-900 text-sm truncate">{item.title}</h3>
-                                    <p className="text-unicycle-green font-bold mt-1">{formatPrice(item.price)}</p>
-                                    <p className="text-xs text-gray-500 mt-1 truncate">{item.category || 'Other'}</p>
-                                </div>
-                            </button>
+                            </div>
                         ))}
                     </div>
                 )}

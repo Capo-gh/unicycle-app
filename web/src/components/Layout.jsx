@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Megaphone, MessageCircle, User, Shield } from 'lucide-react';
+import { Search, Megaphone, MessageCircle, User, Shield, Heart } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import icon from '../assets/unicycle-icon.png';
 import MarketplacePicker from './MarketplacePicker';
@@ -46,6 +46,7 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
         { id: 'requests', label: t('nav.requests'), Icon: Megaphone },
         { id: 'sell', label: t('nav.sell'), Icon: null, isPlus: true },
         { id: 'messages', label: t('nav.messages'), Icon: MessageCircle },
+        { id: 'saved', label: t('nav.saved'), Icon: Heart },
         { id: 'profile', label: t('nav.profile'), Icon: User },
         ...(isAdmin ? [{ id: 'admin', label: t('nav.admin'), Icon: Shield }] : []),
     ];

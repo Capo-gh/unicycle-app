@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, MapPin, DollarSign, X, Image } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 import { createListing } from '../api/listings';
 import { uploadImage } from '../api/upload';
 import { getSafeZones } from '../constants/safeZones';
@@ -21,6 +22,7 @@ export default function SellItem({ onBack }) {
     const [success, setSuccess] = useState(false);
 
     const categories = [
+        'Free',
         'Textbooks & Course Materials',
         'Electronics & Gadgets',
         'Furniture & Decor',
@@ -41,9 +43,17 @@ export default function SellItem({ onBack }) {
     })();
     const safeZones = getSafeZones(userUniversity);
 
+    const isFree = formData.category === 'Free';
+
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => {
+            const updated = { ...prev, [name]: value };
+            if (name === 'category' && value === 'Free') {
+                updated.price = '0';
+            }
+            return updated;
+        });
         setError('');
     };
 
@@ -56,6 +66,18 @@ export default function SellItem({ onBack }) {
                 safeZoneAddress: zone.address
             }));
         }
+    };
+
+    const compressAndUpload = async (file) => {
+        let fileToUpload = file;
+        if (file.type.startsWith('image/') && file.size > 500 * 1024) {
+            fileToUpload = await imageCompression(file, {
+                maxSizeMB: 1,
+                maxWidthOrHeight: 1920,
+                useWebWorker: true,
+            });
+        }
+        return await uploadImage(fileToUpload);
     };
 
     const handleImageUpload = async (e) => {
@@ -72,7 +94,7 @@ export default function SellItem({ onBack }) {
 
         try {
             for (const file of files) {
-                const url = await uploadImage(file);
+                const url = await compressAndUpload(file);
                 setImages(prev => [...prev, url]);
             }
         } catch (err) {
@@ -90,20 +112,19 @@ export default function SellItem({ onBack }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validation
         if (!formData.title || !formData.category || !formData.condition ||
-            !formData.price || !formData.description || !formData.safeZone) {
+            !formData.description || !formData.safeZone) {
             setError('Please fill in all required fields');
+            return;
+        }
+
+        if (!isFree && (formData.price === '' || parseFloat(formData.price) < 0)) {
+            setError('Price must be 0 or more');
             return;
         }
 
         if (formData.description.length < 10) {
             setError('Description must be at least 10 characters');
-            return;
-        }
-
-        if (parseFloat(formData.price) <= 0) {
-            setError('Price must be greater than 0');
             return;
         }
 
@@ -119,7 +140,7 @@ export default function SellItem({ onBack }) {
             const listingData = {
                 title: formData.title,
                 description: formData.description,
-                price: parseFloat(formData.price),
+                price: isFree ? 0 : parseFloat(formData.price),
                 category: formData.category,
                 condition: formData.condition,
                 safe_zone: formData.safeZone,
@@ -129,11 +150,7 @@ export default function SellItem({ onBack }) {
 
             await createListing(listingData);
             setSuccess(true);
-
-            setTimeout(() => {
-                onBack();
-            }, 2000);
-
+            setTimeout(() => onBack(), 2000);
         } catch (err) {
             console.error('Error creating listing:', err);
             if (err.response?.data?.detail) {
@@ -157,7 +174,7 @@ export default function SellItem({ onBack }) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Item Posted! 🎉</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Item Posted!</h2>
                     <p className="text-gray-600">Your listing is now live on the marketplace</p>
                 </div>
             </div>
@@ -166,35 +183,26 @@ export default function SellItem({ onBack }) {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
-            {/* Header */}
             <div className="bg-white border-b border-gray-200 sticky top-14 lg:top-0 z-10">
                 <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-                    <button
-                        onClick={onBack}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    >
+                    <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                         <ArrowLeft className="w-6 h-6 text-gray-700" />
                     </button>
                     <h1 className="text-lg font-semibold text-unicycle-green">Sell an Item</h1>
                 </div>
             </div>
 
-            {/* Form */}
             <div className="max-w-2xl mx-auto px-4 py-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
 
                     {/* Image Upload */}
                     <div className="bg-white rounded-lg p-6 shadow-sm">
                         <div className="flex items-center justify-between mb-3">
-                            <label className="text-sm font-semibold text-gray-900">
-                                Photos *
-                            </label>
+                            <label className="text-sm font-semibold text-gray-900">Photos *</label>
                             <span className={`text-sm font-medium ${images.length >= 5 ? 'text-red-600' : 'text-gray-500'}`}>
                                 {images.length}/5 images
                             </span>
                         </div>
-
-                        {/* Image Preview Grid */}
                         <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-4">
                             {images.map((url, index) => (
                                 <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
@@ -208,8 +216,6 @@ export default function SellItem({ onBack }) {
                                     </button>
                                 </div>
                             ))}
-
-                            {/* Add Image Button */}
                             {images.length < 5 && (
                                 <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-unicycle-green hover:bg-gray-50 transition-colors">
                                     <input
@@ -221,7 +227,10 @@ export default function SellItem({ onBack }) {
                                         disabled={uploading}
                                     />
                                     {uploading ? (
-                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-unicycle-green"></div>
+                                        <>
+                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-unicycle-green mb-1"></div>
+                                            <span className="text-xs text-gray-400">Uploading...</span>
+                                        </>
                                     ) : (
                                         <>
                                             <Image className="w-6 h-6 text-gray-400 mb-1" />
@@ -231,11 +240,8 @@ export default function SellItem({ onBack }) {
                                 </label>
                             )}
                         </div>
-
-                        {images.length === 0 ? (
+                        {images.length === 0 && (
                             <p className="text-xs text-gray-500 text-center">Add photos to attract more buyers</p>
-                        ) : images.length >= 5 && (
-                            <p className="text-xs text-amber-600 text-center font-medium">Maximum limit reached (5 images)</p>
                         )}
                     </div>
 
@@ -268,7 +274,6 @@ export default function SellItem({ onBack }) {
                                 ))}
                             </select>
                         </div>
-
                         <div className="bg-white rounded-lg p-6 shadow-sm">
                             <label className="block text-sm font-semibold text-gray-900 mb-2">Condition *</label>
                             <select
@@ -286,22 +291,29 @@ export default function SellItem({ onBack }) {
                     </div>
 
                     {/* Price */}
-                    <div className="bg-white rounded-lg p-6 shadow-sm">
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Price *</label>
-                        <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                            <input
-                                type="number"
-                                name="price"
-                                value={formData.price}
-                                onChange={handleChange}
-                                placeholder="0.00"
-                                step="0.01"
-                                min="0"
-                                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
-                            />
+                    {isFree ? (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <p className="text-sm font-semibold text-green-800">Price: Free</p>
+                            <p className="text-xs text-green-600 mt-0.5">This item will be listed for free</p>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="bg-white rounded-lg p-6 shadow-sm">
+                            <label className="block text-sm font-semibold text-gray-900 mb-2">Price *</label>
+                            <div className="relative">
+                                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                <input
+                                    type="number"
+                                    name="price"
+                                    value={formData.price}
+                                    onChange={handleChange}
+                                    placeholder="0.00"
+                                    step="0.01"
+                                    min="0"
+                                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-unicycle-green"
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     {/* Description */}
                     <div className="bg-white rounded-lg p-6 shadow-sm">
@@ -345,14 +357,12 @@ export default function SellItem({ onBack }) {
                         )}
                     </div>
 
-                    {/* Error Message */}
                     {error && (
                         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                             <p className="text-red-600 text-sm">{error}</p>
                         </div>
                     )}
 
-                    {/* Submit Button */}
                     <button
                         type="submit"
                         disabled={loading || uploading}

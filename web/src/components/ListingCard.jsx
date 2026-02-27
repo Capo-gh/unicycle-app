@@ -1,6 +1,11 @@
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Heart } from 'lucide-react';
 
-export default function ListingCard({ item, onClick }) {
+export default function ListingCard({ item, onClick, isSaved = false, onToggleSave }) {
+    const handleHeartClick = (e) => {
+        e.stopPropagation();
+        if (onToggleSave) onToggleSave(item.id);
+    };
+
     return (
         <div
             onClick={onClick}
@@ -18,6 +23,17 @@ export default function ListingCard({ item, onClick }) {
                         {item.condition}
                     </div>
                 )}
+                {onToggleSave && (
+                    <button
+                        onClick={handleHeartClick}
+                        className="absolute top-2 left-2 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:scale-110 transition-transform"
+                        aria-label={isSaved ? 'Remove from saved' : 'Save item'}
+                    >
+                        <Heart
+                            className={`w-4 h-4 ${isSaved ? 'fill-red-500 text-red-500' : 'text-gray-400'}`}
+                        />
+                    </button>
+                )}
             </div>
 
             {/* Details */}
@@ -28,15 +44,18 @@ export default function ListingCard({ item, onClick }) {
 
                 <div className="flex items-center justify-between mb-2">
                     <span className="text-lg font-bold text-unicycle-green">
-                        ${item.price}
+                        {item.price === 0 ? 'Free' : `$${item.price}`}
                     </span>
                     <span className="text-xs text-gray-500">{item.category}</span>
                 </div>
 
                 {/* Seller Info */}
                 <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                    <div className="w-6 h-6 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold text-xs">
-                        {item.seller?.name?.charAt(0) || '?'}
+                    <div className="w-6 h-6 rounded-full overflow-hidden bg-gradient-to-br from-unicycle-blue to-unicycle-green flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                        {item.seller?.avatar_url
+                            ? <img src={item.seller.avatar_url} alt={item.seller.name} className="w-full h-full object-cover" />
+                            : (item.seller?.name?.charAt(0) || '?')
+                        }
                     </div>
                     <div className="flex-1 min-w-0 flex items-center gap-1">
                         <span className="text-xs text-gray-600 truncate">

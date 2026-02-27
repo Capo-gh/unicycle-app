@@ -264,8 +264,11 @@ export default function Messages({ incomingRequest, user }) {
                                     className={`w-full text-left p-4 flex gap-3 hover:bg-gray-50 transition-colors border-b border-gray-100 ${selectedConvId === conv.id ? 'bg-unicycle-green/10' : ''}`}
                                 >
                                     <div className="relative flex-shrink-0">
-                                        <div className="w-12 h-12 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold text-lg">
-                                            {otherPerson?.name?.charAt(0) || '?'}
+                                        <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-unicycle-blue to-unicycle-green flex items-center justify-center text-white font-semibold text-lg">
+                                            {otherPerson?.avatar_url
+                                                ? <img src={otherPerson.avatar_url} alt={otherPerson.name} className="w-full h-full object-cover" />
+                                                : (otherPerson?.name?.charAt(0) || '?')
+                                            }
                                         </div>
                                         {conv.unread_count > 0 && (
                                             <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
@@ -392,8 +395,11 @@ export default function Messages({ incomingRequest, user }) {
                             >
                                 <ArrowLeft className="w-5 h-5 text-gray-700" />
                             </button>
-                            <div className="w-10 h-10 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold">
-                                {getOtherPerson(activeConversation)?.name?.charAt(0) || '?'}
+                            <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-unicycle-blue to-unicycle-green flex items-center justify-center text-white font-semibold flex-shrink-0">
+                                {getOtherPerson(activeConversation)?.avatar_url
+                                    ? <img src={getOtherPerson(activeConversation).avatar_url} alt={getOtherPerson(activeConversation).name} className="w-full h-full object-cover" />
+                                    : (getOtherPerson(activeConversation)?.name?.charAt(0) || '?')
+                                }
                             </div>
                             <div className="flex-1">
                                 <h3 className="font-semibold text-gray-900">
@@ -438,11 +444,14 @@ export default function Messages({ incomingRequest, user }) {
                                     return (
                                         <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                                             {/* Avatar */}
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 ${isMe
+                                            <div className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 ${isMe
                                                 ? 'bg-gradient-to-br from-unicycle-green to-unicycle-blue'
                                                 : 'bg-gradient-to-br from-unicycle-blue to-unicycle-green'
                                                 }`}>
-                                                {msg.sender?.name?.charAt(0) || '?'}
+                                                {msg.sender?.avatar_url
+                                                    ? <img src={msg.sender.avatar_url} alt={msg.sender.name} className="w-full h-full object-cover" />
+                                                    : (msg.sender?.name?.charAt(0) || '?')
+                                                }
                                             </div>
 
                                             {/* Message Bubble + translate button */}

@@ -11,6 +11,7 @@ class SellerInfo(BaseModel):
     review_count: Optional[int] = 0
     is_sponsor: Optional[bool] = False
     sponsored_category: Optional[str] = None
+    avatar_url: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -19,7 +20,7 @@ class SellerInfo(BaseModel):
 class ListingBase(BaseModel):
     title: str = Field(..., min_length=3)
     description: str = Field(..., min_length=10)
-    price: float = Field(..., gt=0)
+    price: float = Field(..., ge=0)
     category: str
     condition: str
     safe_zone: str
@@ -34,13 +35,13 @@ class ListingCreate(ListingBase):
 class ListingUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=3)
     description: Optional[str] = Field(None, min_length=10)
-    price: Optional[float] = Field(None, gt=0)
+    price: Optional[float] = Field(None, ge=0)
     category: Optional[str] = None
     condition: Optional[str] = None
     safe_zone: Optional[str] = None
     safe_zone_address: Optional[str] = None
     images: Optional[str] = None
-    is_sold: Optional[bool] = None  # Allow marking as sold
+    is_sold: Optional[bool] = None
 
 
 class ListingResponse(BaseModel):
@@ -57,10 +58,12 @@ class ListingResponse(BaseModel):
     is_sold: bool = False
     is_boosted: bool = False
     boosted_until: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+    last_bumped_at: Optional[datetime] = None
     seller_id: int
     seller: Optional[SellerInfo] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True

@@ -10,7 +10,8 @@ export const reportUser = async (userId, reason, details = '') => {
     return response.data;
 };
 
-export const updateProfile = async (name) => {
-    const response = await apiClient.put('/users/me', { name });
+export const updateProfile = async (fields) => {
+    // accepts { name } or { avatar_url } or both
+    const response = await apiClient.put('/users/me', fields);
     return response.data;
 };

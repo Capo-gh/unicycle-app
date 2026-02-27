@@ -25,8 +25,9 @@ class UserResponse(BaseModel):
     is_suspended: bool = False
     avg_rating: Optional[float] = 0.0
     review_count: Optional[int] = 0
+    avatar_url: Optional[str] = None
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 

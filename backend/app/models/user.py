@@ -15,6 +15,8 @@ class User(Base):
     verification_token = Column(String, nullable=True)
     token_created_at = Column(DateTime(timezone=True), nullable=True)
 
+    avatar_url = Column(String, nullable=True)
+
     is_admin = Column(Boolean, default=False)
     is_super_admin = Column(Boolean, default=False)
     is_suspended = Column(Boolean, default=False)

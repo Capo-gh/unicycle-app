@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, MapPin, ShieldCheck, MessageCircle, Share2, Edit, Star, CheckCircle, ChevronRight, Heart, Flag, X, AlertTriangle, Languages, Zap } from 'lucide-react';
+import { toggleSave, getSavedIds } from '../api/saved';
 import { useTranslation } from 'react-i18next';
 import SecurePayModal from './SecurePayModal';
 import { getUserReviews } from '../api/reviews';
@@ -50,6 +51,9 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
 
     // Share state
     const [linkCopied, setLinkCopied] = useState(false);
+
+    // Save/heart state
+    const [isSaved, setIsSaved] = useState(false);
 
     // Auto-translation state
     const [translatedTitle, setTranslatedTitle] = useState(null);
@@ -105,6 +109,20 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
             getListingSecurePay(item.id).then(tx => setSecurePayTx(tx || null)).catch(() => {});
         }
     }, [currentUser, item?.id]);
+
+    // Load saved state for this item
+    useEffect(() => {
+        if (item?.id) {
+            getSavedIds().then(ids => setIsSaved(ids.includes(item.id))).catch(() => {});
+        }
+    }, [item?.id]);
+
+    const handleToggleSave = async () => {
+        try {
+            const result = await toggleSave(item.id);
+            setIsSaved(result.saved);
+        } catch { /* not logged in — ignore */ }
+    };
 
     // Auto-translate title and description when language is French
     useEffect(() => {
@@ -372,7 +390,16 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
                         <ArrowLeft className="w-6 h-6 text-gray-700" />
                     </button>
                     <h1 className="text-lg font-semibold text-gray-900">Item Details</h1>
-                    <div className="relative">
+                    <div className="flex items-center gap-1 relative">
+                        {!isOwner && (
+                            <button
+                                onClick={handleToggleSave}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                aria-label={isSaved ? 'Remove from saved' : 'Save item'}
+                            >
+                                <Heart className={`w-5 h-5 ${isSaved ? 'fill-red-500 text-red-500' : 'text-gray-700'}`} />
+                            </button>
+                        )}
                         <button onClick={handleShare} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                             <Share2 className="w-5 h-5 text-gray-700" />
                         </button>

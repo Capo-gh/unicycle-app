@@ -19,6 +19,7 @@ class ReportRequest(BaseModel):
 
 class UpdateProfileRequest(BaseModel):
     name: str
+    avatar_url: Optional[str] = None
 
 
 @router.get("/{user_id}", response_model=UserResponse)
@@ -94,12 +95,14 @@ def update_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_required)
 ):
-    """Update current user's profile (name)"""
+    """Update current user's profile (name and/or avatar)"""
     name = body.name.strip()
     if not name:
         raise HTTPException(status_code=400, detail="Name cannot be empty")
 
     current_user.name = name
+    if body.avatar_url is not None:
+        current_user.avatar_url = body.avatar_url
     db.commit()
     db.refresh(current_user)
     return current_user

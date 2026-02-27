@@ -27,7 +27,12 @@ class Listing(Base):
     is_boosted = Column(Boolean, default=False)
     boosted_at = Column(DateTime(timezone=True), nullable=True)
     boosted_until = Column(DateTime(timezone=True), nullable=True)
-    
+
+    # Expiry & free bump (60-day auto-deactivation)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    last_bumped_at = Column(DateTime(timezone=True), nullable=True)
+    expiry_email_sent = Column(Boolean, default=False)
+
     # Foreign keys
     seller_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     

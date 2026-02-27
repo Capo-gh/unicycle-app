@@ -27,6 +27,7 @@
     "requests": "Requests",
     "sell": "Sell",
     "messages": "Messages",
+    "saved": "Saved",
     "profile": "Profile",
     "admin": "Admin"
   },
@@ -91,6 +92,7 @@
     "found": "found",
     "categories": {
       "all": "All",
+      "free": "Free",
       "textbooks": "Textbooks & Course Materials",
       "electronics": "Electronics & Gadgets",
       "furniture": "Furniture & Decor",

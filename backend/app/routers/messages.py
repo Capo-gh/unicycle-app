@@ -12,6 +12,7 @@ from ..schemas.message import (
 )
 from ..utils.dependencies import get_current_user_required
 from .notifications import send_user_notification
+from ..utils.email_resend import send_message_email
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
 
@@ -248,6 +249,26 @@ def send_message(
     except Exception as e:
         db.rollback()
         print(f"[notifications] Failed to send message notification: {e}")
+
+    # Send email if the recipient has not yet replied in this conversation
+    # (avoids spamming both sides of an active back-and-forth)
+    try:
+        recipient_has_replied = db.query(Message).filter(
+            Message.conversation_id == conversation_id,
+            Message.sender_id == recipient_id
+        ).first() is not None
+
+        if not recipient_has_replied:
+            recipient_user = db.query(User).filter(User.id == recipient_id).first()
+            if recipient_user and recipient_user.email:
+                send_message_email(
+                    recipient_email=recipient_user.email,
+                    recipient_name=recipient_user.name,
+                    sender_name=current_user.name,
+                    listing_title=listing_title,
+                )
+    except Exception as e:
+        print(f"[email] Failed to send message email: {e}")
 
     return message
 

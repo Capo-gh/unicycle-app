@@ -168,16 +168,18 @@ def get_my_requests(
         Request.author_id == current_user.id,
         Request.is_active == True
     ).order_by(Request.created_at.desc()).all()
-    
-    # Get reply counts separately
+
+    # Get reply counts only for the loaded requests
+    request_ids = [r.id for r in requests]
     reply_count_map = {}
-    reply_count_results = db.query(
-        Reply.request_id,
-        func.count(Reply.id).label('count')
-    ).group_by(Reply.request_id).all()
-    
-    for request_id, count in reply_count_results:
-        reply_count_map[request_id] = count
+    if request_ids:
+        reply_count_results = db.query(
+            Reply.request_id,
+            func.count(Reply.id).label('count')
+        ).filter(Reply.request_id.in_(request_ids)).group_by(Reply.request_id).all()
+
+        for request_id, count in reply_count_results:
+            reply_count_map[request_id] = count
     
     response = []
     for request in requests:

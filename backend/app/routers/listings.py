@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import asc, desc, case, and_
+from sqlalchemy import asc, desc, case, and_, or_
 from typing import List, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from ..database import get_db
 from ..models.listing import Listing
 from ..models.user import User
@@ -23,7 +23,8 @@ def create_listing(
     """Create a new listing"""
     db_listing = Listing(
         **listing_data.model_dump(),
-        seller_id=current_user.id
+        seller_id=current_user.id,
+        expires_at=datetime.now(timezone.utc) + timedelta(days=60)
     )
     db.add(db_listing)
     db.commit()
@@ -51,8 +52,15 @@ def get_listings(
     current_user: User = Depends(get_current_user_required)
 ):
     """Get all listings with optional filters"""
+    now = datetime.now(timezone.utc)
     query = db.query(Listing).options(joinedload(Listing.seller))
-    
+
+    # Only show active, non-expired listings
+    query = query.filter(Listing.is_active == True)
+    query = query.filter(
+        or_(Listing.expires_at.is_(None), Listing.expires_at > now)
+    )
+
     # Filter out sold items by default
     if not include_sold:
         query = query.filter(Listing.is_sold == False)
@@ -93,7 +101,6 @@ def get_listings(
         query = query.order_by(asc(Listing.created_at))
     else:
         # Default: active boosts first (by most recently boosted), then newest
-        now = datetime.now(timezone.utc)
         is_active_boost = and_(Listing.is_boosted == True, Listing.boosted_until > now)
         query = query.order_by(
             case((is_active_boost, 1), else_=0).desc(),
@@ -295,5 +302,64 @@ def mark_as_unsold(
     listing.is_sold = False
     db.commit()
     db.refresh(listing)
-    
+
+    return listing
+
+
+@router.post("/{listing_id}/renew", response_model=ListingResponse)
+def renew_listing(
+    listing_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Reset a listing's expiry to 60 days from now (owner only, free)."""
+    listing = db.query(Listing).options(
+        joinedload(Listing.seller)
+    ).filter(Listing.id == listing_id).first()
+
+    if not listing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found")
+
+    if listing.seller_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    listing.expires_at = datetime.now(timezone.utc) + timedelta(days=60)
+    listing.is_active = True
+    listing.expiry_email_sent = False
+    db.commit()
+    db.refresh(listing)
+    return listing
+
+
+@router.post("/{listing_id}/bump", response_model=ListingResponse)
+def bump_listing(
+    listing_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Free bump: move listing to top of results (once every 7 days, owner only)."""
+    listing = db.query(Listing).options(
+        joinedload(Listing.seller)
+    ).filter(Listing.id == listing_id).first()
+
+    if not listing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found")
+
+    if listing.seller_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    now = datetime.now(timezone.utc)
+    if listing.last_bumped_at:
+        next_allowed = listing.last_bumped_at + timedelta(days=7)
+        if now < next_allowed:
+            days_left = (next_allowed - now).days + 1
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"You can bump this listing again in {days_left} day{'s' if days_left != 1 else ''}."
+            )
+
+    listing.last_bumped_at = now
+    listing.updated_at = now
+    db.commit()
+    db.refresh(listing)
     return listing

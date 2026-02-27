@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Pencil, Trash2, Plus, CheckCircle, Circle, Zap } from 'lucide-react';
-import { getMyListings, deleteListing, markAsSold, markAsUnsold } from '../api/listings';
+import { ArrowLeft, Pencil, Trash2, Plus, CheckCircle, Circle, Zap, RefreshCw, Clock } from 'lucide-react';
+import { getMyListings, deleteListing, markAsSold, markAsUnsold, renewListing, bumpListing } from '../api/listings';
 import { createBoostSession } from '../api/payments';
 
 export default function MyListings({ onNavigate }) {
@@ -11,6 +11,8 @@ export default function MyListings({ onNavigate }) {
     const [deleting, setDeleting] = useState(false);
     const [togglingId, setTogglingId] = useState(null);
     const [boostingId, setBoostingId] = useState(null);
+    const [renewingId, setRenewingId] = useState(null);
+    const [bumpingId, setBumpingId] = useState(null);
 
     useEffect(() => {
         fetchListings();
@@ -62,6 +64,47 @@ export default function MyListings({ onNavigate }) {
             alert(err.response?.data?.detail || 'Failed to start boost payment');
             setBoostingId(null);
         }
+    };
+
+    const handleRenew = async (listing) => {
+        setRenewingId(listing.id);
+        try {
+            const updated = await renewListing(listing.id);
+            setListings(prev => prev.map(l => l.id === listing.id ? { ...l, ...updated } : l));
+        } catch (err) {
+            alert(err.response?.data?.detail || 'Failed to renew listing');
+        } finally {
+            setRenewingId(null);
+        }
+    };
+
+    const handleBump = async (listing) => {
+        setBumpingId(listing.id);
+        try {
+            const updated = await bumpListing(listing.id);
+            setListings(prev => prev.map(l => l.id === listing.id ? { ...l, ...updated } : l));
+        } catch (err) {
+            alert(err.response?.data?.detail || 'You can only bump once every 7 days');
+        } finally {
+            setBumpingId(null);
+        }
+    };
+
+    const getExpiryStatus = (listing) => {
+        if (!listing.expires_at) return null;
+        const now = new Date();
+        const expires = new Date(listing.expires_at);
+        const daysLeft = Math.ceil((expires - now) / (1000 * 60 * 60 * 24));
+        if (daysLeft <= 0) return { label: 'Expired', color: 'red' };
+        if (daysLeft <= 7) return { label: `Expires in ${daysLeft}d`, color: 'amber' };
+        return { label: `${daysLeft}d left`, color: 'gray' };
+    };
+
+    const canBump = (listing) => {
+        if (!listing.last_bumped_at) return true;
+        const lastBumped = new Date(listing.last_bumped_at);
+        const daysSince = (new Date() - lastBumped) / (1000 * 60 * 60 * 24);
+        return daysSince >= 7;
     };
 
     const handleDelete = async (listingId) => {
@@ -149,7 +192,7 @@ export default function MyListings({ onNavigate }) {
                                     <div className="flex-1 min-w-0">
                                         <h4 className="font-semibold text-gray-900 text-sm mb-1 truncate">{listing.title}</h4>
                                         <p className="text-lg font-bold text-unicycle-green">${listing.price}</p>
-                                        <div className="flex items-center gap-2 mt-1">
+                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
                                             <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
                                                 listing.is_sold
                                                     ? 'bg-red-100 text-red-700'
@@ -163,6 +206,21 @@ export default function MyListings({ onNavigate }) {
                                                     Boosted
                                                 </span>
                                             )}
+                                            {(() => {
+                                                const exp = getExpiryStatus(listing);
+                                                if (!exp) return null;
+                                                const colors = {
+                                                    red: 'bg-red-100 text-red-700',
+                                                    amber: 'bg-amber-100 text-amber-700',
+                                                    gray: 'bg-gray-100 text-gray-500'
+                                                };
+                                                return (
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0 ${colors[exp.color]}`}>
+                                                        <Clock className="w-3 h-3" />
+                                                        {exp.label}
+                                                    </span>
+                                                );
+                                            })()}
                                             <span className="text-xs text-gray-500 truncate">{listing.category}</span>
                                         </div>
                                     </div>
@@ -208,6 +266,28 @@ export default function MyListings({ onNavigate }) {
                                         >
                                             <Zap className="w-4 h-4" />
                                             {listing.is_boosted && listing.boosted_until && new Date(listing.boosted_until) > new Date() ? 'Boosted' : 'Boost'}
+                                        </button>
+                                    )}
+                                    {listing.expires_at && (
+                                        <button
+                                            onClick={() => handleRenew(listing)}
+                                            disabled={renewingId === listing.id}
+                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium disabled:opacity-50"
+                                            title="Renew for 60 more days"
+                                        >
+                                            <RefreshCw className="w-4 h-4" />
+                                            Renew
+                                        </button>
+                                    )}
+                                    {!listing.is_sold && canBump(listing) && (
+                                        <button
+                                            onClick={() => handleBump(listing)}
+                                            disabled={bumpingId === listing.id}
+                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors text-sm font-medium disabled:opacity-50"
+                                            title="Move to top of search results (free, once per 7 days)"
+                                        >
+                                            <Zap className="w-4 h-4" />
+                                            Bump
                                         </button>
                                     )}
                                 </div>

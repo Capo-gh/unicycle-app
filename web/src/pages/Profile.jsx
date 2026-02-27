@@ -21,7 +21,7 @@ export default function Profile({ user: signupUser, onNavigate }) {
         if (!trimmed) return;
         setSavingName(true);
         try {
-            await updateProfile(trimmed);
+            await updateProfile({ name: trimmed });
             setDisplayName(trimmed);
             const stored = JSON.parse(localStorage.getItem('user') || '{}');
             localStorage.setItem('user', JSON.stringify({ ...stored, name: trimmed }));
@@ -100,8 +100,11 @@ export default function Profile({ user: signupUser, onNavigate }) {
 
                     {/* Profile Info */}
                     <div className="flex items-center gap-4 lg:gap-6">
-                        <div className="w-20 h-20 lg:w-24 lg:h-24 bg-white rounded-full flex items-center justify-center text-unicycle-blue font-bold text-3xl lg:text-4xl flex-shrink-0">
-                            {user.name.charAt(0)}
+                        <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-full flex-shrink-0 overflow-hidden bg-white flex items-center justify-center text-unicycle-blue font-bold text-3xl lg:text-4xl">
+                            {signupUser?.avatar_url
+                                ? <img src={signupUser.avatar_url} alt={user.name} className="w-full h-full object-cover" />
+                                : user.name.charAt(0)
+                            }
                         </div>
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
