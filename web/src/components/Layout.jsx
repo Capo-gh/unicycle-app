@@ -60,16 +60,16 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
     const activeNav = getActiveNav();
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
+        <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
 
             {/* ─── SIDEBAR (Desktop only) ─── */}
-            <aside className="hidden lg:flex lg:w-64 bg-white border-r border-gray-200 flex-col fixed h-full z-20">
+            <aside className="hidden lg:flex lg:w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-col fixed h-full z-20">
                 {/* Logo + Marketplace Picker */}
-                <div className="p-6 border-b border-gray-200">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3 mb-3">
                         <button onClick={() => onNavigate('listings')} className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity">
                             <img src={icon} alt="UniCycle" className="w-10 h-10 object-contain flex-shrink-0" />
-                            <h1 className="text-xl font-bold text-gray-900 min-w-0">UniCycle</h1>
+                            <h1 className="text-xl font-bold text-gray-900 dark:text-white min-w-0">UniCycle</h1>
                         </button>
                         <NotificationBell />
                     </div>
@@ -91,7 +91,7 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                             onClick={() => onNavigate(item.id)}
                             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeNav === item.id
                                 ? 'bg-unicycle-green text-white'
-                                : 'text-gray-700 hover:bg-gray-100'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                         >
                             <div className="relative">
@@ -115,7 +115,7 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
             </aside>
 
             {/* Mobile Top Bar (Small + Medium only) — fixed overlay */}
-            <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 h-14 px-4 flex items-center justify-between gap-3">
+            <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-14 px-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
                     <button onClick={() => onNavigate('listings')} className="hover:opacity-80 transition-opacity flex-shrink-0">
                         <img src={icon} alt="UniCycle" className="w-8 h-8 object-contain" />
@@ -140,7 +140,7 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
             </div>
 
             {/* ─── BOTTOM NAV (Mobile only) ─── */}
-            <nav className="fixed bottom-0 left-0 right-0 lg:hidden bg-white border-t border-gray-200 shadow-lg z-10">
+            <nav className="fixed bottom-0 left-0 right-0 lg:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-10">
                 <div className="max-w-md mx-auto px-4 py-3 flex justify-around">
                     {navItems.map((item) => (
                         <button
@@ -148,7 +148,7 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                             onClick={() => onNavigate(item.id)}
                             className={`flex flex-col items-center gap-1 ${activeNav === item.id
                                 ? 'text-unicycle-green'
-                                : 'text-gray-400 hover:text-gray-600'
+                                : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
                                 }`}
                         >
                             <div className="relative">

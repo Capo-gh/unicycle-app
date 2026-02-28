@@ -13,6 +13,7 @@ import MyListings from './pages/MyListings';
 import Saved from './pages/Saved';
 import Admin from './pages/Admin';
 import AnnouncementModal from './components/AnnouncementModal';
+import OnboardingModal from './components/OnboardingModal';
 import Signup from './pages/Signup';
 import VerifyEmail from './pages/VerifyEmail';
 import CheckEmail from './pages/CheckEmail';
@@ -30,6 +31,7 @@ function App() {
   const [currentMarketplace, setCurrentMarketplace] = useState('');
   const [viewingUserId, setViewingUserId] = useState(null);
   const [navigationHistory, setNavigationHistory] = useState(['listings']);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Handle browser back/forward buttons
   useEffect(() => {
@@ -212,6 +214,11 @@ function App() {
 
     setCurrentPage('listings');
     localStorage.setItem('currentPage', 'listings');
+
+    // Show onboarding for first-time users
+    if (!localStorage.getItem('hasSeenOnboarding')) {
+      setShowOnboarding(true);
+    }
   };
 
   const handleNavigate = (page, data = null) => {
@@ -356,6 +363,7 @@ function App() {
   return (
     <Layout currentPage={currentPage} onNavigate={handleNavigate} currentMarketplace={currentMarketplace} onMarketplaceChange={setCurrentMarketplace}>
       <AnnouncementModal />
+      {showOnboarding && <OnboardingModal onDismiss={() => setShowOnboarding(false)} />}
       <div key={currentPage} className="animate-fadeIn">
 
         {currentPage === 'listings' && (
@@ -429,7 +437,7 @@ function App() {
         )}
 
         {currentPage === 'saved' && (
-          <Saved onItemClick={(item) => handleNavigate('detail', item)} />
+          <Saved onItemClick={(item) => handleNavigate('detail', item)} onNavigate={handleNavigate} />
         )}
 
         {currentPage === 'my-listings' && (

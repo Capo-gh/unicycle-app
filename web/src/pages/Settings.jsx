@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, LogOut, Bell, Shield, HelpCircle, Info, ChevronRight, Check, CheckCheck, ChevronDown, ChevronUp, Languages, Camera } from 'lucide-react';
+import { ArrowLeft, LogOut, Bell, Shield, HelpCircle, Info, ChevronRight, Check, CheckCheck, ChevronDown, ChevronUp, Languages, Camera, Moon } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { logout } from '../api/auth';
 import { updateProfile } from '../api/users';
@@ -418,6 +418,19 @@ export default function Settings({ user, onBack, onLogout }) {
     const [subPage, setSubPage] = useState(null);
     const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
+
+    const toggleDarkMode = () => {
+        const next = !darkMode;
+        setDarkMode(next);
+        if (next) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('darkMode', '1');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.removeItem('darkMode');
+        }
+    };
 
     const handleAvatarChange = async (e) => {
         const file = e.target.files?.[0];
@@ -527,6 +540,20 @@ export default function Settings({ user, onBack, onLogout }) {
                             <span className="font-medium text-gray-900">Language</span>
                         </div>
                         <LanguageToggle />
+                    </div>
+
+                    <div className="px-4 py-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Moon className="w-5 h-5 text-gray-600" />
+                            <span className="font-medium text-gray-900">Dark mode</span>
+                        </div>
+                        <button
+                            onClick={toggleDarkMode}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${darkMode ? 'bg-unicycle-green' : 'bg-gray-200'}`}
+                            aria-label="Toggle dark mode"
+                        >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${darkMode ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
                     </div>
 
                     <button

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Heart, Package } from 'lucide-react';
 import { getSaved, toggleSave } from '../api/saved';
 
-export default function Saved({ onItemClick }) {
+export default function Saved({ onItemClick, onNavigate }) {
     const [listings, setListings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [savedIds, setSavedIds] = useState(new Set());
@@ -60,8 +60,16 @@ export default function Saved({ onItemClick }) {
                 {!loading && listings.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
                         <Heart className="w-16 h-16 text-gray-200 mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No saved items yet</h3>
-                        <p className="text-gray-500">Tap the heart on any listing to save it here.</p>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">Nothing saved yet</h3>
+                        <p className="text-gray-500 mb-5">Tap the heart on any listing to save it here.</p>
+                        {onNavigate && (
+                            <button
+                                onClick={() => onNavigate('listings')}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 text-sm font-medium"
+                            >
+                                Browse listings
+                            </button>
+                        )}
                     </div>
                 )}
 
