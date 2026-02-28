@@ -13,6 +13,7 @@ from ..schemas.message import (
 from ..utils.dependencies import get_current_user_required
 from .notifications import send_user_notification
 from ..utils.email import send_message_email
+from .ws import manager as ws_manager
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
 
@@ -198,7 +199,7 @@ def archive_conversation(
 
 # MESSAGE ENDPOINTS
 @router.post("/conversations/{conversation_id}/messages", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
-def send_message(
+async def send_message(
     conversation_id: int,
     message_data: MessageCreate,
     db: Session = Depends(get_db),
@@ -236,8 +237,30 @@ def send_message(
     db.commit()
     db.refresh(message)
 
-    # Notify the recipient (non-critical — separate commit)
     recipient_id = conversation.seller_id if current_user.id == conversation.buyer_id else conversation.buyer_id
+
+    # Push message to recipient via WebSocket if they have an active connection
+    try:
+        await ws_manager.send_to_user(recipient_id, {
+            "type": "new_message",
+            "conversation_id": conversation_id,
+            "message": {
+                "id": message.id,
+                "text": message.text,
+                "sender_id": message.sender_id,
+                "created_at": message.created_at.isoformat() if message.created_at else None,
+                "is_read": message.is_read,
+                "sender": {
+                    "id": current_user.id,
+                    "name": current_user.name,
+                    "avatar_url": getattr(current_user, "avatar_url", None),
+                },
+            },
+        })
+    except Exception as e:
+        print(f"[ws] Failed to push message: {e}")
+
+    # Notify the recipient (non-critical — separate commit)
     listing_title = conversation.listing.title if conversation.listing else "an item"
     try:
         send_user_notification(

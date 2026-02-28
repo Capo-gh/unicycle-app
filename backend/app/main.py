@@ -6,7 +6,7 @@ from slowapi.errors import RateLimitExceeded
 from .utils.limiter import limiter
 from sqlalchemy import text, inspect
 from .database import engine, Base, SessionLocal
-from .routers import auth, listings, requests, messages, upload, reviews, users, transactions, admin, notifications, announcements, payments, saved
+from .routers import auth, listings, requests, messages, upload, reviews, users, transactions, admin, notifications, announcements, payments, saved, ws
 from .models.user import User
 from .models.listing import Listing
 from .models.notification import Notification, NotificationRead
@@ -223,6 +223,7 @@ app.include_router(notifications.router)
 app.include_router(announcements.router)
 app.include_router(payments.router)
 app.include_router(saved.router)
+app.include_router(ws.router)
 
 
 @app.on_event("startup")

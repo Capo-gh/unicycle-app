@@ -27,6 +27,7 @@ export default function Messages({ incomingRequest, user }) {
     const [translatingId, setTranslatingId] = useState(null);
     const [loadingConv, setLoadingConv] = useState(false);
     const messagesEndRef = useRef(null);
+    const wsRef = useRef(null);
 
     const currentUserId = user?.id;
     const userLang = i18n.language || 'en';
@@ -60,16 +61,63 @@ export default function Messages({ incomingRequest, user }) {
         return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
-    // Poll active conversation for new messages every 5 seconds
+    // WebSocket for real-time messages
     useEffect(() => {
-        if (!selectedConvId || selectedConvId === 'new') return;
-        const interval = setInterval(async () => {
-            try {
-                const data = await getConversation(selectedConvId);
-                setActiveConversation(data);
-            } catch (err) {}
-        }, 5000);
-        return () => clearInterval(interval);
+        if (!selectedConvId || selectedConvId === 'new') {
+            wsRef.current?.close();
+            wsRef.current = null;
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const wsBase = API_URL.replace(/^http/, 'ws');
+
+        let shouldReconnect = true;
+        let reconnectDelay = 1000;
+        let timeoutId = null;
+
+        const connect = () => {
+            const ws = new WebSocket(`${wsBase}/ws/conversations/${selectedConvId}?token=${token}`);
+            wsRef.current = ws;
+
+            ws.onopen = () => { reconnectDelay = 1000; };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'new_message') {
+                        setActiveConversation(prev => {
+                            if (!prev || prev.messages.some(m => m.id === data.message.id)) return prev;
+                            return { ...prev, messages: [...prev.messages, data.message] };
+                        });
+                        setConversations(prev => prev.map(c =>
+                            c.id === data.conversation_id
+                                ? { ...c, last_message: data.message, updated_at: data.message.created_at }
+                                : c
+                        ));
+                    }
+                } catch {}
+            };
+
+            ws.onclose = () => {
+                if (shouldReconnect) {
+                    timeoutId = setTimeout(() => {
+                        reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+                        connect();
+                    }, reconnectDelay);
+                }
+            };
+        };
+
+        connect();
+
+        return () => {
+            shouldReconnect = false;
+            if (timeoutId) clearTimeout(timeoutId);
+            wsRef.current?.close();
+            wsRef.current = null;
+        };
     }, [selectedConvId]);
 
     const fetchConversations = async () => {

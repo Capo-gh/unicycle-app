@@ -12,9 +12,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../../../shared/constants/colors';
 import { getConversations, getConversation, sendMessage, createConversation, archiveConversation } from '../api/messages';
+import { API_BASE_URL } from '../../../shared/config/api';
 
 export default function MessagesScreen({ route }) {
     const [conversations, setConversations] = useState([]);
@@ -30,6 +32,7 @@ export default function MessagesScreen({ route }) {
     const [translatingId, setTranslatingId] = useState(null);
     const { user } = useAuth();
     const flatListRef = useRef(null);
+    const wsRef = useRef(null);
 
     const translateMessage = useCallback(async (msgId, text) => {
         if (translatedMessages[msgId]) {
@@ -74,16 +77,62 @@ export default function MessagesScreen({ route }) {
         }
     }, [activeConversation?.messages]);
 
-    // Poll active conversation for new messages every 5 seconds
+    // WebSocket for real-time messages
     useEffect(() => {
-        if (!selectedConvId) return;
-        const interval = setInterval(async () => {
-            try {
-                const data = await getConversation(selectedConvId);
-                setActiveConversation(data);
-            } catch (err) {}
-        }, 5000);
-        return () => clearInterval(interval);
+        if (!selectedConvId || selectedConvId === 'new') {
+            wsRef.current?.close();
+            wsRef.current = null;
+            return;
+        }
+
+        let shouldReconnect = true;
+        let reconnectDelay = 1000;
+        let timeoutId = null;
+
+        const connect = async () => {
+            const token = await AsyncStorage.getItem('token');
+            if (!token || !shouldReconnect) return;
+            const wsBase = API_BASE_URL.replace(/^http/, 'ws');
+            const ws = new WebSocket(`${wsBase}/ws/conversations/${selectedConvId}?token=${token}`);
+            wsRef.current = ws;
+
+            ws.onopen = () => { reconnectDelay = 1000; };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'new_message') {
+                        setActiveConversation(prev => {
+                            if (!prev || prev.messages.some(m => m.id === data.message.id)) return prev;
+                            return { ...prev, messages: [...prev.messages, data.message] };
+                        });
+                        setConversations(prev => prev.map(c =>
+                            c.id === data.conversation_id
+                                ? { ...c, last_message: data.message, updated_at: data.message.created_at }
+                                : c
+                        ));
+                    }
+                } catch {}
+            };
+
+            ws.onclose = () => {
+                if (shouldReconnect) {
+                    timeoutId = setTimeout(() => {
+                        reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+                        connect();
+                    }, reconnectDelay);
+                }
+            };
+        };
+
+        connect();
+
+        return () => {
+            shouldReconnect = false;
+            if (timeoutId) clearTimeout(timeoutId);
+            wsRef.current?.close();
+            wsRef.current = null;
+        };
     }, [selectedConvId]);
 
     const fetchConversations = async () => {
