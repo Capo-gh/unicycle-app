@@ -16,7 +16,6 @@ import RequestsScreen from '../screens/RequestsScreen';
 import SellScreen from '../screens/SellScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ItemDetailScreen from '../screens/ItemDetailScreen';
-import MyInterestsScreen from '../screens/MyInterestsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import MyListingsScreen from '../screens/MyListingsScreen';
 import EditListingScreen from '../screens/EditListingScreen';
@@ -58,8 +57,6 @@ function MainTabs() {
                         iconName = focused ? 'add-circle' : 'add-circle-outline';
                     } else if (route.name === 'Messages') {
                         iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
-                    } else if (route.name === 'Saved') {
-                        iconName = focused ? 'heart' : 'heart-outline';
                     } else if (route.name === 'Profile') {
                         iconName = focused ? 'person' : 'person-outline';
                     }
@@ -75,7 +72,6 @@ function MainTabs() {
             <Tab.Screen name="Requests" component={RequestsScreen} />
             <Tab.Screen name="Sell" component={SellScreen} />
             <Tab.Screen name="Messages" component={MessagesScreen} />
-            <Tab.Screen name="Saved" component={SavedStack} />
             <Tab.Screen name="Profile" component={ProfileStack} />
         </Tab.Navigator>
     );
@@ -112,25 +108,7 @@ function BrowseStack() {
     );
 }
 
-// Saved Stack
-function SavedStack() {
-    return (
-        <Stack.Navigator>
-            <Stack.Screen
-                name="SavedList"
-                component={SavedScreen}
-                options={{ headerShown: false }}
-            />
-            <Stack.Screen
-                name="ItemDetail"
-                component={ItemDetailScreen}
-                options={{ headerShown: true, title: 'Item Details', headerBackTitle: 'Back' }}
-            />
-        </Stack.Navigator>
-    );
-}
-
-// Profile Stack (for Activity, Settings, etc.)
+// Profile Stack (for Saved, Settings, etc.)
 function ProfileStack() {
     return (
         <Stack.Navigator>
@@ -140,13 +118,9 @@ function ProfileStack() {
                 options={{ headerShown: false }}
             />
             <Stack.Screen
-                name="MyInterests"
-                component={MyInterestsScreen}
-                options={{
-                    headerShown: true,
-                    title: 'Activity',
-                    headerBackTitle: 'Back'
-                }}
+                name="SavedList"
+                component={SavedScreen}
+                options={{ headerShown: true, title: 'Saved', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
                 name="Notifications"

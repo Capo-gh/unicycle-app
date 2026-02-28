@@ -18,15 +18,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../../../shared/constants/colors';
 import { getMyListings } from '../api/listings';
-import { getMyStats, getMyTransactions } from '../api/transactions';
+import { getMyStats } from '../api/transactions';
 import { updateProfile } from '../api/users';
 import NotificationBell from '../components/NotificationBell';
 
 export default function ProfileScreen({ navigation }) {
     const { user, logout, updateUser } = useAuth();
     const [myListings, setMyListings] = useState([]);
-    const [myInterests, setMyInterests] = useState([]);
-    const [incomingTransactions, setIncomingTransactions] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -41,15 +39,11 @@ export default function ProfileScreen({ navigation }) {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [listingsData, interestsData, incomingData, statsData] = await Promise.all([
+            const [listingsData, statsData] = await Promise.all([
                 getMyListings(),
-                getMyTransactions(true),  // as_buyer = true
-                getMyTransactions(false), // as_seller (incoming)
                 getMyStats()
             ]);
             setMyListings(listingsData);
-            setMyInterests(interestsData);
-            setIncomingTransactions(incomingData);
             setStats(statsData);
         } catch (error) {
             console.error('Error fetching profile data:', error);
@@ -255,16 +249,13 @@ export default function ProfileScreen({ navigation }) {
                 <View style={styles.menu}>
                     <TouchableOpacity
                         style={styles.menuItem}
-                        onPress={() => navigation.navigate('MyInterests')}
+                        onPress={() => navigation.navigate('SavedList')}
                     >
                         <View style={styles.menuItemLeft}>
-                            <Ionicons name="swap-horizontal-outline" size={22} color={COLORS.dark} />
-                            <Text style={styles.menuText}>Activity</Text>
+                            <Ionicons name="heart-outline" size={22} color={COLORS.dark} />
+                            <Text style={styles.menuText}>Saved</Text>
                         </View>
-                        <View style={styles.menuItemRight}>
-                            <Text style={styles.menuCount}>{myInterests.length + incomingTransactions.length}</Text>
-                            <Ionicons name="chevron-forward" size={20} color="#999" />
-                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#999" />
                     </TouchableOpacity>
 
                     <TouchableOpacity

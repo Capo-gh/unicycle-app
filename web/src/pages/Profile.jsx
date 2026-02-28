@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Settings, ShieldCheck, Package, Star, Plus, ArrowLeftRight, Pencil, Check, X } from 'lucide-react';
+import { Settings, ShieldCheck, Package, Star, Plus, Heart, Pencil, Check, X } from 'lucide-react';
 import { getMyListings } from '../api/listings';
-import { getMyStats, getMyTransactions } from '../api/transactions';
+import { getMyStats } from '../api/transactions';
 import { updateProfile } from '../api/users';
 
 export default function Profile({ user: signupUser, onNavigate }) {
     const [myListings, setMyListings] = useState([]);
-    const [myInterests, setMyInterests] = useState([]);
-    const [incomingTransactions, setIncomingTransactions] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -54,16 +52,11 @@ export default function Profile({ user: signupUser, onNavigate }) {
             setLoading(true);
             setError(null);
             try {
-                // Fetch listings, interests, and stats in parallel
-                const [listingsData, interestsData, incomingData, statsData] = await Promise.all([
+                const [listingsData, statsData] = await Promise.all([
                     getMyListings(),
-                    getMyTransactions(true),  // as_buyer = true
-                    getMyTransactions(false), // as_seller = false (incoming)
                     getMyStats()
                 ]);
                 setMyListings(listingsData);
-                setMyInterests(interestsData);
-                setIncomingTransactions(incomingData);
                 setStats(statsData);
             } catch (err) {
                 console.error('Error fetching profile data:', err);
@@ -287,112 +280,21 @@ export default function Profile({ user: signupUser, onNavigate }) {
                         )}
                     </div>
 
-                    {/* Activity */}
+                    {/* Saved */}
                     <div>
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                                <ArrowLeftRight className="w-5 h-5" />
-                                Activity
+                                <Heart className="w-5 h-5" />
+                                Saved Items
                             </h3>
-                            <span className="text-sm text-gray-500">
-                                {loading ? '...' : `${myInterests.length + incomingTransactions.length} total`}
-                            </span>
                         </div>
-
-                        {/* Loading State */}
-                        {loading && (
-                            <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200 text-center">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-unicycle-green mx-auto"></div>
-                                <p className="text-gray-500 text-sm mt-2">Loading activity...</p>
-                            </div>
-                        )}
-
-                        {/* Error State */}
-                        {error && !loading && (
-                            <div className="bg-red-50 rounded-lg p-4 border border-red-200 text-center">
-                                <p className="text-red-600 text-sm">{error}</p>
-                            </div>
-                        )}
-
-                        {/* Empty State */}
-                        {!loading && !error && myInterests.length === 0 && incomingTransactions.length === 0 && (
-                            <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200 text-center">
-                                <div className="text-4xl mb-3">📦</div>
-                                <h4 className="font-semibold text-gray-900 mb-1">No activity yet</h4>
-                                <p className="text-sm text-gray-600 mb-4">Express interest in items or wait for buyers to find yours!</p>
-                                <button
-                                    onClick={() => onNavigate('listings')}
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 text-sm font-medium"
-                                >
-                                    Browse Listings
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Transactions Preview (max 3) */}
-                        {!loading && !error && (myInterests.length > 0 || incomingTransactions.length > 0) && (
-                            <div className="space-y-3">
-                                {[
-                                    ...myInterests.map(t => ({ ...t, _type: 'buyer' })),
-                                    ...incomingTransactions.map(t => ({ ...t, _type: 'seller' }))
-                                ]
-                                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                                    .slice(0, 3)
-                                    .map((transaction) => (
-                                    <div
-                                        key={`${transaction._type}-${transaction.id}`}
-                                        className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 cursor-pointer hover:border-unicycle-green transition-colors"
-                                        onClick={() => onNavigate('my-interests')}
-                                    >
-                                        <div className="flex gap-3">
-                                            <img
-                                                src={transaction.listing?.images ? transaction.listing.images.split(',')[0] : 'https://via.placeholder.com/80'}
-                                                alt={transaction.listing?.title || 'Item'}
-                                                className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
-                                            />
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="font-semibold text-gray-900 text-sm mb-1 truncate">
-                                                    {transaction.listing?.title || 'Untitled'}
-                                                </h4>
-                                                <p className="text-base font-bold text-unicycle-green">
-                                                    ${transaction.listing?.price || '0'}
-                                                </p>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
-                                                        transaction.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                        transaction.status === 'cancelled' ? 'bg-gray-100 text-gray-700' :
-                                                        transaction.status === 'agreed' ? 'bg-purple-100 text-purple-700' :
-                                                        'bg-blue-100 text-blue-700'
-                                                    }`}>
-                                                        {transaction.status === 'completed' ? 'Completed' :
-                                                         transaction.status === 'cancelled' ? 'Cancelled' :
-                                                         transaction.status === 'agreed' ? 'Agreed' : 'Interested'}
-                                                    </span>
-                                                    {transaction._type === 'seller' && (
-                                                        <span className="text-xs text-gray-400">
-                                                            (Incoming)
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-
-                                {/* View All Button */}
-                                <button
-                                    onClick={() => onNavigate('my-interests')}
-                                    className="w-full py-2.5 bg-unicycle-green text-white rounded-lg font-medium hover:bg-unicycle-green/90 transition-colors text-sm flex items-center justify-center gap-2"
-                                >
-                                    View All Activity
-                                    {(myInterests.length + incomingTransactions.length) > 3 && (
-                                        <span className="px-2 py-0.5 bg-white text-unicycle-green text-xs rounded-full font-semibold">
-                                            +{(myInterests.length + incomingTransactions.length) - 3}
-                                        </span>
-                                    )}
-                                </button>
-                            </div>
-                        )}
+                        <button
+                            onClick={() => onNavigate('saved')}
+                            className="w-full py-2.5 bg-unicycle-green text-white rounded-lg font-medium hover:bg-unicycle-green/90 transition-colors text-sm flex items-center justify-center gap-2"
+                        >
+                            <Heart className="w-4 h-4" />
+                            View Saved Items
+                        </button>
                     </div>
 
                 </div>

@@ -9,7 +9,6 @@ import Profile from './pages/Profile';
 import UserProfile from './pages/UserProfile';
 import Messages from './pages/Messages';
 import Requests from './pages/Requests';
-import Transactions from './pages/Activity';
 import MyListings from './pages/MyListings';
 import Saved from './pages/Saved';
 import Admin from './pages/Admin';
@@ -122,7 +121,7 @@ function App() {
               console.error('Secure pay activation failed:', e);
             }
             window.history.replaceState({}, '', window.location.pathname);
-            setCurrentPage('my-interests');
+            setCurrentPage('my-listings');
             return;
           }
 
@@ -427,10 +426,6 @@ function App() {
 
         {currentPage === 'requests' && (
           <Requests user={user} onNavigate={handleNavigate} />
-        )}
-
-        {currentPage === 'my-interests' && (
-          <Transactions onNavigate={handleNavigate} />
         )}
 
         {currentPage === 'saved' && (
