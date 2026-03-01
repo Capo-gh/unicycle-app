@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Settings, ShieldCheck, Package, Star, Plus, Heart, Pencil, Check, X, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
@@ -21,6 +21,7 @@ export default function Profile() {
     const [displayName, setDisplayName] = useState(signupUser?.name || 'User');
     const [savingName, setSavingName] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const avatarInputRef = useRef(null);
 
     const handleSaveName = async () => {
         const trimmed = nameInput.trim();
@@ -119,7 +120,10 @@ export default function Profile() {
 
                     {/* Profile Info */}
                     <div className="flex items-center gap-4 lg:gap-6">
-                        <label className="relative w-20 h-20 lg:w-24 lg:h-24 rounded-full flex-shrink-0 cursor-pointer">
+                        <div
+                            className="relative w-20 h-20 lg:w-24 lg:h-24 rounded-full flex-shrink-0 cursor-pointer"
+                            onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+                        >
                             <div className="w-full h-full rounded-full overflow-hidden bg-white flex items-center justify-center text-unicycle-blue font-bold text-3xl lg:text-4xl">
                                 {signupUser?.avatar_url
                                     ? <img src={signupUser.avatar_url} alt={user.name} className="w-full h-full object-cover" />
@@ -132,8 +136,8 @@ export default function Profile() {
                                     : <Camera className="w-3.5 h-3.5 text-gray-600" />
                                 }
                             </div>
-                            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={uploadingAvatar} onClick={(e) => { e.currentTarget.value = null; }} />
-                        </label>
+                            <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} onClick={(e) => { e.currentTarget.value = null; }} />
+                        </div>
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                                 {editingName ? (

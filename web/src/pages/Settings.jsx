@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, LogOut, Bell, Shield, HelpCircle, Info, ChevronRight, Check, CheckCheck, ChevronDown, ChevronUp, Languages, Camera, Moon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
@@ -422,6 +422,7 @@ export default function Settings() {
     const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [avatarError, setAvatarError] = useState(null);
+    const avatarInputRef = useRef(null);
     const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
 
     const toggleDarkMode = () => {
@@ -489,7 +490,10 @@ export default function Settings() {
 
                     {/* Avatar */}
                     <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-100">
-                        <label className="relative flex-shrink-0 cursor-pointer">
+                        <div
+                            className="relative flex-shrink-0 cursor-pointer"
+                            onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+                        >
                             <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-unicycle-blue to-unicycle-green flex items-center justify-center text-white font-bold text-2xl">
                                 {avatarUrl
                                     ? <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
@@ -502,8 +506,8 @@ export default function Settings() {
                                     : <Camera className="w-3 h-3 text-gray-600" />
                                 }
                             </div>
-                            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={uploadingAvatar} onClick={(e) => { e.currentTarget.value = null; }} />
-                        </label>
+                            <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} onClick={(e) => { e.currentTarget.value = null; }} />
+                        </div>
                         <div className="flex flex-col gap-1">
                             <p className="text-sm font-medium text-gray-700">Tap your photo to change it</p>
                             {avatarError && <p className="text-xs text-red-500">{avatarError}</p>}

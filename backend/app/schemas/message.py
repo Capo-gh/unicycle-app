@@ -8,7 +8,8 @@ class UserBasic(BaseModel):
     id: int
     name: str
     university: str
-    
+    avatar_url: Optional[str] = None
+
     class Config:
         from_attributes = True
 
