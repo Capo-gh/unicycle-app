@@ -119,7 +119,7 @@ with engine.connect() as conn:
 # Seed super admin user
 def seed_admin():
     from .config import settings
-    admin_email = settings.super_admin_email or os.getenv("SUPER_ADMIN_EMAIL", "ibrahim.sabiku@mail.mcgill.ca")
+    admin_email = settings.super_admin_email or os.getenv("SUPER_ADMIN_EMAIL", "")
     db = SessionLocal()
     try:
         admin_user = db.query(User).filter(User.email == admin_email).first()

@@ -119,7 +119,7 @@ def send_verification_email(email: str, name: str, token: str):
         raise Exception(f"Failed to send verification email: {str(e)}")
 
 
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "ibrahim.sabiku@mail.mcgill.ca")
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "")
 
 
 def send_report_email(
