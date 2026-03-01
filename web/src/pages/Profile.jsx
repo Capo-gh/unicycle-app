@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Settings, ShieldCheck, Package, Star, Plus, Heart, Pencil, Check, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 import { getMyListings } from '../api/listings';
 import { getMyStats } from '../api/transactions';
 import { updateProfile } from '../api/users';
 
-export default function Profile({ user: signupUser, onNavigate }) {
+export default function Profile() {
+    const navigate = useNavigate();
+    const { user: signupUser, setUser } = useAuthStore();
     const [myListings, setMyListings] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -21,8 +25,7 @@ export default function Profile({ user: signupUser, onNavigate }) {
         try {
             await updateProfile({ name: trimmed });
             setDisplayName(trimmed);
-            const stored = JSON.parse(localStorage.getItem('user') || '{}');
-            localStorage.setItem('user', JSON.stringify({ ...stored, name: trimmed }));
+            setUser({ ...signupUser, name: trimmed });
             setEditingName(false);
         } catch {
             // ignore
@@ -84,7 +87,7 @@ export default function Profile({ user: signupUser, onNavigate }) {
                     <div className="flex items-center justify-between mb-4">
                         <h1 className="text-xl font-bold text-unicycle-green">Profile</h1>
                         <button
-                            onClick={() => onNavigate('settings')}
+                            onClick={() => navigate('/settings')}
                             className="p-2 hover:bg-white/10 rounded-full transition-colors"
                         >
                             <Settings className="w-6 h-6" />
@@ -191,7 +194,7 @@ export default function Profile({ user: signupUser, onNavigate }) {
                                     {loading ? '...' : `${myListings.length} active`}
                                 </span>
                                 <button
-                                    onClick={() => onNavigate('sell')}
+                                    onClick={() => navigate('/sell')}
                                     className="p-1.5 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 transition-colors"
                                     title="Post new item"
                                 >
@@ -222,7 +225,7 @@ export default function Profile({ user: signupUser, onNavigate }) {
                                 <h4 className="font-semibold text-gray-900 mb-1">No listings yet</h4>
                                 <p className="text-sm text-gray-600 mb-4">Start selling items to your campus community!</p>
                                 <button
-                                    onClick={() => onNavigate('sell')}
+                                    onClick={() => navigate('/sell')}
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 text-sm font-medium"
                                 >
                                     <Plus className="w-4 h-4" />
@@ -238,7 +241,7 @@ export default function Profile({ user: signupUser, onNavigate }) {
                                     <div
                                         key={listing.id}
                                         className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 cursor-pointer hover:border-unicycle-green transition-colors"
-                                        onClick={() => onNavigate('detail', listing)}
+                                        onClick={() => navigate(`/item/${listing.id}`, { state: { item: listing } })}
                                     >
                                         <div className="flex gap-3">
                                             <img
@@ -266,7 +269,7 @@ export default function Profile({ user: signupUser, onNavigate }) {
 
                                 {/* View All Button */}
                                 <button
-                                    onClick={() => onNavigate('my-listings')}
+                                    onClick={() => navigate('/my-listings')}
                                     className="w-full py-2.5 bg-unicycle-green text-white rounded-lg font-medium hover:bg-unicycle-green/90 transition-colors text-sm flex items-center justify-center gap-2"
                                 >
                                     View All Listings
@@ -289,7 +292,7 @@ export default function Profile({ user: signupUser, onNavigate }) {
                             </h3>
                         </div>
                         <button
-                            onClick={() => onNavigate('saved')}
+                            onClick={() => navigate('/saved')}
                             className="w-full py-2.5 bg-unicycle-green text-white rounded-lg font-medium hover:bg-unicycle-green/90 transition-colors text-sm flex items-center justify-center gap-2"
                         >
                             <Heart className="w-4 h-4" />

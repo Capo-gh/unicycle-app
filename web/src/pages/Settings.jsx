@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, LogOut, Bell, Shield, HelpCircle, Info, ChevronRight, Check, CheckCheck, ChevronDown, ChevronUp, Languages, Camera, Moon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 import imageCompression from 'browser-image-compression';
-import { logout } from '../api/auth';
 import { updateProfile } from '../api/users';
 import { uploadImage } from '../api/upload';
 import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from '../api/notifications';
@@ -414,7 +415,9 @@ function AboutPage({ onBack }) {
 }
 
 // ─── Main Settings Page ───────────────────────────────────────────────────────
-export default function Settings({ user, onBack, onLogout }) {
+export default function Settings() {
+    const navigate = useNavigate();
+    const { user, logout: storeLogout, setUser } = useAuthStore();
     const [subPage, setSubPage] = useState(null);
     const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -444,8 +447,7 @@ export default function Settings({ user, onBack, onLogout }) {
             const url = await uploadImage(fileToUpload);
             await updateProfile({ avatar_url: url });
             setAvatarUrl(url);
-            const stored = JSON.parse(localStorage.getItem('user') || '{}');
-            localStorage.setItem('user', JSON.stringify({ ...stored, avatar_url: url }));
+            setUser({ ...user, avatar_url: url });
         } catch {
             // ignore
         } finally {
@@ -454,8 +456,8 @@ export default function Settings({ user, onBack, onLogout }) {
     };
 
     const handleLogout = () => {
-        logout();
-        onLogout();
+        storeLogout();
+        navigate('/signup', { replace: true });
     };
 
     if (subPage === 'notifications') return <NotificationsPage onBack={() => setSubPage(null)} />;
@@ -469,7 +471,7 @@ export default function Settings({ user, onBack, onLogout }) {
             <div className="bg-white border-b border-gray-200 sticky top-14 lg:top-0 z-10">
                 <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
                     <button
-                        onClick={onBack}
+                        onClick={() => navigate(-1)}
                         className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                     >
                         <ArrowLeft className="w-6 h-6 text-gray-700" />

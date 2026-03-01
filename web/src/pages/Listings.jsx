@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, Package, X, Heart } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
+import { useMarketplaceStore } from '../store/marketplaceStore';
 import { getListings } from '../api/listings';
 import { getSavedIds, toggleSave } from '../api/saved';
 
-export default function Listings({ onItemClick, onNavigate, currentMarketplace, onMarketplaceChange }) {
+export default function Listings() {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const { user } = useAuthStore();
+    const { currentMarketplace } = useMarketplaceStore();
 
-    const userUniversity = (() => {
-        try { return JSON.parse(localStorage.getItem('user') || '{}').university || ''; } catch { return ''; }
-    })();
+    const userUniversity = user?.university || '';
     const isOwnSchool = !currentMarketplace || currentMarketplace === userUniversity;
 
     const [selectedCategory, setSelectedCategory] = useState('All');
@@ -345,7 +349,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                             </button>
                         ) : isOwnSchool ? (
                             <button
-                                onClick={() => onNavigate('sell')}
+                                onClick={() => navigate('/sell')}
                                 className="inline-flex items-center gap-2 px-4 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90"
                             >
                                 {t('listings.postItem')}
@@ -363,7 +367,7 @@ export default function Listings({ onItemClick, onNavigate, currentMarketplace, 
                                 className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                             >
                                 <button
-                                    onClick={() => onItemClick(item)}
+                                    onClick={() => navigate(`/item/${item.id}`, { state: { item } })}
                                     className="w-full text-left"
                                 >
                                     <div className="aspect-square relative bg-gray-100">

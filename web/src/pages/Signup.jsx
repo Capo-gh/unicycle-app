@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { Mail, User, Building2, ShieldCheck, Eye, EyeOff, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { signup, login, forgotPassword } from '../api/auth';
+import { useAuthStore } from '../store/authStore';
 import LanguageToggle from '../components/LanguageToggle';
 
 // Import logo
 import logo from '../assets/unicycle-icon.png';
 
-export default function Signup({ onSignup, onNavigate }) {
+export default function Signup() {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const { setUser } = useAuthStore();
     const [isLogin, setIsLogin] = useState(false);
     const [selectedUniversity, setSelectedUniversity] = useState('');
     const [email, setEmail] = useState('');
@@ -78,15 +82,13 @@ export default function Signup({ onSignup, onNavigate }) {
                 });
             }
 
-            // Handle signup response (no token yet)
             if (!isLogin) {
                 localStorage.setItem('pendingVerificationEmail', email);
-                onNavigate('check-email');
+                navigate('/check-email', { state: { email } });
             } else {
-                // Login response has token and user
                 localStorage.setItem('token', response.access_token);
-                localStorage.setItem('user', JSON.stringify(response.user));
-                onSignup(response.user);
+                setUser(response.user);
+                navigate('/browse', { replace: true });
             }
 
         } catch (err) {

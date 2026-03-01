@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, ShieldCheck, MessageCircle, Send, ArrowLeft, Trash2, Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 import { getConversations, getConversation, sendMessage, createConversation, archiveConversation } from '../api/messages';
 
 async function translateText(text, targetLang) {
@@ -12,8 +14,11 @@ async function translateText(text, targetLang) {
     return data.responseData?.translatedText || text;
 }
 
-export default function Messages({ incomingRequest, user }) {
+export default function Messages() {
     const { t, i18n } = useTranslation();
+    const location = useLocation();
+    const incomingRequest = location.state?.incomingRequest;
+    const { user } = useAuthStore();
     const [selectedConvId, setSelectedConvId] = useState(null);
     const [messageText, setMessageText] = useState('');
     const [conversations, setConversations] = useState([]);

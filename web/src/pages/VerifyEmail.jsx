@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Mail, Loader, Lock, Eye, EyeOff } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import client from '../api/client';
 import { setPassword } from '../api/auth';
+import { useAuthStore } from '../store/authStore';
 
-export default function VerifyEmail({ onNavigate, onSignup }) {
+export default function VerifyEmail() {
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const { setUser } = useAuthStore();
     const [status, setStatus] = useState('verifying'); // verifying, success, error, expired, set_password
     const [message, setMessage] = useState('');
     const [resending, setResending] = useState(false);
@@ -17,8 +22,7 @@ export default function VerifyEmail({ onNavigate, onSignup }) {
     useEffect(() => {
         const verifyToken = async () => {
             // Get token from URL and clean it
-            const params = new URLSearchParams(window.location.search);
-            let token = params.get('token');
+            let token = searchParams.get('token');
 
             if (!token) {
                 setStatus('error');
@@ -52,9 +56,8 @@ export default function VerifyEmail({ onNavigate, onSignup }) {
                         }));
                     }
 
-                    // Redirect to listings after 2 seconds
                     setTimeout(() => {
-                        onNavigate('listings');
+                        navigate('/browse', { replace: true });
                     }, 2000);
                 }
 
@@ -71,7 +74,7 @@ export default function VerifyEmail({ onNavigate, onSignup }) {
         };
 
         verifyToken();
-    }, [onNavigate]);
+    }, []);
 
     const handleResend = async () => {
         setResending(true);
@@ -115,7 +118,8 @@ export default function VerifyEmail({ onNavigate, onSignup }) {
             setMessage('Password set successfully! Logging you in...');
 
             setTimeout(() => {
-                onSignup(response.user);
+                setUser(response.user);
+                navigate('/browse', { replace: true });
             }, 1500);
 
         } catch (err) {
@@ -176,7 +180,7 @@ export default function VerifyEmail({ onNavigate, onSignup }) {
                             {message}
                         </p>
                         <button
-                            onClick={() => onNavigate('signup')}
+                            onClick={() => navigate('/signup')}
                             className="w-full py-3 bg-unicycle-blue text-white rounded-lg font-semibold hover:bg-unicycle-blue/90 transition-colors"
                         >
                             Back to Login

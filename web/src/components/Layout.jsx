@@ -1,26 +1,25 @@
 import { useState, useEffect } from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Search, Megaphone, MessageCircle, User, Shield } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../store/authStore';
+import { useMarketplaceStore } from '../store/marketplaceStore';
 import icon from '../assets/unicycle-icon.png';
 import MarketplacePicker from './MarketplacePicker';
 import NotificationBell from './NotificationBell';
 import LanguageToggle from './LanguageToggle';
+import AnnouncementModal from './AnnouncementModal';
 import { getUnreadCount } from '../api/messages';
 
-export default function Layout({ currentPage, onNavigate, currentMarketplace, onMarketplaceChange, children }) {
+export default function Layout() {
     const { t } = useTranslation();
-    const [isAdmin, setIsAdmin] = useState(false);
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { user } = useAuthStore();
+    const { currentMarketplace, setCurrentMarketplace } = useMarketplaceStore();
     const [unreadMessages, setUnreadMessages] = useState(0);
 
-    useEffect(() => {
-        try {
-            const userStr = localStorage.getItem('user');
-            if (userStr) {
-                const userData = JSON.parse(userStr);
-                setIsAdmin(userData.is_admin === true);
-            }
-        } catch (e) {}
-    }, []);
+    const isAdmin = user?.is_admin === true;
 
     useEffect(() => {
         const fetchUnread = async () => {
@@ -36,47 +35,53 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
 
     // Reset unread count when user navigates to messages
     useEffect(() => {
-        if (currentPage === 'messages') {
+        if (location.pathname === '/messages') {
             setUnreadMessages(0);
         }
-    }, [currentPage]);
+    }, [location.pathname]);
 
     const navItems = [
-        { id: 'listings', label: t('nav.browse'), Icon: Search },
-        { id: 'requests', label: t('nav.requests'), Icon: Megaphone },
-        { id: 'sell', label: t('nav.sell'), Icon: null, isPlus: true },
-        { id: 'messages', label: t('nav.messages'), Icon: MessageCircle },
-        { id: 'profile', label: t('nav.profile'), Icon: User },
-        ...(isAdmin ? [{ id: 'admin', label: t('nav.admin'), Icon: Shield }] : []),
+        { id: 'listings', path: '/browse', label: t('nav.browse'), Icon: Search },
+        { id: 'requests', path: '/requests', label: t('nav.requests'), Icon: Megaphone },
+        { id: 'sell', path: '/sell', label: t('nav.sell'), Icon: null, isPlus: true },
+        { id: 'messages', path: '/messages', label: t('nav.messages'), Icon: MessageCircle },
+        { id: 'profile', path: '/profile', label: t('nav.profile'), Icon: User },
+        ...(isAdmin ? [{ id: 'admin', path: '/admin', label: t('nav.admin'), Icon: Shield }] : []),
     ];
 
-    // detail and chat are sub-pages, so highlight Browse; saved/my-listings/settings are under Profile
     const getActiveNav = () => {
-        if (currentPage === 'detail' || currentPage === 'chat') return 'listings';
-        if (currentPage === 'saved' || currentPage === 'my-listings' || currentPage === 'settings') return 'profile';
-        if (currentPage === 'admin') return 'admin';
-        return currentPage;
+        const { pathname } = location;
+        if (pathname === '/browse' || pathname.startsWith('/item/')) return 'listings';
+        if (pathname === '/requests') return 'requests';
+        if (pathname === '/sell') return 'sell';
+        if (pathname === '/messages') return 'messages';
+        if (pathname === '/profile' || pathname === '/settings' || pathname === '/my-listings' || pathname === '/saved') return 'profile';
+        if (pathname === '/admin') return 'admin';
+        return 'listings';
     };
     const activeNav = getActiveNav();
 
+    const isOnListings = location.pathname === '/browse';
+
     return (
         <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+            <AnnouncementModal />
 
             {/* ─── SIDEBAR (Desktop only) ─── */}
             <aside className="hidden lg:flex lg:w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-col fixed h-full z-20">
                 {/* Logo + Marketplace Picker */}
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3 mb-3">
-                        <button onClick={() => onNavigate('listings')} className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity">
+                        <button onClick={() => navigate('/browse')} className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity">
                             <img src={icon} alt="UniCycle" className="w-10 h-10 object-contain flex-shrink-0" />
                             <h1 className="text-xl font-bold text-gray-900 dark:text-white min-w-0">UniCycle</h1>
                         </button>
                         <NotificationBell />
                     </div>
                     <div className="flex items-center gap-2">
-                        {currentPage === 'listings' && (
+                        {isOnListings && (
                             <div className="flex-1 min-w-0">
-                                <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} />
+                                <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={setCurrentMarketplace} />
                             </div>
                         )}
                         <LanguageToggle />
@@ -88,7 +93,7 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                     {navItems.map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => onNavigate(item.id)}
+                            onClick={() => navigate(item.path)}
                             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeNav === item.id
                                 ? 'bg-unicycle-green text-white'
                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -114,14 +119,14 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                 </nav>
             </aside>
 
-            {/* Mobile Top Bar (Small + Medium only) — fixed overlay */}
+            {/* Mobile Top Bar */}
             <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-14 px-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
-                    <button onClick={() => onNavigate('listings')} className="hover:opacity-80 transition-opacity flex-shrink-0">
+                    <button onClick={() => navigate('/browse')} className="hover:opacity-80 transition-opacity flex-shrink-0">
                         <img src={icon} alt="UniCycle" className="w-8 h-8 object-contain" />
                     </button>
-                    {currentPage === 'listings' && (
-                        <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={onMarketplaceChange} compact />
+                    {isOnListings && (
+                        <MarketplacePicker currentMarketplace={currentMarketplace} onMarketplaceChange={setCurrentMarketplace} compact />
                     )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -133,9 +138,8 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
             {/* ─── CONTENT COLUMN ─── */}
             <div className="flex-1 lg:ml-64 min-w-0">
                 <main className="pb-20 lg:pb-0 min-w-0">
-                    {/* Spacer so content sits below the fixed mobile top bar */}
                     <div className="h-14 lg:hidden" />
-                    {children}
+                    <Outlet />
                 </main>
             </div>
 
@@ -145,7 +149,7 @@ export default function Layout({ currentPage, onNavigate, currentMarketplace, on
                     {navItems.map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => onNavigate(item.id)}
+                            onClick={() => navigate(item.path)}
                             className={`flex flex-col items-center gap-1 ${activeNav === item.id
                                 ? 'text-unicycle-green'
                                 : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'

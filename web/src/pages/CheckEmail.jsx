@@ -1,8 +1,12 @@
 import { Mail, RefreshCw } from 'lucide-react';
 import { resendVerification } from '../api/auth';
 import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-export default function CheckEmail({ userEmail, onNavigate }) {
+export default function CheckEmail() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const userEmail = location.state?.email || localStorage.getItem('pendingVerificationEmail') || '';
     const [resending, setResending] = useState(false);
     const [message, setMessage] = useState('');
 
@@ -69,7 +73,7 @@ export default function CheckEmail({ userEmail, onNavigate }) {
 
                 {/* Back to login */}
                 <button
-                    onClick={() => onNavigate('login')}
+                    onClick={() => navigate('/signup')}
                     className="mt-4 text-sm text-gray-500 hover:text-gray-700"
                 >
                     Back to Login

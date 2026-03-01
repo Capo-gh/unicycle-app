@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Heart, Package } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { getSaved, toggleSave } from '../api/saved';
 
-export default function Saved({ onItemClick, onNavigate }) {
+export default function Saved() {
+    const navigate = useNavigate();
     const [listings, setListings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [savedIds, setSavedIds] = useState(new Set());
@@ -62,14 +64,12 @@ export default function Saved({ onItemClick, onNavigate }) {
                         <Heart className="w-16 h-16 text-gray-200 mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 mb-2">Nothing saved yet</h3>
                         <p className="text-gray-500 mb-5">Tap the heart on any listing to save it here.</p>
-                        {onNavigate && (
-                            <button
-                                onClick={() => onNavigate('listings')}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 text-sm font-medium"
-                            >
-                                Browse listings
-                            </button>
-                        )}
+                        <button
+                            onClick={() => navigate('/browse')}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 text-sm font-medium"
+                        >
+                            Browse listings
+                        </button>
                     </div>
                 )}
 
@@ -80,7 +80,7 @@ export default function Saved({ onItemClick, onNavigate }) {
                                 key={item.id}
                                 className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                             >
-                                <button onClick={() => onItemClick(item)} className="w-full text-left">
+                                <button onClick={() => navigate(`/item/${item.id}`, { state: { item } })} className="w-full text-left">
                                     <div className="aspect-square relative bg-gray-100">
                                         {getFirstImage(item.images) ? (
                                             <img

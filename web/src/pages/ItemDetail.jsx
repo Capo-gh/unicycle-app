@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, MapPin, ShieldCheck, MessageCircle, Share2, Edit, Star, CheckCircle, ChevronRight, Heart, Flag, X, AlertTriangle, Languages, Zap } from 'lucide-react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { toggleSave, getSavedIds } from '../api/saved';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../store/authStore';
 import SecurePayModal from './SecurePayModal';
 import { getUserReviews } from '../api/reviews';
-import { markAsSold, markAsUnsold } from '../api/listings';
+import { getListing, markAsSold, markAsUnsold } from '../api/listings';
 import { createTransaction, getMyTransactions, deleteTransaction } from '../api/transactions';
 import { reportUser } from '../api/users';
 import { getListingSecurePay, confirmHandoff, confirmReceipt, disputeTransaction, createBoostSession } from '../api/payments';
@@ -21,11 +23,16 @@ async function translateText(text, targetLang) {
     }
 }
 
-export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, onViewSellerProfile }) {
+export default function ItemDetail() {
     const { i18n } = useTranslation();
+    const navigate = useNavigate();
+    const { id } = useParams();
+    const location = useLocation();
+    const { user: authUser } = useAuthStore();
+    const [item, setItem] = useState(location.state?.item || null);
     const [showSecurePayModal, setShowSecurePayModal] = useState(false);
     const [securePayFromMessage, setSecurePayFromMessage] = useState(false);
-    const [currentUser, setCurrentUser] = useState(null);
+    const [currentUser, setCurrentUser] = useState(authUser);
     const [sellerReviews, setSellerReviews] = useState(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isSold, setIsSold] = useState(item?.is_sold || false);
@@ -59,17 +66,17 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
     const [translatedTitle, setTranslatedTitle] = useState(null);
     const [translatedDescription, setTranslatedDescription] = useState(null);
 
-    // Get current user from localStorage
+    // Fetch item if not passed via router state (direct URL access)
     useEffect(() => {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-            try {
-                setCurrentUser(JSON.parse(userStr));
-            } catch (e) {
-                console.error('Error parsing user:', e);
-            }
+        if (!item && id) {
+            getListing(parseInt(id)).then(setItem).catch(() => navigate('/browse', { replace: true }));
         }
-    }, []);
+    }, [id]);
+
+    // Keep currentUser in sync with auth store
+    useEffect(() => {
+        setCurrentUser(authUser);
+    }, [authUser]);
 
     // Fetch seller reviews
     useEffect(() => {
@@ -174,25 +181,17 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
             setSecurePayFromMessage(true);
             setShowSecurePayModal(true);
         } else {
-            onContactSeller({
-                listingId: item.id,
-                initialMessage: `Hi! Is "${item.title}" still available?`
-            });
+            navigate('/messages', { state: { incomingRequest: { listingId: item.id, initialMessage: `Hi! Is "${item.title}" still available?` } } });
         }
     };
 
     const handleSecurePayProceed = () => {
         setShowSecurePayModal(false);
-        onContactSeller({
-            listingId: item.id,
-            initialMessage: `Hi! I'm interested in "${item.title}" ($${item.price}). Is it still available?`
-        });
+        navigate('/messages', { state: { incomingRequest: { listingId: item.id, initialMessage: `Hi! I'm interested in "${item.title}" ($${item.price}). Is it still available?` } } });
     };
 
     const handleEditListing = () => {
-        if (onNavigate) {
-            onNavigate('edit-listing', item);
-        }
+        navigate(`/edit/${item.id}`);
     };
 
     const handleToggleSold = async () => {
@@ -214,9 +213,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
     };
 
     const handleViewSellerProfile = () => {
-        if (onViewSellerProfile) {
-            onViewSellerProfile(item.seller_id);
-        }
+        navigate(`/user/${item.seller_id}`);
     };
 
     const handleExpressInterest = async () => {
@@ -384,7 +381,7 @@ export default function ItemDetail({ item, onBack, onContactSeller, onNavigate, 
             <div className="bg-white border-b border-gray-200 sticky top-14 lg:top-0 z-10">
                 <div className="max-w-md lg:max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
                     <button
-                        onClick={onBack}
+                        onClick={() => navigate(-1)}
                         className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                     >
                         <ArrowLeft className="w-6 h-6 text-gray-700" />

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Pencil, Trash2, Plus, CheckCircle, Circle, Zap, RefreshCw, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { getMyListings, deleteListing, markAsSold, markAsUnsold, renewListing, bumpListing } from '../api/listings';
 import { createBoostSession } from '../api/payments';
 
-export default function MyListings({ onNavigate }) {
+export default function MyListings() {
+    const navigate = useNavigate();
     const [listings, setListings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -127,7 +129,7 @@ export default function MyListings({ onNavigate }) {
             <div className="bg-white border-b border-gray-200 sticky top-14 lg:top-0 z-10">
                 <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
                     <button
-                        onClick={() => onNavigate('profile')}
+                        onClick={() => navigate('/profile')}
                         className="p-2 hover:bg-gray-100 rounded-full transition-colors lg:hidden"
                     >
                         <ArrowLeft className="w-6 h-6 text-gray-700" />
@@ -135,7 +137,7 @@ export default function MyListings({ onNavigate }) {
                     <h1 className="text-lg font-semibold text-unicycle-green">My Listings</h1>
                     <div className="flex-1" />
                     <button
-                        onClick={() => onNavigate('sell')}
+                        onClick={() => navigate('/sell')}
                         className="flex items-center gap-1.5 px-3 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 text-sm font-medium"
                     >
                         <Plus className="w-4 h-4" />
@@ -166,7 +168,7 @@ export default function MyListings({ onNavigate }) {
                         <h3 className="font-semibold text-gray-900 mb-1">No listings yet</h3>
                         <p className="text-sm text-gray-600 mb-4">Start selling items to your campus community!</p>
                         <button
-                            onClick={() => onNavigate('sell')}
+                            onClick={() => navigate('/sell')}
                             className="inline-flex items-center gap-2 px-4 py-2 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 text-sm font-medium"
                         >
                             <Plus className="w-4 h-4" />
@@ -182,7 +184,7 @@ export default function MyListings({ onNavigate }) {
                             <div key={listing.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                                 <div
                                     className="flex gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                                    onClick={() => onNavigate('detail', listing)}
+                                    onClick={() => navigate(`/item/${listing.id}`, { state: { item: listing } })}
                                 >
                                     <img
                                         src={listing.images ? listing.images.split(',')[0] : 'https://via.placeholder.com/80'}
@@ -241,7 +243,7 @@ export default function MyListings({ onNavigate }) {
                                         {listing.is_sold ? 'Mark Available' : 'Mark Sold'}
                                     </button>
                                     <button
-                                        onClick={() => onNavigate('edit-listing', listing)}
+                                        onClick={() => navigate(`/edit/${listing.id}`)}
                                         className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                                     >
                                         <Pencil className="w-4 h-4" />

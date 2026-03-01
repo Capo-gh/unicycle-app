@@ -1,21 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Lock, Eye, EyeOff, Loader, CheckCircle, XCircle } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { resetPassword } from '../api/auth';
+import { useAuthStore } from '../store/authStore';
 
-export default function ResetPassword({ onSignup, onNavigate }) {
-    const [token, setToken] = useState('');
+export default function ResetPassword() {
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const { setUser } = useAuthStore();
+    const token = decodeURIComponent((searchParams.get('reset_token') || '').trim());
     const [password, setPasswordInput] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [done, setDone] = useState(false);
-
-    useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const t = params.get('reset_token');
-        if (t) setToken(decodeURIComponent(t.trim()));
-    }, []);
 
     const handleReset = async () => {
         setError('');
@@ -32,9 +31,11 @@ export default function ResetPassword({ onSignup, onNavigate }) {
         try {
             const response = await resetPassword(token, password);
             localStorage.setItem('token', response.access_token);
-            localStorage.setItem('user', JSON.stringify(response.user));
             setDone(true);
-            setTimeout(() => onSignup(response.user), 1500);
+            setTimeout(() => {
+                setUser(response.user);
+                navigate('/browse', { replace: true });
+            }, 1500);
         } catch (err) {
             setError(err.response?.data?.detail || 'Failed to reset password. The link may have expired.');
         } finally {
@@ -109,7 +110,7 @@ export default function ResetPassword({ onSignup, onNavigate }) {
                             </button>
 
                             <button
-                                onClick={() => onNavigate('signup')}
+                                onClick={() => navigate('/signup')}
                                 className="w-full text-center text-sm text-gray-500 hover:text-gray-700"
                             >
                                 Back to Login

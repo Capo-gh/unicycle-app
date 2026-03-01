@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, MapPin, DollarSign, Save, X, Image, Tag } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 import imageCompression from 'browser-image-compression';
-import { updateListing, markAsSold, markAsUnsold } from '../api/listings';
+import { getListing, updateListing, markAsSold, markAsUnsold } from '../api/listings';
 import { uploadImage } from '../api/upload';
 import { getSafeZones } from '../constants/safeZones';
 
-export default function EditListing({ listing, onBack, onSuccess }) {
+export default function EditListing() {
+    const navigate = useNavigate();
+    const { id } = useParams();
+    const { user } = useAuthStore();
+    const [listing, setListing] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
         category: '',
@@ -39,12 +45,16 @@ export default function EditListing({ listing, onBack, onSuccess }) {
 
     const conditions = ['New', 'Like New', 'Good', 'Fair'];
 
-    const userUniversity = (() => {
-        try {
-            return JSON.parse(localStorage.getItem('user') || '{}').university || '';
-        } catch { return ''; }
-    })();
-    const safeZones = getSafeZones(userUniversity);
+    const safeZones = getSafeZones(user?.university || '');
+
+    // Fetch listing data on mount
+    useEffect(() => {
+        if (id) {
+            getListing(parseInt(id))
+                .then(data => setListing(data))
+                .catch(() => navigate(-1));
+        }
+    }, [id]);
 
     // Pre-fill form with existing listing data
     useEffect(() => {
@@ -171,11 +181,7 @@ export default function EditListing({ listing, onBack, onSuccess }) {
 
             // Redirect after 1.5 seconds
             setTimeout(() => {
-                if (onSuccess) {
-                    onSuccess();
-                } else {
-                    onBack();
-                }
+                navigate(-1);
             }, 1500);
 
         } catch (err) {
@@ -212,16 +218,8 @@ export default function EditListing({ listing, onBack, onSuccess }) {
 
     if (!listing) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-                <div className="text-center">
-                    <p className="text-gray-600">No listing selected</p>
-                    <button
-                        onClick={onBack}
-                        className="mt-4 text-unicycle-blue hover:underline"
-                    >
-                        Go back
-                    </button>
-                </div>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-unicycle-green"></div>
             </div>
         );
     }
@@ -232,7 +230,7 @@ export default function EditListing({ listing, onBack, onSuccess }) {
             <div className="bg-white border-b border-gray-200 sticky top-14 lg:top-0 z-10">
                 <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
                     <button
-                        onClick={onBack}
+                        onClick={() => navigate(-1)}
                         className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                     >
                         <ArrowLeft className="w-6 h-6 text-gray-700" />

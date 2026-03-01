@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { ArrowLeft, MapPin, DollarSign, X, Image } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 import imageCompression from 'browser-image-compression';
 import { createListing } from '../api/listings';
 import { uploadImage } from '../api/upload';
 import { getSafeZones } from '../constants/safeZones';
 
-export default function SellItem({ onBack }) {
+export default function SellItem() {
+    const navigate = useNavigate();
+    const { user } = useAuthStore();
     const [formData, setFormData] = useState({
         title: '',
         category: '',
@@ -36,12 +40,7 @@ export default function SellItem({ onBack }) {
 
     const conditions = ['New', 'Like New', 'Good', 'Fair'];
 
-    const userUniversity = (() => {
-        try {
-            return JSON.parse(localStorage.getItem('user') || '{}').university || '';
-        } catch { return ''; }
-    })();
-    const safeZones = getSafeZones(userUniversity);
+    const safeZones = getSafeZones(user?.university || '');
 
     const isFree = formData.category === 'Free';
 
@@ -150,7 +149,7 @@ export default function SellItem({ onBack }) {
 
             await createListing(listingData);
             setSuccess(true);
-            setTimeout(() => onBack(), 2000);
+            setTimeout(() => navigate(-1), 2000);
         } catch (err) {
             console.error('Error creating listing:', err);
             if (err.response?.data?.detail) {
@@ -185,7 +184,7 @@ export default function SellItem({ onBack }) {
         <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
             <div className="bg-white border-b border-gray-200 sticky top-14 lg:top-0 z-10">
                 <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-                    <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                    <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                         <ArrowLeft className="w-6 h-6 text-gray-700" />
                     </button>
                     <h1 className="text-lg font-semibold text-unicycle-green">Sell an Item</h1>

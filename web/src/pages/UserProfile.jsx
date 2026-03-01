@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, ShieldCheck, Star, MapPin, Package, Flag, X, Pencil, MessageCircle } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 import { getUserProfile, reportUser } from '../api/users';
 import { getUserListings } from '../api/listings';
 import { getUserReviews, createReview, updateReview } from '../api/reviews';
 
-export default function UserProfile({ userId, onBack, onItemClick, currentUser, onContact }) {
+export default function UserProfile() {
+    const navigate = useNavigate();
+    const { id } = useParams();
+    const userId = parseInt(id);
+    const { user: currentUser } = useAuthStore();
     const [user, setUser] = useState(null);
     const [listings, setListings] = useState([]);
     const [reviews, setReviews] = useState(null);
@@ -184,7 +190,7 @@ export default function UserProfile({ userId, onBack, onItemClick, currentUser, 
             <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
                 <div className="text-center">
                     <p className="text-red-600 mb-4">{error || 'User not found'}</p>
-                    <button onClick={onBack} className="text-unicycle-blue hover:underline">
+                    <button onClick={() => navigate(-1)} className="text-unicycle-blue hover:underline">
                         Go back
                     </button>
                 </div>
@@ -198,7 +204,7 @@ export default function UserProfile({ userId, onBack, onItemClick, currentUser, 
             <div className="bg-white border-b border-gray-200 sticky top-14 lg:top-0 z-10">
                 <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
                     <button
-                        onClick={onBack}
+                        onClick={() => navigate(-1)}
                         className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                     >
                         <ArrowLeft className="w-6 h-6 text-gray-700" />
@@ -243,16 +249,11 @@ export default function UserProfile({ userId, onBack, onItemClick, currentUser, 
                     </p>
 
                     {/* Message User Button — only shown when they have at least one active listing */}
-                    {currentUser && currentUser.id !== userId && onContact && listings.some(l => !l.is_sold) && (
+                    {currentUser && currentUser.id !== userId && listings.some(l => !l.is_sold) && (
                         <button
                             onClick={() => {
                                 const activeListing = listings.find(l => !l.is_sold);
-                                onContact({
-                                    listingId: activeListing.id,
-                                    listingTitle: activeListing.title,
-                                    listingPrice: activeListing.price,
-                                    sellerId: userId
-                                });
+                                navigate('/messages', { state: { incomingRequest: { listingId: activeListing.id, listingTitle: activeListing.title, listingPrice: activeListing.price, sellerId: userId } } });
                             }}
                             className="mt-4 w-full py-2.5 bg-unicycle-green text-white rounded-lg hover:bg-unicycle-green/90 transition-colors font-medium flex items-center justify-center gap-2"
                         >
@@ -419,7 +420,7 @@ export default function UserProfile({ userId, onBack, onItemClick, currentUser, 
                                 {listings.map((item) => (
                                     <button
                                         key={item.id}
-                                        onClick={() => onItemClick(item)}
+                                        onClick={() => navigate(`/item/${item.id}`, { state: { item } })}
                                         className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow text-left"
                                     >
                                         <div className="aspect-square relative">

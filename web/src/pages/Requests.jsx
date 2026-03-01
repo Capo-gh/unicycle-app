@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, MessageCircle, Clock, TrendingUp, ArrowLeft, DollarSign, Send, Trash2, X, CornerDownRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 import { getAllRequests, getRequest, createRequest, createReply, deleteRequest, deleteReply } from '../api/requests';
 
-export default function Requests({ user, onNavigate }) {
+export default function Requests() {
+    const navigate = useNavigate();
+    const { user } = useAuthStore();
     const [selectedFilter, setSelectedFilter] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [showPostForm, setShowPostForm] = useState(false);
@@ -220,8 +224,8 @@ export default function Requests({ user, onNavigate }) {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            if (onNavigate && request.author_id !== user?.id) {
-                                                onNavigate('user-profile', request.author_id);
+                                            if (request.author_id !== user?.id) {
+                                                navigate(`/user/${request.author_id}`);
                                             }
                                         }}
                                         className="w-10 h-10 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 hover:opacity-80 transition-opacity"
@@ -283,7 +287,6 @@ export default function Requests({ user, onNavigate }) {
                         onDelete={handleDeleteRequest}
                         onDeleteReply={handleDeleteReply}
                         formatTimeAgo={formatTimeAgo}
-                        onNavigate={onNavigate}
                     />
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
@@ -301,7 +304,8 @@ export default function Requests({ user, onNavigate }) {
 // ═══════════════════════════════════════════════════════════════════
 // REQUEST DETAIL COMPONENT
 // ═══════════════════════════════════════════════════════════════════
-function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteReply, formatTimeAgo, onNavigate }) {
+function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteReply, formatTimeAgo }) {
+    const navigate = useNavigate();
     const [replyText, setReplyText] = useState('');
     const [replyingTo, setReplyingTo] = useState(null); // { id, authorName } for nested reply
     const [sending, setSending] = useState(false);
@@ -336,7 +340,7 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteRe
                 <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 group mb-2">
                     <div className="flex items-start gap-3">
                         <button
-                            onClick={() => onNavigate && reply.author_id !== user?.id && onNavigate('user-profile', reply.author_id)}
+                            onClick={() => reply.author_id !== user?.id && navigate(`/user/${reply.author_id}`)}
                             className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${reply.author_id === request.author_id
                                 ? 'bg-gradient-to-br from-unicycle-blue to-unicycle-green'
                                 : 'bg-gray-400'
@@ -426,7 +430,7 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteRe
                 <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
                     <div className="flex items-start gap-3 mb-3">
                         <button
-                            onClick={() => onNavigate && request.author_id !== user?.id && onNavigate('user-profile', request.author_id)}
+                            onClick={() => request.author_id !== user?.id && navigate(`/user/${request.author_id}`)}
                             className={`w-12 h-12 bg-gradient-to-br from-unicycle-blue to-unicycle-green rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0 ${request.author_id !== user?.id ? 'hover:opacity-80 transition-opacity cursor-pointer' : 'cursor-default'}`}
                         >
                             {request.author?.name?.charAt(0) || '?'}
