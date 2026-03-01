@@ -489,25 +489,23 @@ export default function Settings() {
 
                     {/* Avatar */}
                     <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-100">
-                        <div className="relative flex-shrink-0">
+                        <label className="relative flex-shrink-0 cursor-pointer">
                             <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-unicycle-blue to-unicycle-green flex items-center justify-center text-white font-bold text-2xl">
                                 {avatarUrl
                                     ? <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                                     : (user?.name?.charAt(0) || '?')
                                 }
                             </div>
-                            {uploadingAvatar && (
-                                <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                </div>
-                            )}
-                        </div>
+                            <div className="absolute bottom-0 right-0 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow border border-gray-200">
+                                {uploadingAvatar
+                                    ? <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-unicycle-green" />
+                                    : <Camera className="w-3 h-3 text-gray-600" />
+                                }
+                            </div>
+                            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={uploadingAvatar} onClick={(e) => { e.currentTarget.value = null; }} />
+                        </label>
                         <div className="flex flex-col gap-1">
-                            <label className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors">
-                                <Camera className="w-4 h-4" />
-                                Change photo
-                                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={uploadingAvatar} />
-                            </label>
+                            <p className="text-sm font-medium text-gray-700">Tap your photo to change it</p>
                             {avatarError && <p className="text-xs text-red-500">{avatarError}</p>}
                         </div>
                     </div>

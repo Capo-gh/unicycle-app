@@ -119,22 +119,20 @@ export default function Profile() {
 
                     {/* Profile Info */}
                     <div className="flex items-center gap-4 lg:gap-6">
-                        <label className="relative w-20 h-20 lg:w-24 lg:h-24 rounded-full flex-shrink-0 cursor-pointer group">
+                        <label className="relative w-20 h-20 lg:w-24 lg:h-24 rounded-full flex-shrink-0 cursor-pointer">
                             <div className="w-full h-full rounded-full overflow-hidden bg-white flex items-center justify-center text-unicycle-blue font-bold text-3xl lg:text-4xl">
                                 {signupUser?.avatar_url
                                     ? <img src={signupUser.avatar_url} alt={user.name} className="w-full h-full object-cover" />
                                     : user.name.charAt(0)
                                 }
                             </div>
-                            {uploadingAvatar
-                                ? <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                                  </div>
-                                : <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Camera className="w-6 h-6 text-white" />
-                                  </div>
-                            }
-                            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={uploadingAvatar} />
+                            <div className="absolute bottom-0 right-0 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow border border-gray-200">
+                                {uploadingAvatar
+                                    ? <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-unicycle-green" />
+                                    : <Camera className="w-3.5 h-3.5 text-gray-600" />
+                                }
+                            </div>
+                            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={uploadingAvatar} onClick={(e) => { e.currentTarget.value = null; }} />
                         </label>
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
