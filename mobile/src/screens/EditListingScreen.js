@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { COLORS } from '../../../shared/constants/colors';
 import { getSafeZones } from '../../../shared/constants/safeZones';
 import { updateListing, markAsSold, markAsUnsold } from '../api/listings';
@@ -78,7 +79,15 @@ export default function EditListingScreen({ route, navigation }) {
         if (!result.canceled && result.assets) {
             setUploading(true);
             try {
-                const uris = result.assets.map(a => a.uri);
+                const uris = await Promise.all(
+                    result.assets.map(async a => {
+                        const ref = await ImageManipulator.manipulate(a.uri)
+                            .resize({ width: 1920 })
+                            .renderAsync();
+                        const saved = await ref.saveAsync({ compress: 0.7, format: SaveFormat.JPEG });
+                        return saved.uri;
+                    })
+                );
                 const uploaded = await uploadImages(uris);
                 const urls = uploaded.images ? uploaded.images.map(i => i.url) : [];
                 setImages(prev => [...prev, ...urls].slice(0, 5));

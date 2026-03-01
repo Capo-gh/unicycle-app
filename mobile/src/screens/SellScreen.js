@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { COLORS } from '../../../shared/constants/colors';
 import { getSafeZones } from '../../../shared/constants/safeZones';
 import { createListing } from '../api/listings';
@@ -76,8 +77,16 @@ export default function SellScreen({ navigation }) {
         });
 
         if (!result.canceled && result.assets) {
-            const newImages = result.assets.map(asset => asset.uri);
-            setImages([...images, ...newImages].slice(0, 5));
+            const compressed = await Promise.all(
+                result.assets.map(async asset => {
+                    const ref = await ImageManipulator.manipulate(asset.uri)
+                        .resize({ width: 1920 })
+                        .renderAsync();
+                    const saved = await ref.saveAsync({ compress: 0.7, format: SaveFormat.JPEG });
+                    return saved.uri;
+                })
+            );
+            setImages([...images, ...compressed].slice(0, 5));
         }
     };
 
