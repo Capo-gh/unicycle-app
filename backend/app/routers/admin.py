@@ -34,6 +34,8 @@ class EmailUserRequest(BaseModel):
 class SetSponsorRequest(BaseModel):
     is_sponsor: bool
     sponsored_category: Optional[str] = None
+    # JSON array string of university names, null = visible in all schools
+    sponsored_universities: Optional[str] = None
 
 
 class UpdateSettingRequest(BaseModel):
@@ -182,6 +184,9 @@ def get_all_users(
             "is_admin": u.is_admin,
             "is_super_admin": u.is_super_admin,
             "is_suspended": u.is_suspended,
+            "is_sponsor": u.is_sponsor,
+            "sponsored_category": u.sponsored_category,
+            "sponsored_universities": u.sponsored_universities,
             "avg_rating": u.avg_rating,
             "review_count": u.review_count,
             "listing_count": listing_count,
@@ -252,6 +257,7 @@ def set_sponsor(
 
     user.is_sponsor = body.is_sponsor
     user.sponsored_category = body.sponsored_category if body.is_sponsor else None
+    user.sponsored_universities = body.sponsored_universities if body.is_sponsor else None
     db.commit()
     log_action(db, current_user.id, "set_sponsor", "user", user_id,
                f"{'granted' if body.is_sponsor else 'revoked'} sponsor for {user.name}" +

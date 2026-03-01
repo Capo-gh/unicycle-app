@@ -22,6 +22,8 @@ class User(Base):
     is_suspended = Column(Boolean, default=False)
     is_sponsor = Column(Boolean, default=False)
     sponsored_category = Column(String, nullable=True)
+    # JSON array of university names, null = visible in all schools
+    sponsored_universities = Column(String, nullable=True)
 
     # Review stats (will be updated when reviews are added)
     avg_rating = Column(Float, default=0.0)

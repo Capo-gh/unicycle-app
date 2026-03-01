@@ -17,6 +17,18 @@ import {
 import { sendBroadcast, getAdminNotifications } from '../api/notifications';
 import { createAnnouncement, getAdminAnnouncements, toggleAnnouncement, deleteAnnouncement } from '../api/announcements';
 
+const UNIVERSITIES = [
+    { fullName: 'McGill University', shortName: 'McGill' },
+    { fullName: 'Concordia University', shortName: 'Concordia' },
+    { fullName: 'École de technologie supérieure (ÉTS)', shortName: 'ÉTS' },
+    { fullName: 'Polytechnique Montréal', shortName: 'Poly' },
+    { fullName: 'Université de Montréal (UdeM)', shortName: 'UdeM' },
+    { fullName: 'Université du Québec à Montréal (UQAM)', shortName: 'UQAM' },
+    { fullName: 'Université Laval', shortName: 'Laval' },
+    { fullName: 'Université de Sherbrooke', shortName: 'Sherbrooke' },
+    { fullName: 'HEC Montréal', shortName: 'HEC' },
+];
+
 const TABS = [
     { id: 'stats', label: 'Stats', Icon: BarChart3 },
     { id: 'users', label: 'Users', Icon: Users },
@@ -64,8 +76,10 @@ export default function Admin() {
     const [sendingEmail, setSendingEmail] = useState(false);
 
     // Sponsor modal
-    const [sponsorModal, setSponsorModal] = useState(null); // { userId, userName, isSponsor, currentCategory }
+    const [sponsorModal, setSponsorModal] = useState(null); // { userId, userName, isSponsor, currentCategory, currentUniversities }
     const [sponsorCategory, setSponsorCategory] = useState('');
+    const [sponsorVisibility, setSponsorVisibility] = useState('all'); // 'all' | 'specific'
+    const [sponsorSchools, setSponsorSchools] = useState(new Set());
     const [settingSponsor, setSettingSponsor] = useState(false);
 
     // Notifications
@@ -187,9 +201,12 @@ export default function Admin() {
         e.preventDefault();
         setSettingSponsor(true);
         try {
-            await setSponsor(sponsorModal.userId, true, sponsorCategory);
+            const univs = (sponsorVisibility === 'specific' && sponsorSchools.size > 0)
+                ? JSON.stringify([...sponsorSchools])
+                : null;
+            await setSponsor(sponsorModal.userId, true, sponsorCategory, univs);
             setUsers(prev => prev.map(u => u.id === sponsorModal.userId
-                ? { ...u, is_sponsor: true, sponsored_category: sponsorCategory } : u));
+                ? { ...u, is_sponsor: true, sponsored_category: sponsorCategory, sponsored_universities: univs } : u));
             setSponsorModal(null);
         } catch { alert('Failed to set sponsor'); }
         finally { setSettingSponsor(false); }
@@ -602,7 +619,13 @@ export default function Admin() {
                                                         </button>
                                                         {isSuperAdmin && (
                                                             <button
-                                                                onClick={() => { setSponsorModal({ userId: u.id, userName: u.name, isSponsor: u.is_sponsor, currentCategory: u.sponsored_category }); setSponsorCategory(u.sponsored_category || ''); }}
+                                                                onClick={() => {
+                                                                    const unis = u.sponsored_universities ? JSON.parse(u.sponsored_universities) : [];
+                                                                    setSponsorModal({ userId: u.id, userName: u.name, isSponsor: u.is_sponsor, currentCategory: u.sponsored_category, currentUniversities: u.sponsored_universities });
+                                                                    setSponsorCategory(u.sponsored_category || '');
+                                                                    setSponsorVisibility(unis.length > 0 ? 'specific' : 'all');
+                                                                    setSponsorSchools(new Set(unis));
+                                                                }}
                                                                 title={u.is_sponsor ? `Sponsor: ${u.sponsored_category}` : 'Set as category sponsor'}
                                                                 className={`p-1.5 rounded-lg transition-colors ${u.is_sponsor ? 'text-amber-500 hover:bg-amber-50' : 'text-gray-400 hover:bg-gray-100'}`}>
                                                                 <Building2 className="w-4 h-4" />
@@ -1145,7 +1168,10 @@ export default function Admin() {
                         </div>
                         {sponsorModal.isSponsor && (
                             <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mb-3">
-                                Currently sponsoring: <strong>{sponsorModal.currentCategory}</strong>
+                                Sponsoring: <strong>{sponsorModal.currentCategory}</strong>
+                                {sponsorModal.currentUniversities
+                                    ? <> · <span className="font-normal">{JSON.parse(sponsorModal.currentUniversities).map(u => UNIVERSITIES.find(x => x.fullName === u)?.shortName || u).join(', ')}</span></>
+                                    : <> · <span className="font-normal">All Montreal</span></>}
                             </p>
                         )}
                         <form onSubmit={handleSetSponsor} className="space-y-3">
@@ -1160,6 +1186,34 @@ export default function Admin() {
                                         <option key={cat} value={cat}>{cat}</option>
                                     ))}
                                 </select>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700 mb-2 block">Visibility</label>
+                                <div className="flex gap-4 mb-2">
+                                    <label className="flex items-center gap-1.5 cursor-pointer text-sm text-gray-700">
+                                        <input type="radio" name="sponsorVis" value="all" checked={sponsorVisibility === 'all'} onChange={() => setSponsorVisibility('all')} />
+                                        All Montreal
+                                    </label>
+                                    <label className="flex items-center gap-1.5 cursor-pointer text-sm text-gray-700">
+                                        <input type="radio" name="sponsorVis" value="specific" checked={sponsorVisibility === 'specific'} onChange={() => setSponsorVisibility('specific')} />
+                                        Specific schools
+                                    </label>
+                                </div>
+                                {sponsorVisibility === 'specific' && (
+                                    <div className="border border-gray-200 rounded-lg p-3 grid grid-cols-2 gap-y-1.5 gap-x-3 max-h-44 overflow-y-auto">
+                                        {UNIVERSITIES.map(u => (
+                                            <label key={u.fullName} className="flex items-center gap-1.5 cursor-pointer text-sm text-gray-700">
+                                                <input type="checkbox" checked={sponsorSchools.has(u.fullName)}
+                                                    onChange={e => setSponsorSchools(prev => {
+                                                        const s = new Set(prev);
+                                                        e.target.checked ? s.add(u.fullName) : s.delete(u.fullName);
+                                                        return s;
+                                                    })} />
+                                                {u.shortName}
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div className="flex gap-2">
                                 {sponsorModal.isSponsor && (

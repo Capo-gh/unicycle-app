@@ -86,10 +86,20 @@ def get_listings(
             (Listing.description.ilike(search_term))
         )
     
-    # University filter — sponsored listings (is_sponsor=True) are always visible regardless of campus
+    # University filter — sponsored listings respect their targeted-university setting:
+    #   sponsored_universities null / '' = visible at all schools (All Montreal tier)
+    #   sponsored_universities JSON array = only visible at the listed schools
     if university:
+        sponsored_visible = and_(
+            User.is_sponsor == True,
+            or_(
+                User.sponsored_universities == None,
+                User.sponsored_universities == '',
+                User.sponsored_universities.like(f'%"{university}"%'),
+            )
+        )
         query = query.join(User, Listing.seller_id == User.id).filter(
-            or_(User.university == university, User.is_sponsor == True)
+            or_(User.university == university, sponsored_visible)
         )
     
     # Price filters
