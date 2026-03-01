@@ -33,6 +33,9 @@ class Listing(Base):
     last_bumped_at = Column(DateTime(timezone=True), nullable=True)
     expiry_email_sent = Column(Boolean, default=False)
 
+    # Post-sale review prompt
+    review_prompt_sent = Column(Boolean, default=False)
+
     # Foreign keys
     seller_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     

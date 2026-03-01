@@ -39,8 +39,13 @@ export const deleteListing = async (id) => {
     return response.data;
 };
 
-export const markAsSold = async (id) => {
-    const response = await apiClient.post(`/listings/${id}/sold`);
+export const markAsSold = async (id, buyerId = null) => {
+    const response = await apiClient.post(`/listings/${id}/sold`, buyerId ? { buyer_id: buyerId } : {});
+    return response.data;
+};
+
+export const getListingBuyers = async (id) => {
+    const response = await apiClient.get(`/listings/${id}/buyers`);
     return response.data;
 };
 

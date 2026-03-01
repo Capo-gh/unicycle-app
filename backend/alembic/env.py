@@ -27,6 +27,7 @@ import app.models.announcement   # noqa: F401
 import app.models.report         # noqa: F401
 import app.models.admin_log      # noqa: F401
 import app.models.system_setting # noqa: F401
+import app.models.saved_search   # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

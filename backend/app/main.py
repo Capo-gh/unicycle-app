@@ -6,7 +6,7 @@ from slowapi.errors import RateLimitExceeded
 from .utils.limiter import limiter
 from sqlalchemy import text, inspect
 from .database import engine, Base, SessionLocal
-from .routers import auth, listings, requests, messages, upload, reviews, users, transactions, admin, notifications, announcements, payments, saved, ws
+from .routers import auth, listings, requests, messages, upload, reviews, users, transactions, admin, notifications, announcements, payments, saved, ws, saved_searches
 from .models.user import User
 from .models.listing import Listing
 from .models.notification import Notification, NotificationRead
@@ -15,6 +15,7 @@ from .models.report import Report
 from .models.admin_log import AdminLog
 from .models.system_setting import SystemSetting
 from .models.saved_listing import SavedListing
+from .models.saved_search import SavedSearch
 
 # Create database tables (new tables are auto-created here)
 Base.metadata.create_all(bind=engine)
@@ -46,6 +47,9 @@ with engine.connect() as conn:
         conn.commit()
     if "expiry_email_sent" not in listing_columns:
         conn.execute(text("ALTER TABLE listings ADD COLUMN expiry_email_sent BOOLEAN DEFAULT FALSE"))
+        conn.commit()
+    if "review_prompt_sent" not in listing_columns:
+        conn.execute(text("ALTER TABLE listings ADD COLUMN review_prompt_sent BOOLEAN DEFAULT FALSE"))
         conn.commit()
 
     # Transaction payment columns
@@ -186,6 +190,77 @@ def run_expiry_job():
         db.close()
 
 
+# APScheduler: every-4-hour job to alert users about new listings matching saved searches
+def run_saved_search_job():
+    from datetime import datetime, timezone
+    from sqlalchemy import and_, or_, ilike
+    from .utils.email import send_saved_search_alert_email
+    from .routers.notifications import send_user_notification
+    from .config import settings
+
+    now = datetime.now(timezone.utc)
+    frontend_url = settings.frontend_url if hasattr(settings, "frontend_url") else os.getenv("FRONTEND_URL", "https://unicycle.app")
+
+    db = SessionLocal()
+    try:
+        searches = db.query(SavedSearch).all()
+        for search in searches:
+            # Only look at listings created since last notification (or since search was created)
+            since = search.last_notified_at or search.created_at
+
+            query = db.query(Listing).filter(
+                Listing.is_active == True,
+                Listing.is_sold == False,
+                Listing.created_at > since,
+            )
+            if search.query:
+                term = f"%{search.query}%"
+                query = query.filter(
+                    or_(Listing.title.ilike(term), Listing.description.ilike(term))
+                )
+            if search.category:
+                query = query.filter(Listing.category == search.category)
+            if search.min_price is not None:
+                query = query.filter(Listing.price >= search.min_price)
+            if search.max_price is not None:
+                query = query.filter(Listing.price <= search.max_price)
+            if search.condition:
+                query = query.filter(Listing.condition == search.condition)
+            if search.university:
+                query = query.join(User, Listing.seller_id == User.id).filter(User.university == search.university)
+
+            matches = query.count()
+            if matches > 0 and search.user and search.user.email:
+                parts = []
+                if search.query:
+                    parts.append(f'"{search.query}"')
+                if search.category:
+                    parts.append(search.category)
+                search_desc = ", ".join(parts) if parts else "your saved search"
+
+                send_user_notification(
+                    db, search.user_id,
+                    title="New listings match your search",
+                    message=f"{matches} new {'item' if matches == 1 else 'items'} matching {search_desc} just listed!"
+                )
+                send_saved_search_alert_email(
+                    email=search.user.email,
+                    name=search.user.name,
+                    search_desc=search_desc,
+                    match_count=matches,
+                    frontend_url=frontend_url,
+                )
+                search.last_notified_at = now
+
+        db.commit()
+        print(f"[saved-search] Job ran, checked {len(searches)} saved search(es).")
+    except Exception as e:
+        db.rollback()
+        print(f"[saved-search] Job error: {e}")
+    finally:
+        db.close()
+
+
 app = FastAPI(title="UniCycle API", version="1.0.0")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -224,6 +299,7 @@ app.include_router(announcements.router)
 app.include_router(payments.router)
 app.include_router(saved.router)
 app.include_router(ws.router)
+app.include_router(saved_searches.router)
 
 
 @app.on_event("startup")
@@ -234,8 +310,9 @@ def start_scheduler():
         scheduler = BackgroundScheduler()
         # Run daily at 06:00 UTC
         scheduler.add_job(run_expiry_job, "cron", hour=6, minute=0)
+        scheduler.add_job(run_saved_search_job, "interval", hours=4)
         scheduler.start()
-        print("[scheduler] Expiry job scheduled (daily at 06:00 UTC).")
+        print("[scheduler] Expiry job scheduled (daily at 06:00 UTC). Saved search job scheduled (every 4 hours).")
     except ImportError:
         print("[scheduler] apscheduler not installed — expiry job skipped.")
     except Exception as e:

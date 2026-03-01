@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, Package, X, Heart } from 'lucide-react';
+import { Search, SlidersHorizontal, Package, X, Heart, Bell } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useMarketplaceStore } from '../store/marketplaceStore';
 import { getListings } from '../api/listings';
 import { getSavedIds, toggleSave } from '../api/saved';
+import { saveSearch } from '../api/savedSearches';
 
 export default function Listings() {
     const { t } = useTranslation();
@@ -32,6 +33,24 @@ export default function Listings() {
     });
 
     const hasActiveFilters = filters.minPrice || filters.maxPrice || filters.condition !== 'All' || filters.sort !== 'newest';
+    const hasSearchToSave = searchQuery || selectedCategory !== 'All' || hasActiveFilters;
+
+    const [searchSaved, setSearchSaved] = useState(false);
+
+    const handleSaveSearch = async () => {
+        try {
+            await saveSearch({
+                query: searchQuery || null,
+                category: selectedCategory !== 'All' ? selectedCategory : null,
+                min_price: filters.minPrice ? parseFloat(filters.minPrice) : null,
+                max_price: filters.maxPrice ? parseFloat(filters.maxPrice) : null,
+                condition: filters.condition !== 'All' ? filters.condition : null,
+                university: currentMarketplace !== 'all' ? currentMarketplace : null,
+            });
+            setSearchSaved(true);
+            setTimeout(() => setSearchSaved(false), 3000);
+        } catch { /* ignore */ }
+    };
 
     // Category definitions: value (sent to API, always English) + translation key
     const categories = [
@@ -181,6 +200,15 @@ export default function Listings() {
                                     className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
                                 />
                             </div>
+                            {hasSearchToSave && (
+                                <button
+                                    onClick={handleSaveSearch}
+                                    title="Save this search"
+                                    className="p-2.5 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition-colors"
+                                >
+                                    <Bell className="w-5 h-5" />
+                                </button>
+                            )}
                             <button
                                 onClick={() => setShowFilters(!showFilters)}
                                 className={`p-2.5 rounded-lg border transition-colors relative ${showFilters || hasActiveFilters
@@ -429,6 +457,14 @@ export default function Listings() {
                     </div>
                 )}
             </div>
+
+            {/* Save Search Toast */}
+            {searchSaved && (
+                <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 text-sm font-medium">
+                    <Bell className="w-4 h-4 text-unicycle-green" />
+                    Search saved! We'll notify you when new listings match.
+                </div>
+            )}
         </div>
     );
 }

@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/authStore';
 import SecurePayModal from './SecurePayModal';
 import { getUserReviews } from '../api/reviews';
-import { getListing, markAsSold, markAsUnsold } from '../api/listings';
+import { getListing, markAsSold, markAsUnsold, getListingBuyers } from '../api/listings';
 import { createTransaction, getMyTransactions, deleteTransaction } from '../api/transactions';
 import { reportUser } from '../api/users';
 import { getListingSecurePay, confirmHandoff, confirmReceipt, disputeTransaction, createBoostSession } from '../api/payments';
@@ -58,6 +58,11 @@ export default function ItemDetail() {
 
     // Share state
     const [linkCopied, setLinkCopied] = useState(false);
+
+    // Buyer picker modal (shown when marking as sold)
+    const [showBuyerModal, setShowBuyerModal] = useState(false);
+    const [buyers, setBuyers] = useState([]);
+    const [selectedBuyerId, setSelectedBuyerId] = useState(null);
 
     // Save/heart state
     const [isSaved, setIsSaved] = useState(false);
@@ -195,18 +200,52 @@ export default function ItemDetail() {
     };
 
     const handleToggleSold = async () => {
-        setUpdating(true);
-        try {
-            if (isSold) {
+        if (isSold) {
+            // Relisting — no buyer picker needed
+            setUpdating(true);
+            try {
                 await markAsUnsold(item.id);
                 setIsSold(false);
+            } catch (err) {
+                console.error('Error relisting:', err);
+                alert('Failed to relist');
+            } finally {
+                setUpdating(false);
+            }
+            return;
+        }
+        // Marking as sold — fetch buyers and show picker
+        try {
+            const buyerList = await getListingBuyers(item.id);
+            if (buyerList.length > 0) {
+                setBuyers(buyerList);
+                setSelectedBuyerId(null);
+                setShowBuyerModal(true);
             } else {
+                // No conversations — mark sold directly
+                setUpdating(true);
                 await markAsSold(item.id);
                 setIsSold(true);
+                setUpdating(false);
             }
         } catch (err) {
-            console.error('Error updating sold status:', err);
-            alert('Failed to update listing status');
+            console.error('Error fetching buyers:', err);
+            // Fallback: mark sold without buyer
+            setUpdating(true);
+            try { await markAsSold(item.id); setIsSold(true); } catch { alert('Failed to mark as sold'); }
+            setUpdating(false);
+        }
+    };
+
+    const handleConfirmSold = async (buyerId) => {
+        setShowBuyerModal(false);
+        setUpdating(true);
+        try {
+            await markAsSold(item.id, buyerId);
+            setIsSold(true);
+        } catch (err) {
+            console.error('Error marking as sold:', err);
+            alert('Failed to mark as sold');
         } finally {
             setUpdating(false);
         }
@@ -930,6 +969,50 @@ export default function ItemDetail() {
                     onClose={() => setShowSecurePayModal(false)}
                     onProceed={securePayFromMessage ? handleSecurePayProceed : null}
                 />
+            )}
+
+            {/* Buyer Picker Modal */}
+            {showBuyerModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-sm">
+                        <div className="p-5 border-b border-gray-100">
+                            <h2 className="text-lg font-semibold text-gray-900">Who did you sell to?</h2>
+                            <p className="text-sm text-gray-500 mt-1">We'll send them a review prompt.</p>
+                        </div>
+                        <div className="p-3 max-h-64 overflow-y-auto">
+                            {buyers.map((buyer) => (
+                                <button
+                                    key={buyer.id}
+                                    onClick={() => setSelectedBuyerId(buyer.id)}
+                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${selectedBuyerId === buyer.id ? 'bg-unicycle-green/10 border border-unicycle-green' : 'hover:bg-gray-50'}`}
+                                >
+                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-unicycle-blue to-unicycle-green flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                                        {buyer.name?.charAt(0) || '?'}
+                                    </div>
+                                    <span className="font-medium text-gray-900">{buyer.name}</span>
+                                    {selectedBuyerId === buyer.id && (
+                                        <CheckCircle className="w-5 h-5 text-unicycle-green ml-auto" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="p-4 border-t border-gray-100 flex flex-col gap-2">
+                            <button
+                                onClick={() => handleConfirmSold(selectedBuyerId)}
+                                disabled={!selectedBuyerId}
+                                className="w-full py-2.5 bg-unicycle-green text-white rounded-lg font-semibold hover:bg-unicycle-green/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Confirm Sale
+                            </button>
+                            <button
+                                onClick={() => handleConfirmSold(null)}
+                                className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                            >
+                                Skip — just mark as sold
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

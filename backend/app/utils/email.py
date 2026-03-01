@@ -510,6 +510,126 @@ def send_listing_expiry_email(
         print(f"[email] Failed to send expiry warning: {e}")
 
 
+def send_review_prompt_email(
+    buyer_email: str,
+    buyer_name: str,
+    seller_name: str,
+    listing_title: str,
+    seller_id: int,
+):
+    """Prompt the buyer to leave a review after a sale."""
+    html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: #16a34a; color: white; padding: 24px 30px; border-radius: 8px 8px 0 0; }}
+                .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #16a34a; color: white; padding: 12px 28px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }}
+                .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2 style="margin:0;">How was your purchase?</h2>
+                </div>
+                <div class="content">
+                    <p>Hi {buyer_name},</p>
+                    <p>You recently purchased <strong>{listing_title}</strong> from <strong>{seller_name}</strong>.</p>
+                    <p>Help the community by leaving a quick review. It only takes a moment!</p>
+                    <center>
+                        <a href="{FRONTEND_URL}/user/{seller_id}" class="button">Leave a Review</a>
+                    </center>
+                    <p style="font-size:13px; color:#666;">Reviews help other students know who to trust.</p>
+                </div>
+                <div class="footer">
+                    <p>&copy; 2025 UniCycle &mdash; Student Marketplace</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    """
+
+    if not SENDGRID_API_KEY:
+        print(f"[email] No SendGrid key - skipping review prompt to {buyer_email}")
+        return None
+
+    try:
+        message = Mail(
+            from_email=SENDGRID_FROM_EMAIL,
+            to_emails=buyer_email,
+            subject=f"How was buying from {seller_name} on UniCycle?",
+            html_content=html_content,
+        )
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        sg.send(message)
+    except Exception as e:
+        print(f"[email] Failed to send review prompt: {e}")
+
+
+def send_saved_search_alert_email(
+    email: str,
+    name: str,
+    search_desc: str,
+    match_count: int,
+    frontend_url: str,
+):
+    """Notify a user that new listings match one of their saved searches."""
+    item_word = "item" if match_count == 1 else "items"
+    html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: #2563eb; color: white; padding: 24px 30px; border-radius: 8px 8px 0 0; }}
+                .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #16a34a; color: white; padding: 12px 28px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }}
+                .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2 style="margin:0;">New listings match your search</h2>
+                </div>
+                <div class="content">
+                    <p>Hi {name},</p>
+                    <p><strong>{match_count} new {item_word}</strong> matching <em>{search_desc}</em> were just listed on UniCycle.</p>
+                    <center>
+                        <a href="{frontend_url}" class="button">View Listings</a>
+                    </center>
+                    <p style="font-size:13px; color:#666;">Act fast &mdash; popular items go quickly!</p>
+                </div>
+                <div class="footer">
+                    <p>&copy; 2025 UniCycle &mdash; Student Marketplace</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    """
+
+    if not SENDGRID_API_KEY:
+        print(f"[email] No SendGrid key - skipping saved search alert to {email}")
+        return None
+
+    try:
+        message = Mail(
+            from_email=SENDGRID_FROM_EMAIL,
+            to_emails=email,
+            subject=f"{match_count} new {item_word} match your saved search on UniCycle",
+            html_content=html_content,
+        )
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        sg.send(message)
+    except Exception as e:
+        print(f"[email] Failed to send saved search alert: {e}")
+
+
 def is_token_expired(token_created_at: datetime) -> bool:
     """Check if verification token is expired (24 hours)"""
     if not token_created_at:

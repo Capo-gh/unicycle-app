@@ -1,15 +1,24 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import asc, desc, case, and_, or_
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone
+from pydantic import BaseModel
 from ..database import get_db
 from ..models.listing import Listing
 from ..models.user import User
 from ..models.transaction import Transaction
 from ..models.system_setting import SystemSetting
+from ..models.message import Conversation
 from ..schemas.listing import ListingCreate, ListingUpdate, ListingResponse
 from ..utils.dependencies import get_current_user_optional, get_current_user_required
+from ..utils.email import send_review_prompt_email
+from ..routers.notifications import send_user_notification
+
+
+class MarkSoldRequest(BaseModel):
+    buyer_id: Optional[int] = None
+
 
 router = APIRouter(prefix="/listings", tags=["Listings"])
 
@@ -246,33 +255,80 @@ def delete_listing(
     return None
 
 
-@router.post("/{listing_id}/sold", response_model=ListingResponse)
-def mark_as_sold(
+@router.get("/{listing_id}/buyers")
+def get_listing_buyers(
     listing_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_required)
 ):
-    """Mark a listing as sold (only owner can mark)"""
+    """Get list of users who have messaged about a listing (seller only)."""
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found")
+    if listing.seller_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    conversations = db.query(Conversation).options(
+        joinedload(Conversation.buyer)
+    ).filter(
+        Conversation.listing_id == listing_id,
+        Conversation.seller_id == current_user.id
+    ).all()
+
+    seen = set()
+    buyers = []
+    for conv in conversations:
+        if conv.buyer and conv.buyer.id not in seen:
+            seen.add(conv.buyer.id)
+            buyers.append({"id": conv.buyer.id, "name": conv.buyer.name})
+    return buyers
+
+
+@router.post("/{listing_id}/sold", response_model=ListingResponse)
+def mark_as_sold(
+    listing_id: int,
+    body: MarkSoldRequest = Body(default_factory=MarkSoldRequest),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Mark a listing as sold (only owner can mark). Optionally specify buyer_id to send a review prompt."""
     listing = db.query(Listing).options(
         joinedload(Listing.seller)
     ).filter(Listing.id == listing_id).first()
-    
+
     if not listing:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Listing not found"
         )
-    
+
     if listing.seller_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to update this listing"
         )
-    
+
     listing.is_sold = True
+
+    if body.buyer_id and not listing.review_prompt_sent:
+        buyer = db.query(User).filter(User.id == body.buyer_id).first()
+        if buyer:
+            send_user_notification(
+                db, buyer.id,
+                title="How was your purchase?",
+                message=f"You bought \"{listing.title}\" from {listing.seller.name}. Tap to leave a review!"
+            )
+            send_review_prompt_email(
+                buyer_email=buyer.email,
+                buyer_name=buyer.name,
+                seller_name=listing.seller.name,
+                listing_title=listing.title,
+                seller_id=listing.seller_id,
+            )
+            listing.review_prompt_sent = True
+
     db.commit()
     db.refresh(listing)
-    
     return listing
 
 
