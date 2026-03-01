@@ -7,6 +7,7 @@ import { useAuthStore } from '../store/authStore';
 import SecurePayModal from './SecurePayModal';
 import { getUserReviews } from '../api/reviews';
 import { getListing, markAsSold, markAsUnsold, getListingBuyers } from '../api/listings';
+import { parseImages } from '../utils/images';
 import { createTransaction, getMyTransactions, deleteTransaction } from '../api/transactions';
 import { reportUser } from '../api/users';
 import { getListingSecurePay, confirmHandoff, confirmReceipt, disputeTransaction, createBoostSession } from '../api/payments';
@@ -387,10 +388,9 @@ export default function ItemDetail() {
         }
     };
 
-    // Get images from comma-separated list
     const getImages = () => {
-        if (!item.images) return ['https://via.placeholder.com/400x400?text=No+Image'];
-        return item.images.split(',').filter(img => img.trim());
+        const imgs = parseImages(item.images);
+        return imgs.length ? imgs : ['https://via.placeholder.com/400x400?text=No+Image'];
     };
 
     const images = getImages();

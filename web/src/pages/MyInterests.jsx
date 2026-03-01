@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowLeftRight, MessageCircle, Clock, CheckCircle, X } from 'lucide-react';
 import { getMyTransactions } from '../api/transactions';
+import { firstImage } from '../utils/images';
 
 export default function MyInterests({ onNavigate, onContactSeller }) {
     const [interests, setInterests] = useState([]);
@@ -100,7 +101,7 @@ export default function MyInterests({ onNavigate, onContactSeller }) {
                                 {/* Item Info */}
                                 <div className="flex gap-3 mb-3">
                                     <img
-                                        src={transaction.listing?.images ? transaction.listing.images.split(',')[0] : 'https://via.placeholder.com/80'}
+                                        src={firstImage(transaction.listing?.images) || 'https://via.placeholder.com/80'}
                                         alt={transaction.listing?.title || 'Item'}
                                         className="w-20 h-20 object-cover rounded-lg flex-shrink-0 cursor-pointer hover:opacity-75 transition-opacity"
                                         onClick={() => onNavigate('detail', transaction.listing)}

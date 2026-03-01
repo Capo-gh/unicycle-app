@@ -28,6 +28,7 @@ import { getUserReviews } from '../api/reviews';
 import { reportUser } from '../api/users';
 import SecurePayModal from '../components/SecurePayModal';
 import { getListingSecurePay, confirmHandoff, confirmReceipt, disputeTransaction, createBoostSession, activateBoost } from '../api/payments';
+import { parseImages } from '../utils/images';
 
 const { width } = Dimensions.get('window');
 
@@ -68,11 +69,9 @@ export default function ItemDetailScreen({ route, navigation }) {
     const isOwner = currentUser && listing?.seller_id === currentUser.id;
     const isActiveBoosted = isBoosted && boostedUntil && new Date(boostedUntil) > new Date();
 
-    // Get images array
     const getImages = () => {
-        if (!listing.images) return ['https://via.placeholder.com/400x400?text=No+Image'];
-        if (Array.isArray(listing.images)) return listing.images;
-        return listing.images.split(',').filter(img => img.trim());
+        const imgs = parseImages(listing.images);
+        return imgs.length ? imgs : ['https://via.placeholder.com/400x400?text=No+Image'];
     };
 
     const images = getImages();

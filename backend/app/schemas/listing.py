@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field
+import json
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
 
@@ -27,6 +28,18 @@ class ListingBase(BaseModel):
     safe_zone_address: Optional[str] = None
     images: Optional[str] = None
 
+    @field_validator('images', mode='before')
+    @classmethod
+    def normalize_images(cls, v):
+        if not v:
+            return v
+        if isinstance(v, list):
+            return json.dumps(v)
+        if isinstance(v, str) and not v.startswith('['):
+            parts = [p.strip() for p in v.split(',') if p.strip()]
+            return json.dumps(parts)
+        return v
+
 
 class ListingCreate(ListingBase):
     pass
@@ -42,6 +55,18 @@ class ListingUpdate(BaseModel):
     safe_zone_address: Optional[str] = None
     images: Optional[str] = None
     is_sold: Optional[bool] = None
+
+    @field_validator('images', mode='before')
+    @classmethod
+    def normalize_images(cls, v):
+        if not v:
+            return v
+        if isinstance(v, list):
+            return json.dumps(v)
+        if isinstance(v, str) and not v.startswith('['):
+            parts = [p.strip() for p in v.split(',') if p.strip()]
+            return json.dumps(parts)
+        return v
 
 
 class ListingResponse(BaseModel):

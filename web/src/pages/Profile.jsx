@@ -3,6 +3,7 @@ import { Settings, ShieldCheck, Package, Star, Plus, Heart, Pencil, Check, X } f
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { getMyListings } from '../api/listings';
+import { firstImage } from '../utils/images';
 import { getMyStats } from '../api/transactions';
 import { updateProfile } from '../api/users';
 
@@ -245,7 +246,7 @@ export default function Profile() {
                                     >
                                         <div className="flex gap-3">
                                             <img
-                                                src={listing.images ? listing.images.split(',')[0] : 'https://via.placeholder.com/80'}
+                                                src={firstImage(listing.images) || 'https://via.placeholder.com/80'}
                                                 alt={listing.title}
                                                 className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                                             />

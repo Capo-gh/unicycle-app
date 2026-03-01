@@ -7,6 +7,7 @@ import { useMarketplaceStore } from '../store/marketplaceStore';
 import { getListings } from '../api/listings';
 import { getSavedIds, toggleSave } from '../api/saved';
 import { saveSearch } from '../api/savedSearches';
+import { firstImage } from '../utils/images';
 
 export default function Listings() {
     const { t } = useTranslation();
@@ -153,12 +154,7 @@ export default function Listings() {
 
     const formatPrice = (price) => `$${price}`;
 
-    const getFirstImage = (images) => {
-        if (!images) return null;
-        if (Array.isArray(images)) return images[0];
-        const imageList = images.split(',');
-        return imageList[0] || null;
-    };
+    const getFirstImage = (images) => firstImage(images);
 
     const handleToggleSave = async (listingId) => {
         try {

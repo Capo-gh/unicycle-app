@@ -21,12 +21,13 @@ import { getSafeZones } from '../../../shared/constants/safeZones';
 import { updateListing, markAsSold, markAsUnsold } from '../api/listings';
 import { uploadImages } from '../api/upload';
 import { useAuth } from '../contexts/AuthContext';
+import { parseImages } from '../utils/images';
 
 export default function EditListingScreen({ route, navigation }) {
     const { listing } = route.params;
     const { user } = useAuth();
     const [images, setImages] = useState(
-        listing.images ? listing.images.split(',').filter(Boolean) : []
+        parseImages(listing.images)
     );
     const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(false);

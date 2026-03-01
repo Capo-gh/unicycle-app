@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { getUserProfile, reportUser } from '../api/users';
 import { getUserListings } from '../api/listings';
+import { firstImage } from '../utils/images';
 import { getUserReviews, createReview, updateReview } from '../api/reviews';
 
 export default function UserProfile() {
@@ -146,11 +147,7 @@ export default function UserProfile() {
         }).format(price);
     };
 
-    const getFirstImage = (images) => {
-        if (!images) return 'https://via.placeholder.com/300x300?text=No+Image';
-        const imageList = images.split(',');
-        return imageList[0] || 'https://via.placeholder.com/300x300?text=No+Image';
-    };
+    const getFirstImage = (images) => firstImage(images) || 'https://via.placeholder.com/300x300?text=No+Image';
 
     const handleReport = async () => {
         if (!reportReason) return;

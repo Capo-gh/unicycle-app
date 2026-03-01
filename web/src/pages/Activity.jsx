@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Package, ShoppingBag, Clock, CheckCircle, X, Star } from 'lucide-react';
 import { getMyTransactions, updateTransaction } from '../api/transactions';
 import { createReview } from '../api/reviews';
+import { firstImage } from '../utils/images';
 
 export default function Transactions({ onNavigate }) {
     const [activeTab, setActiveTab] = useState('buyer'); // buyer or seller
@@ -189,7 +190,7 @@ export default function Transactions({ onNavigate }) {
                                     onClick={() => onNavigate('detail', transaction.listing)}
                                 >
                                     <img
-                                        src={transaction.listing?.images?.split(',')[0] || 'https://via.placeholder.com/80'}
+                                        src={firstImage(transaction.listing?.images) || 'https://via.placeholder.com/80'}
                                         alt={transaction.listing?.title}
                                         className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                                     />

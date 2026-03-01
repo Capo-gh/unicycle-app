@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import imageCompression from 'browser-image-compression';
 import { getListing, updateListing, markAsSold, markAsUnsold } from '../api/listings';
+import { parseImages } from '../utils/images';
 import { uploadImage } from '../api/upload';
 import { getSafeZones } from '../constants/safeZones';
 
@@ -70,7 +71,7 @@ export default function EditListing() {
             });
             // Initialize images from existing listing
             if (listing.images) {
-                setImages(listing.images.split(',').filter(Boolean));
+                setImages(parseImages(listing.images));
             }
             setIsSold(!!listing.is_sold);
         }

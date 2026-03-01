@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Heart, Package } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getSaved, toggleSave } from '../api/saved';
+import { firstImage } from '../utils/images';
 
 export default function Saved() {
     const navigate = useNavigate();
@@ -36,11 +37,7 @@ export default function Saved() {
         } catch { /* ignore */ }
     };
 
-    const getFirstImage = (images) => {
-        if (!images) return null;
-        if (Array.isArray(images)) return images[0];
-        return images.split(',')[0] || null;
-    };
+    const getFirstImage = (images) => firstImage(images);
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ShieldCheck, X, Lock, CheckCircle, Loader } from 'lucide-react';
 import { createSecurePaySession } from '../api/payments';
+import { firstImage } from '../utils/images';
 
 export default function SecurePayModal({ item, onClose, onProceed }) {
     const [loading, setLoading] = useState(false);
@@ -42,7 +43,7 @@ export default function SecurePayModal({ item, onClose, onProceed }) {
                     {/* Item Info */}
                     <div className="flex gap-3 items-center pb-4 border-b border-gray-200">
                         <img
-                            src={item.images ? item.images.split(',')[0] : 'https://via.placeholder.com/64'}
+                            src={firstImage(item.images) || 'https://via.placeholder.com/64'}
                             alt={item.title}
                             className="w-16 h-16 rounded-lg object-cover"
                         />

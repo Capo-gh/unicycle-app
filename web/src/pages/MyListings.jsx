@@ -3,6 +3,7 @@ import { ArrowLeft, Pencil, Trash2, Plus, CheckCircle, Circle, Zap, RefreshCw, C
 import { useNavigate } from 'react-router-dom';
 import { getMyListings, deleteListing, markAsSold, markAsUnsold, renewListing, bumpListing } from '../api/listings';
 import { createBoostSession } from '../api/payments';
+import { firstImage } from '../utils/images';
 
 export default function MyListings() {
     const navigate = useNavigate();
@@ -187,7 +188,7 @@ export default function MyListings() {
                                     onClick={() => navigate(`/item/${listing.id}`, { state: { item: listing } })}
                                 >
                                     <img
-                                        src={listing.images ? listing.images.split(',')[0] : 'https://via.placeholder.com/80'}
+                                        src={firstImage(listing.images) || 'https://via.placeholder.com/80'}
                                         alt={listing.title}
                                         className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
                                     />
