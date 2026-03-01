@@ -617,7 +617,7 @@ export default function Admin() {
                                                             className={`p-1.5 rounded-lg transition-colors ${u.is_suspended ? 'text-red-600 hover:bg-red-50' : 'text-gray-400 hover:bg-gray-100'}`}>
                                                             {u.is_suspended ? <CheckCircle className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
                                                         </button>
-                                                        {isSuperAdmin && (
+                                                        {isSuperAdmin && (u.university === 'Business' || u.is_sponsor) && (
                                                             <button
                                                                 onClick={() => {
                                                                     const unis = u.sponsored_universities ? JSON.parse(u.sponsored_universities) : [];
@@ -626,8 +626,8 @@ export default function Admin() {
                                                                     setSponsorVisibility(unis.length > 0 ? 'specific' : 'all');
                                                                     setSponsorSchools(new Set(unis));
                                                                 }}
-                                                                title={u.is_sponsor ? `Sponsor: ${u.sponsored_category}` : u.university === 'Business' ? 'Business account — set as sponsor' : 'Set as category sponsor'}
-                                                                className={`p-1.5 rounded-lg transition-colors ${u.is_sponsor ? 'text-amber-500 hover:bg-amber-50' : u.university === 'Business' ? 'text-amber-400 hover:bg-amber-50' : 'text-gray-400 hover:bg-gray-100'}`}>
+                                                                title={u.is_sponsor ? `Sponsor: ${u.sponsored_category}` : 'Business account — set as sponsor'}
+                                                                className={`p-1.5 rounded-lg transition-colors ${u.is_sponsor ? 'text-amber-500 hover:bg-amber-50' : 'text-amber-400 hover:bg-amber-50'}`}>
                                                                 <Building2 className="w-4 h-4" />
                                                             </button>
                                                         )}
