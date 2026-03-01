@@ -95,6 +95,9 @@ with engine.connect() as conn:
     if "sponsored_category" not in existing_columns:
         conn.execute(text("ALTER TABLE users ADD COLUMN sponsored_category VARCHAR"))
         conn.commit()
+    if "sponsored_universities" not in existing_columns:
+        conn.execute(text("ALTER TABLE users ADD COLUMN sponsored_universities VARCHAR"))
+        conn.commit()
     if "avatar_url" not in existing_columns:
         conn.execute(text("ALTER TABLE users ADD COLUMN avatar_url VARCHAR"))
         conn.commit()
