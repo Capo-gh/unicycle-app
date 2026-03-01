@@ -19,9 +19,9 @@ class SellerInfo(BaseModel):
 
 
 class ListingBase(BaseModel):
-    title: str = Field(..., min_length=3)
-    description: str = Field(..., min_length=10)
-    price: float = Field(..., ge=0)
+    title: str = Field(..., min_length=3, max_length=150)
+    description: str = Field(..., min_length=10, max_length=2000)
+    price: float = Field(..., ge=0, le=99999)
     category: str
     condition: str
     safe_zone: str
@@ -46,9 +46,9 @@ class ListingCreate(ListingBase):
 
 
 class ListingUpdate(BaseModel):
-    title: Optional[str] = Field(None, min_length=3)
-    description: Optional[str] = Field(None, min_length=10)
-    price: Optional[float] = Field(None, ge=0)
+    title: Optional[str] = Field(None, min_length=3, max_length=150)
+    description: Optional[str] = Field(None, min_length=10, max_length=2000)
+    price: Optional[float] = Field(None, ge=0, le=99999)
     category: Optional[str] = None
     condition: Optional[str] = None
     safe_zone: Optional[str] = None

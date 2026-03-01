@@ -293,7 +293,8 @@ def resend_verification(
 
 
 @router.post("/forgot-password")
-def forgot_password(email_data: dict, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+def forgot_password(request: Request, email_data: dict, db: Session = Depends(get_db)):
     """Send a password reset email. Always returns success to avoid revealing if email exists."""
     email = email_data.get("email", "").strip().lower()
     user = db.query(User).filter(User.email == email).first()
@@ -317,7 +318,8 @@ def forgot_password(email_data: dict, db: Session = Depends(get_db)):
 
 
 @router.post("/reset-password")
-def reset_password(data: SetPassword, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def reset_password(request: Request, data: SetPassword, db: Session = Depends(get_db)):
     """Reset password using a token from the reset email"""
     user = db.query(User).filter(User.verification_token == data.token).first()
 

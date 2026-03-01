@@ -102,6 +102,8 @@ def update_profile(
 
     current_user.name = name
     if body.avatar_url is not None:
+        if body.avatar_url and not body.avatar_url.startswith(("http://", "https://")):
+            raise HTTPException(status_code=400, detail="avatar_url must be a valid http/https URL")
         current_user.avatar_url = body.avatar_url
     db.commit()
     db.refresh(current_user)

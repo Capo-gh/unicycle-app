@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional, List
 from datetime import datetime
 
@@ -22,7 +22,7 @@ class RequestAuthor(BaseModel):
 
 # REPLY SCHEMAS
 class ReplyBase(BaseModel):
-    text: str
+    text: str = Field(..., min_length=1, max_length=1000)
 
 
 class ReplyCreate(ReplyBase):
@@ -44,12 +44,19 @@ class ReplyResponse(BaseModel):
 
 # REQUEST SCHEMAS
 class RequestBase(BaseModel):
-    title: str
-    description: str
+    title: str = Field(..., min_length=3, max_length=150)
+    description: str = Field(..., min_length=10, max_length=1000)
     category: str
     urgent: bool = False
-    budget_min: Optional[float] = None
-    budget_max: Optional[float] = None
+    budget_min: Optional[float] = Field(None, ge=0)
+    budget_max: Optional[float] = Field(None, ge=0)
+
+    @model_validator(mode='after')
+    def budget_min_le_max(self):
+        if self.budget_min is not None and self.budget_max is not None:
+            if self.budget_min > self.budget_max:
+                raise ValueError('budget_min must be less than or equal to budget_max')
+        return self
 
 
 class RequestCreate(RequestBase):

@@ -2,6 +2,7 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import os
 import secrets
+import html
 from datetime import datetime, timedelta, timezone
 
 # Initialize SendGrid
@@ -57,7 +58,7 @@ def send_verification_email(email: str, name: str, token: str):
                     <h1>🎓 Welcome to UniCycle!</h1>
                 </div>
                 <div class="content">
-                    <p>Hi {name},</p>
+                    <p>Hi {html.escape(name)},</p>
                     <p>Thanks for joining UniCycle - the verified student marketplace for Montreal universities!</p>
                     <p>To complete your registration and start buying, selling, and connecting with fellow students, please verify your student email address:</p>
                     <center>
@@ -133,7 +134,17 @@ def send_report_email(
     details: str = "",
 ):
     """Send a user-report notification to the admin inbox."""
-    subject = f"[UniCycle Report] {reporter_name} reported {reportee_name}"
+    # Escape all user-supplied values before embedding in HTML
+    _rn  = html.escape(reporter_name)
+    _re  = html.escape(reporter_email)
+    _ru  = html.escape(reporter_university)
+    _dn  = html.escape(reportee_name)
+    _de  = html.escape(reportee_email)
+    _du  = html.escape(reportee_university)
+    _rs  = html.escape(reason)
+    _dt  = html.escape(details) if details else "—"
+
+    subject = f"[UniCycle Report] {_rn} reported {_dn}"
 
     html_content = f"""
         <!DOCTYPE html>
@@ -148,41 +159,41 @@ def send_report_email(
                     </tr>
                     <tr>
                         <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600; width: 30%;">Name</td>
-                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{reportee_name}</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{_dn}</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600;">Email</td>
-                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{reportee_email}</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{_de}</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600;">University</td>
-                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{reportee_university}</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{_du}</td>
                     </tr>
                     <tr style="background: #f0fdf4;">
                         <th colspan="2" style="padding: 10px; text-align: left; border: 1px solid #bbf7d0;">Reporter</th>
                     </tr>
                     <tr>
                         <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600;">Name</td>
-                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{reporter_name}</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{_rn}</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600;">Email</td>
-                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{reporter_email}</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{_re}</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600;">University</td>
-                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{reporter_university}</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{_ru}</td>
                     </tr>
                     <tr style="background: #fffbeb;">
                         <th colspan="2" style="padding: 10px; text-align: left; border: 1px solid #fde68a;">Report Details</th>
                     </tr>
                     <tr>
                         <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600;">Reason</td>
-                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{reason}</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{_rs}</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600;">Details</td>
-                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{details or "—"}</td>
+                        <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">{_dt}</td>
                     </tr>
                 </table>
                 <p style="color: #666; font-size: 13px;">Review this report and take action if necessary. You can suspend the user from the Admin dashboard.</p>
@@ -234,7 +245,7 @@ def send_suspension_email(email: str, name: str):
                     <h1>🚫 Account Suspended</h1>
                 </div>
                 <div class="content">
-                    <p>Hi {name},</p>
+                    <p>Hi {html.escape(name)},</p>
                     <p>Your UniCycle account has been <strong>suspended</strong> due to a violation of our community guidelines.</p>
                     <p>You will no longer be able to sign in or access the marketplace.</p>
                     <p>If you believe this is a mistake, please contact us by replying to this email and our team will review your case within 24–48 hours.</p>
@@ -299,7 +310,7 @@ def send_reset_email(email: str, name: str, token: str):
                     <h1>🔐 Reset Your Password</h1>
                 </div>
                 <div class="content">
-                    <p>Hi {name},</p>
+                    <p>Hi {html.escape(name)},</p>
                     <p>We received a request to reset your UniCycle password. Click the button below to set a new password:</p>
                     <center>
                         <a href="{reset_link}" class="button">Reset Password</a>
@@ -359,8 +370,8 @@ def send_direct_email(email: str, name: str, subject: str, message: str):
                     <h1>📬 Message from UniCycle Team</h1>
                 </div>
                 <div class="content">
-                    <p>Hi {name},</p>
-                    <div class="message-box">{message}</div>
+                    <p>Hi {html.escape(name)},</p>
+                    <div class="message-box">{html.escape(message)}</div>
                     <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
                     <p style="font-size: 14px; color: #666;">This message was sent by the UniCycle moderation team. If you have questions, reply to this email.</p>
                 </div>
@@ -417,8 +428,8 @@ def send_message_email(
                     <h2 style="margin:0;">New message on UniCycle</h2>
                 </div>
                 <div class="content">
-                    <p>Hi {recipient_name},</p>
-                    <p><strong>{sender_name}</strong> sent you a message about <strong>{listing_title}</strong>.</p>
+                    <p>Hi {html.escape(recipient_name)},</p>
+                    <p><strong>{html.escape(sender_name)}</strong> sent you a message about <strong>{html.escape(listing_title)}</strong>.</p>
                     <center>
                         <a href="{FRONTEND_URL}" class="button">View Message</a>
                     </center>
@@ -477,8 +488,8 @@ def send_listing_expiry_email(
                     <h2 style="margin:0;">Your listing is expiring soon</h2>
                 </div>
                 <div class="content">
-                    <p>Hi {seller_name},</p>
-                    <p>Your listing <strong>{listing_title}</strong> will be automatically deactivated in <strong>{days_left} {day_word}</strong>.</p>
+                    <p>Hi {html.escape(seller_name)},</p>
+                    <p>Your listing <strong>{html.escape(listing_title)}</strong> will be automatically deactivated in <strong>{days_left} {day_word}</strong>.</p>
                     <p>Renew it from your My Listings page to keep it visible to buyers.</p>
                     <center>
                         <a href="{FRONTEND_URL}" class="button">Renew Listing</a>
@@ -537,8 +548,8 @@ def send_review_prompt_email(
                     <h2 style="margin:0;">How was your purchase?</h2>
                 </div>
                 <div class="content">
-                    <p>Hi {buyer_name},</p>
-                    <p>You recently purchased <strong>{listing_title}</strong> from <strong>{seller_name}</strong>.</p>
+                    <p>Hi {html.escape(buyer_name)},</p>
+                    <p>You recently purchased <strong>{html.escape(listing_title)}</strong> from <strong>{html.escape(seller_name)}</strong>.</p>
                     <p>Help the community by leaving a quick review. It only takes a moment!</p>
                     <center>
                         <a href="{FRONTEND_URL}/user/{seller_id}" class="button">Leave a Review</a>
@@ -598,8 +609,8 @@ def send_saved_search_alert_email(
                     <h2 style="margin:0;">New listings match your search</h2>
                 </div>
                 <div class="content">
-                    <p>Hi {name},</p>
-                    <p><strong>{match_count} new {item_word}</strong> matching <em>{search_desc}</em> were just listed on UniCycle.</p>
+                    <p>Hi {html.escape(name)},</p>
+                    <p><strong>{match_count} new {item_word}</strong> matching <em>{html.escape(search_desc)}</em> were just listed on UniCycle.</p>
                     <center>
                         <a href="{frontend_url}" class="button">View Listings</a>
                     </center>
