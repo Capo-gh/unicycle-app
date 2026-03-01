@@ -18,7 +18,7 @@ class ReportRequest(BaseModel):
 
 
 class UpdateProfileRequest(BaseModel):
-    name: str
+    name: Optional[str] = None
     avatar_url: Optional[str] = None
 
 
@@ -96,11 +96,11 @@ def update_profile(
     current_user: User = Depends(get_current_user_required)
 ):
     """Update current user's profile (name and/or avatar)"""
-    name = body.name.strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="Name cannot be empty")
-
-    current_user.name = name
+    if body.name is not None:
+        name = body.name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Name cannot be empty")
+        current_user.name = name
     if body.avatar_url is not None:
         if body.avatar_url and not body.avatar_url.startswith(("http://", "https://")):
             raise HTTPException(status_code=400, detail="avatar_url must be a valid http/https URL")

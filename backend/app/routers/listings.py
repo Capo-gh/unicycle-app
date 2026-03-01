@@ -70,6 +70,13 @@ def get_listings(
         or_(Listing.expires_at.is_(None), Listing.expires_at > now)
     )
 
+    # Hide listings from suspended sellers
+    query = query.filter(
+        Listing.seller_id.in_(
+            db.query(User.id).filter(User.is_suspended == False)
+        )
+    )
+
     # Filter out sold items by default
     if not include_sold:
         query = query.filter(Listing.is_sold == False)

@@ -421,6 +421,7 @@ export default function Settings() {
     const [subPage, setSubPage] = useState(null);
     const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [avatarError, setAvatarError] = useState(null);
     const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
 
     const toggleDarkMode = () => {
@@ -439,6 +440,7 @@ export default function Settings() {
         const file = e.target.files?.[0];
         if (!file) return;
         setUploadingAvatar(true);
+        setAvatarError(null);
         try {
             let fileToUpload = file;
             if (file.size > 500 * 1024) {
@@ -448,8 +450,8 @@ export default function Settings() {
             await updateProfile({ avatar_url: url });
             setAvatarUrl(url);
             setUser({ ...user, avatar_url: url });
-        } catch {
-            // ignore
+        } catch (err) {
+            setAvatarError(err?.response?.data?.detail || 'Failed to upload photo. Please try again.');
         } finally {
             setUploadingAvatar(false);
         }
@@ -500,11 +502,14 @@ export default function Settings() {
                                 </div>
                             )}
                         </div>
-                        <label className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors">
-                            <Camera className="w-4 h-4" />
-                            Change photo
-                            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={uploadingAvatar} />
-                        </label>
+                        <div className="flex flex-col gap-1">
+                            <label className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <Camera className="w-4 h-4" />
+                                Change photo
+                                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={uploadingAvatar} />
+                            </label>
+                            {avatarError && <p className="text-xs text-red-500">{avatarError}</p>}
+                        </div>
                     </div>
 
                     <div className="space-y-3">

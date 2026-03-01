@@ -30,6 +30,13 @@ apiClient.interceptors.response.use(
             localStorage.removeItem('user');
             window.location.href = '/signup';
         }
+        if (error.response?.status === 403 &&
+            error.response?.data?.detail?.toLowerCase().includes('suspended')) {
+            // Account suspended — force logout
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/signup';
+        }
         return Promise.reject(error);
     }
 );

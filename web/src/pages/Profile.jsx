@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Settings, ShieldCheck, Package, Star, Plus, Heart, Pencil, Check, X } from 'lucide-react';
+import { Settings, ShieldCheck, Package, Star, Plus, Heart, Pencil, Check, X, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { getMyListings } from '../api/listings';
 import { firstImage } from '../utils/images';
 import { getMyStats } from '../api/transactions';
 import { updateProfile } from '../api/users';
+import { uploadImage } from '../api/upload';
+import imageCompression from 'browser-image-compression';
 
 export default function Profile() {
     const navigate = useNavigate();
@@ -18,6 +20,7 @@ export default function Profile() {
     const [nameInput, setNameInput] = useState('');
     const [displayName, setDisplayName] = useState(signupUser?.name || 'User');
     const [savingName, setSavingName] = useState(false);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
     const handleSaveName = async () => {
         const trimmed = nameInput.trim();
@@ -32,6 +35,25 @@ export default function Profile() {
             // ignore
         } finally {
             setSavingName(false);
+        }
+    };
+
+    const handleAvatarChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadingAvatar(true);
+        try {
+            let fileToUpload = file;
+            if (file.size > 500 * 1024) {
+                fileToUpload = await imageCompression(file, { maxSizeMB: 1, maxWidthOrHeight: 512, useWebWorker: true });
+            }
+            const url = await uploadImage(fileToUpload);
+            await updateProfile({ avatar_url: url });
+            setUser({ ...signupUser, avatar_url: url });
+        } catch {
+            // silent — settings page has dedicated error UI
+        } finally {
+            setUploadingAvatar(false);
         }
     };
 
@@ -97,12 +119,23 @@ export default function Profile() {
 
                     {/* Profile Info */}
                     <div className="flex items-center gap-4 lg:gap-6">
-                        <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-full flex-shrink-0 overflow-hidden bg-white flex items-center justify-center text-unicycle-blue font-bold text-3xl lg:text-4xl">
-                            {signupUser?.avatar_url
-                                ? <img src={signupUser.avatar_url} alt={user.name} className="w-full h-full object-cover" />
-                                : user.name.charAt(0)
+                        <label className="relative w-20 h-20 lg:w-24 lg:h-24 rounded-full flex-shrink-0 cursor-pointer group">
+                            <div className="w-full h-full rounded-full overflow-hidden bg-white flex items-center justify-center text-unicycle-blue font-bold text-3xl lg:text-4xl">
+                                {signupUser?.avatar_url
+                                    ? <img src={signupUser.avatar_url} alt={user.name} className="w-full h-full object-cover" />
+                                    : user.name.charAt(0)
+                                }
+                            </div>
+                            {uploadingAvatar
+                                ? <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                                  </div>
+                                : <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Camera className="w-6 h-6 text-white" />
+                                  </div>
                             }
-                        </div>
+                            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={uploadingAvatar} />
+                        </label>
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                                 {editingName ? (
