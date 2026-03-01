@@ -86,9 +86,11 @@ def get_listings(
             (Listing.description.ilike(search_term))
         )
     
-    # University filter
+    # University filter — sponsored listings (is_sponsor=True) are always visible regardless of campus
     if university:
-        query = query.join(User, Listing.seller_id == User.id).filter(User.university == university)
+        query = query.join(User, Listing.seller_id == User.id).filter(
+            or_(User.university == university, User.is_sponsor == True)
+        )
     
     # Price filters
     if min_price is not None:
