@@ -11,13 +11,13 @@ class Review(Base):
     id = Column(Integer, primary_key=True, index=True)
     
     # Who wrote the review
-    reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    
+    reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
     # Who is being reviewed
-    reviewed_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    
+    reviewed_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
     # Optional: related listing (if review is about a specific transaction)
-    listing_id = Column(Integer, ForeignKey("listings.id", ondelete="SET NULL"), nullable=True)
+    listing_id = Column(Integer, ForeignKey("listings.id", ondelete="SET NULL"), nullable=True, index=True)
     
     # Review content
     rating = Column(Integer, nullable=False)  # 1-5 stars

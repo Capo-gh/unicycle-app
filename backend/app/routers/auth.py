@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from ..utils.limiter import limiter
 from sqlalchemy.orm import Session
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from ..database import get_db
 from ..models.user import User
 from ..schemas.user import UserCreate, UserLogin, UserResponse, Token, SetPassword
@@ -56,7 +56,7 @@ def signup(request: Request, user_data: UserCreate, db: Session = Depends(get_db
         hashed_password=None,  # Password will be set after email verification
         is_verified=False,
         verification_token=verification_token,
-        token_created_at=datetime.now()
+        token_created_at=datetime.now(timezone.utc)
     )
 
     db.add(new_user)
@@ -277,7 +277,7 @@ def resend_verification(
     # Generate new token
     verification_token = generate_verification_token()
     user.verification_token = verification_token
-    user.token_created_at = datetime.now()
+    user.token_created_at = datetime.now(timezone.utc)
 
     db.commit()
 
@@ -306,7 +306,7 @@ def forgot_password(request: Request, email_data: dict, db: Session = Depends(ge
     # Generate reset token (reuse verification_token column)
     reset_token = generate_verification_token()
     user.verification_token = reset_token
-    user.token_created_at = datetime.now()
+    user.token_created_at = datetime.now(timezone.utc)
     db.commit()
 
     try:

@@ -23,8 +23,8 @@ class Request(Base):
     is_active = Column(Boolean, default=True)
     
     # Foreign keys
-    author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    
+    author_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -42,8 +42,8 @@ class Reply(Base):
     text = Column(Text, nullable=False)
     
     # Foreign keys
-    request_id = Column(Integer, ForeignKey("requests.id", ondelete="CASCADE"), nullable=False)
-    author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    request_id = Column(Integer, ForeignKey("requests.id", ondelete="CASCADE"), nullable=False, index=True)
+    author_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     
     # For nested replies - parent_reply_id is null for top-level replies
     parent_reply_id = Column(Integer, ForeignKey("replies.id", ondelete="CASCADE"), nullable=True)

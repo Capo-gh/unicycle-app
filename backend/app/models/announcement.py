@@ -15,7 +15,7 @@ class Announcement(Base):
     action_type = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
     target_university = Column(String, nullable=True)
-    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime(timezone=True), nullable=True)
 
@@ -26,6 +26,6 @@ class AnnouncementDismissal(Base):
     __tablename__ = "announcement_dismissals"
 
     id = Column(Integer, primary_key=True, index=True)
-    announcement_id = Column(Integer, ForeignKey("announcements.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    announcement_id = Column(Integer, ForeignKey("announcements.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     dismissed_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -8,8 +8,8 @@ class Report(Base):
     __tablename__ = "reports"
 
     id = Column(Integer, primary_key=True, index=True)
-    reporter_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    reportee_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    reporter_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    reportee_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     reason = Column(String, nullable=False)
     details = Column(Text, nullable=True)
     status = Column(String, default="pending")  # pending, dismissed, actioned

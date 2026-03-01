@@ -96,6 +96,12 @@ button:active {
   transform: scale(0.98);
 }
 
+/* Hide browser-native password reveal button — clashes with our custom eye toggle */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none !important;
+}
+
 /* Prevent iOS Safari auto-zoom when focusing input fields.
    iOS zooms in when an input's font-size < 16px. This rule
    overrides text-sm (14px) only on iOS WebKit. */

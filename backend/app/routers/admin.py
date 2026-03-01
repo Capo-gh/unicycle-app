@@ -152,6 +152,8 @@ def get_universities(
 def get_all_users(
     search: Optional[str] = Query(None),
     university: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_required)
 ):
@@ -169,7 +171,7 @@ def get_all_users(
             (User.email.ilike(term)) |
             (User.university.ilike(term))
         )
-    rows = query.order_by(User.created_at.desc()).all()
+    rows = query.order_by(User.created_at.desc()).offset(skip).limit(limit).all()
     return [
         {
             "id": u.id,
@@ -285,6 +287,8 @@ def email_user(
 def get_all_listings(
     search: Optional[str] = Query(None),
     university: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_required)
 ):
@@ -297,7 +301,7 @@ def get_all_listings(
             (Listing.title.ilike(term)) |
             (Listing.category.ilike(term))
         )
-    listings = query.order_by(Listing.created_at.desc()).all()
+    listings = query.order_by(Listing.created_at.desc()).offset(skip).limit(limit).all()
     return [
         {
             "id": l.id,
@@ -356,6 +360,8 @@ def delete_listing(
 @router.get("/transactions")
 def get_all_transactions(
     university: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_required)
 ):
@@ -366,7 +372,7 @@ def get_all_transactions(
     )
     if university:
         query = query.join(Transaction.buyer).filter(User.university == university)
-    transactions = query.order_by(Transaction.created_at.desc()).all()
+    transactions = query.order_by(Transaction.created_at.desc()).offset(skip).limit(limit).all()
 
     return [
         {
@@ -500,6 +506,8 @@ def action_report(
 @router.get("/reviews")
 def get_all_reviews(
     search: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_required)
 ):
@@ -511,7 +519,7 @@ def get_all_reviews(
     if search:
         term = f"%{search}%"
         query = query.join(Review.reviewer).filter(User.name.ilike(term))
-    reviews = query.order_by(Review.created_at.desc()).all()
+    reviews = query.order_by(Review.created_at.desc()).offset(skip).limit(limit).all()
     return [
         {
             "id": r.id,

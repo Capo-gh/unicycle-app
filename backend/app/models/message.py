@@ -11,11 +11,11 @@ class Conversation(Base):
     id = Column(Integer, primary_key=True, index=True)
     
     # The listing this conversation is about (optional - can be null if listing deleted)
-    listing_id = Column(Integer, ForeignKey("listings.id", ondelete="SET NULL"), nullable=True)
-    
+    listing_id = Column(Integer, ForeignKey("listings.id", ondelete="SET NULL"), nullable=True, index=True)
+
     # The two participants
-    buyer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    seller_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    buyer_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    seller_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     
     # Track if archived by either party
     archived_by_buyer = Column(Boolean, default=False)
@@ -40,8 +40,8 @@ class Message(Base):
     text = Column(Text, nullable=False)
     
     # Foreign keys
-    conversation_id = Column(Integer, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False)
-    sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    conversation_id = Column(Integer, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
+    sender_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     
     # Read status
     is_read = Column(Boolean, default=False)
