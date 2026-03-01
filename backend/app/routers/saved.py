@@ -22,6 +22,8 @@ def toggle_save(
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if not listing:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found")
+    if listing.seller_id == current_user.id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot save your own listing")
 
     existing = db.query(SavedListing).filter(
         SavedListing.user_id == current_user.id,

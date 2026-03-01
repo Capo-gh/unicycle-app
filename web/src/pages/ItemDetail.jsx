@@ -8,7 +8,6 @@ import SecurePayModal from './SecurePayModal';
 import { getUserReviews } from '../api/reviews';
 import { getListing, markAsSold, markAsUnsold, getListingBuyers } from '../api/listings';
 import { parseImages } from '../utils/images';
-import { createTransaction, getMyTransactions, deleteTransaction } from '../api/transactions';
 import { reportUser } from '../api/users';
 import { getListingSecurePay, confirmHandoff, confirmReceipt, disputeTransaction, createBoostSession } from '../api/payments';
 
@@ -40,9 +39,6 @@ export default function ItemDetail() {
     const [updating, setUpdating] = useState(false);
     const [touchStart, setTouchStart] = useState(null);
     const [touchEnd, setTouchEnd] = useState(null);
-    const [expressingInterest, setExpressingInterest] = useState(false);
-    const [alreadyInterested, setAlreadyInterested] = useState(false);
-    const [interestTransactionId, setInterestTransactionId] = useState(null);
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportReason, setReportReason] = useState('');
     const [reportDetails, setReportDetails] = useState('');
@@ -95,26 +91,6 @@ export default function ItemDetail() {
     useEffect(() => {
         setIsSold(item?.is_sold || false);
     }, [item?.is_sold]);
-
-    // Check if user has already expressed interest in this item
-    useEffect(() => {
-        const checkInterestStatus = async () => {
-            if (currentUser && item?.id) {
-                try {
-                    const myInterests = await getMyTransactions(true); // as_buyer = true
-                    const existingInterest = myInterests.find(t => t.listing_id === item.id);
-                    if (existingInterest) {
-                        setAlreadyInterested(true);
-                        setInterestTransactionId(existingInterest.id);
-                    }
-                } catch (err) {
-                    console.error('Error checking interest status:', err);
-                }
-            }
-        };
-
-        checkInterestStatus();
-    }, [currentUser, item?.id]);
 
     // Fetch active Secure-Pay transaction for this listing
     useEffect(() => {
@@ -254,44 +230,6 @@ export default function ItemDetail() {
 
     const handleViewSellerProfile = () => {
         navigate(`/user/${item.seller_id}`);
-    };
-
-    const handleExpressInterest = async () => {
-        if (!currentUser) {
-            alert('Please log in to express interest');
-            return;
-        }
-
-        setExpressingInterest(true);
-        try {
-            const transaction = await createTransaction(item.id);
-            setAlreadyInterested(true);
-            setInterestTransactionId(transaction.id);
-        } catch (err) {
-            console.error('Error expressing interest:', err);
-            if (err.response?.data?.detail && err.response.data.detail.includes('already')) {
-                setAlreadyInterested(true);
-            } else {
-                alert(err.response?.data?.detail || 'Failed to express interest. Please try again.');
-            }
-        } finally {
-            setExpressingInterest(false);
-        }
-    };
-
-    const handleRemoveInterest = async () => {
-        if (!interestTransactionId) return;
-        setExpressingInterest(true);
-        try {
-            await deleteTransaction(interestTransactionId);
-            setAlreadyInterested(false);
-            setInterestTransactionId(null);
-        } catch (err) {
-            console.error('Error removing interest:', err);
-            alert(err.response?.data?.detail || 'Failed to remove interest');
-        } finally {
-            setExpressingInterest(false);
-        }
     };
 
     // Escrow action handlers
@@ -885,16 +823,15 @@ export default function ItemDetail() {
                     {!isOwner && !isSold && (
                         <div className="hidden lg:flex gap-2">
                             <button
-                                onClick={alreadyInterested ? handleRemoveInterest : handleExpressInterest}
-                                disabled={expressingInterest}
-                                className={`flex-1 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed ${
-                                    alreadyInterested
-                                        ? 'bg-red-50 text-red-600 border-2 border-red-200 hover:bg-red-100'
+                                onClick={handleToggleSave}
+                                className={`flex-1 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 ${
+                                    isSaved
+                                        ? 'bg-red-50 text-red-500 border-2 border-red-200 hover:bg-red-100'
                                         : 'bg-unicycle-green/10 text-unicycle-green border-2 border-unicycle-green/30 hover:bg-unicycle-green/20'
                                 }`}
                             >
-                                <Heart className={`w-5 h-5 ${alreadyInterested ? 'fill-red-500 text-red-500' : ''}`} />
-                                {expressingInterest ? 'Loading...' : alreadyInterested ? 'Remove Interest' : 'Add to Interests'}
+                                <Heart className={`w-5 h-5 ${isSaved ? 'fill-red-500 text-red-500' : ''}`} />
+                                {isSaved ? 'Saved' : 'Save'}
                             </button>
                             <button
                                 onClick={handleContactSeller}
@@ -939,16 +876,15 @@ export default function ItemDetail() {
                     ) : (
                         <div className="flex gap-2">
                             <button
-                                onClick={alreadyInterested ? handleRemoveInterest : handleExpressInterest}
-                                disabled={expressingInterest}
-                                className={`flex-1 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60 ${
-                                    alreadyInterested
-                                        ? 'bg-red-50 text-red-600 border border-red-200'
+                                onClick={handleToggleSave}
+                                className={`flex-1 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1.5 ${
+                                    isSaved
+                                        ? 'bg-red-50 text-red-500 border border-red-200'
                                         : 'bg-unicycle-green/10 text-unicycle-green border border-unicycle-green/30'
                                 }`}
                             >
-                                <Heart className={`w-4 h-4 ${alreadyInterested ? 'fill-red-500 text-red-500' : ''}`} />
-                                {expressingInterest ? '...' : alreadyInterested ? 'Remove' : 'Interested'}
+                                <Heart className={`w-4 h-4 ${isSaved ? 'fill-red-500 text-red-500' : ''}`} />
+                                {isSaved ? 'Saved' : 'Save'}
                             </button>
                             <button
                                 onClick={handleContactSeller}

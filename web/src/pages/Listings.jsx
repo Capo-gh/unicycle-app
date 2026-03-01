@@ -438,16 +438,18 @@ export default function Listings() {
                                         <p className="text-xs text-gray-500 mt-1 truncate">{item.category || 'Other'}</p>
                                     </div>
                                 </button>
-                                {/* Heart button */}
-                                <div className="px-3 pb-3 -mt-2 flex justify-end">
-                                    <button
-                                        onClick={() => handleToggleSave(item.id)}
-                                        className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-                                        aria-label={savedIds.has(item.id) ? 'Remove from saved' : 'Save item'}
-                                    >
-                                        <Heart className={`w-4 h-4 ${savedIds.has(item.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
-                                    </button>
-                                </div>
+                                {/* Heart button — only for items not owned by current user */}
+                                {item.seller_id !== user?.id && (
+                                    <div className="px-3 pb-3 -mt-2 flex justify-end">
+                                        <button
+                                            onClick={() => handleToggleSave(item.id)}
+                                            className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                                            aria-label={savedIds.has(item.id) ? 'Remove from saved' : 'Save item'}
+                                        >
+                                            <Heart className={`w-4 h-4 ${savedIds.has(item.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>

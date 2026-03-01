@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { parseImages } from '../utils/images';
 import {
     Users, Package, ArrowLeftRight, BarChart3, Search, Shield, ShieldOff, Ban, CheckCircle,
     Trash2, Eye, EyeOff, Bell, Megaphone, Send, Star, DollarSign, RotateCcw,
@@ -1078,19 +1079,19 @@ export default function Admin() {
                 <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setPreviewListing(null)}>
                     <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         {/* Images */}
-                        {previewListing.images?.length > 0 && (
+                        {(() => { const imgs = parseImages(previewListing.images); return imgs.length > 0 && (
                             <div className="relative">
-                                <img src={previewListing.images[previewImageIdx]} alt="" className="w-full h-56 object-cover rounded-t-2xl" />
-                                {previewListing.images.length > 1 && (
+                                <img src={imgs[previewImageIdx]} alt="" className="w-full h-56 object-cover rounded-t-2xl" />
+                                {imgs.length > 1 && (
                                     <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
-                                        {previewListing.images.map((_, i) => (
+                                        {imgs.map((_, i) => (
                                             <button key={i} onClick={() => setPreviewImageIdx(i)}
                                                 className={`w-2 h-2 rounded-full ${i === previewImageIdx ? 'bg-white' : 'bg-white/50'}`} />
                                         ))}
                                     </div>
                                 )}
                             </div>
-                        )}
+                        ); })()}
                         <div className="p-5">
                             <div className="flex items-start justify-between gap-3 mb-3">
                                 <div>
