@@ -8,7 +8,8 @@ import {
     FlatList,
     KeyboardAvoidingView,
     Platform,
-    Alert
+    Alert,
+    Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -358,9 +359,10 @@ export default function MessagesScreen({ route }) {
                         </TouchableOpacity>
                         <View style={styles.chatHeaderContent}>
                             <View style={styles.chatAvatar}>
-                                <Text style={styles.chatAvatarText}>
-                                    {otherPerson?.name?.charAt(0) || '?'}
-                                </Text>
+                                {otherPerson?.avatar_url
+                                    ? <Image source={{ uri: otherPerson.avatar_url }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                                    : <Text style={styles.chatAvatarText}>{otherPerson?.name?.charAt(0) || '?'}</Text>
+                                }
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.chatHeaderName}>{otherPerson?.name || 'Unknown'}</Text>
@@ -421,9 +423,10 @@ export default function MessagesScreen({ route }) {
                                 ]}>
                                     {!isMe && (
                                         <View style={styles.msgAvatar}>
-                                            <Text style={styles.msgAvatarText}>
-                                                {otherPerson?.name?.charAt(0) || '?'}
-                                            </Text>
+                                            {otherPerson?.avatar_url
+                                                ? <Image source={{ uri: otherPerson.avatar_url }} style={{ width: 28, height: 28, borderRadius: 14 }} />
+                                                : <Text style={styles.msgAvatarText}>{otherPerson?.name?.charAt(0) || '?'}</Text>
+                                            }
                                         </View>
                                     )}
                                     <View style={{ maxWidth: '78%', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
@@ -458,9 +461,10 @@ export default function MessagesScreen({ route }) {
                                     </View>
                                     {isMe && (
                                         <View style={[styles.msgAvatar, styles.msgAvatarMe]}>
-                                            <Text style={styles.msgAvatarText}>
-                                                {user?.name?.charAt(0) || '?'}
-                                            </Text>
+                                            {user?.avatar_url
+                                                ? <Image source={{ uri: user.avatar_url }} style={{ width: 28, height: 28, borderRadius: 14 }} />
+                                                : <Text style={styles.msgAvatarText}>{user?.name?.charAt(0) || '?'}</Text>
+                                            }
                                         </View>
                                     )}
                                 </View>
@@ -501,9 +505,10 @@ export default function MessagesScreen({ route }) {
                 onPress={() => handleSelectConversation(item.id)}
             >
                 <View style={styles.conversationAvatar}>
-                    <Text style={styles.conversationAvatarText}>
-                        {otherPerson?.name?.charAt(0) || '?'}
-                    </Text>
+                    {otherPerson?.avatar_url
+                        ? <Image source={{ uri: otherPerson.avatar_url }} style={{ width: 50, height: 50, borderRadius: 25 }} />
+                        : <Text style={styles.conversationAvatarText}>{otherPerson?.name?.charAt(0) || '?'}</Text>
+                    }
                 </View>
                 <View style={styles.conversationContent}>
                     <View style={styles.conversationHeader}>

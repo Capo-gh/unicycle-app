@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as ImagePicker from 'expo-image-picker';
 import {
     View,
     Text,
@@ -20,6 +21,7 @@ import { COLORS } from '../../../shared/constants/colors';
 import { getMyListings } from '../api/listings';
 import { getMyStats } from '../api/transactions';
 import { updateProfile } from '../api/users';
+import { uploadImage } from '../api/upload';
 import NotificationBell from '../components/NotificationBell';
 
 export default function ProfileScreen({ navigation }) {
@@ -31,6 +33,7 @@ export default function ProfileScreen({ navigation }) {
     const [showEditModal, setShowEditModal] = useState(false);
     const [nameInput, setNameInput] = useState('');
     const [savingName, setSavingName] = useState(false);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -61,6 +64,31 @@ export default function ProfileScreen({ navigation }) {
         setRefreshing(true);
         await fetchData();
         setRefreshing(false);
+    };
+
+    const handleAvatarChange = async () => {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+            Alert.alert('Permission required', 'Please allow access to your photo library.');
+            return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.7,
+        });
+        if (result.canceled) return;
+        setUploadingAvatar(true);
+        try {
+            const url = await uploadImage(result.assets[0].uri);
+            await updateProfile({ avatar_url: url });
+            if (updateUser) await updateUser({ avatar_url: url });
+        } catch (err) {
+            Alert.alert('Error', 'Failed to upload photo. Please try again.');
+        } finally {
+            setUploadingAvatar(false);
+        }
     };
 
     const handleSaveName = async () => {
@@ -127,13 +155,21 @@ export default function ProfileScreen({ navigation }) {
                     </View>
 
                     <View style={styles.profileInfo}>
-                        <View style={styles.avatarContainer}>
-                            {user?.avatar_url ? (
-                                <Image source={{ uri: user.avatar_url }} style={{ width: 80, height: 80, borderRadius: 40 }} />
-                            ) : (
-                                <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text>
-                            )}
-                        </View>
+                        <TouchableOpacity onPress={handleAvatarChange} disabled={uploadingAvatar} style={{ position: 'relative', marginRight: 16 }}>
+                            <View style={styles.avatarContainer}>
+                                {user?.avatar_url ? (
+                                    <Image source={{ uri: user.avatar_url }} style={{ width: 80, height: 80, borderRadius: 40 }} />
+                                ) : (
+                                    <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text>
+                                )}
+                            </View>
+                            <View style={styles.avatarCameraBadge}>
+                                {uploadingAvatar
+                                    ? <ActivityIndicator size="small" color="#666" />
+                                    : <Ionicons name="camera" size={12} color="#666" />
+                                }
+                            </View>
+                        </TouchableOpacity>
                         <View style={styles.profileDetails}>
                             <View style={styles.nameRow}>
                                 <Text style={styles.name}>{user?.name || 'User'}</Text>
@@ -342,7 +378,24 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 16,
+        overflow: 'hidden',
+    },
+    avatarCameraBadge: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
     },
     avatarText: {
         fontSize: 32,
