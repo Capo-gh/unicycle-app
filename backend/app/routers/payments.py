@@ -71,8 +71,8 @@ def create_boost_session(
             "quantity": 1,
         }],
         mode="payment",
-        success_url=f"{frontend_url}?boost_success=1&listing_id={data.listing_id}&session_id={{CHECKOUT_SESSION_ID}}",
-        cancel_url=f"{frontend_url}?boost_cancel=1",
+        success_url=f"{frontend_url}/my-listings?boost_success=1&listing_id={data.listing_id}&session_id={{CHECKOUT_SESSION_ID}}",
+        cancel_url=f"{frontend_url}/my-listings?boost_cancel=1",
         metadata={"type": "boost", "listing_id": str(data.listing_id), "user_id": str(current_user.id)},
     )
 
@@ -156,8 +156,8 @@ def create_secure_pay_session(
         }],
         mode="payment",
         payment_intent_data={"capture_method": "manual"},
-        success_url=f"{frontend_url}?secure_pay_success=1&listing_id={data.listing_id}&session_id={{CHECKOUT_SESSION_ID}}",
-        cancel_url=f"{frontend_url}?secure_pay_cancel=1",
+        success_url=f"{frontend_url}/my-listings?secure_pay_success=1&listing_id={data.listing_id}&session_id={{CHECKOUT_SESSION_ID}}",
+        cancel_url=f"{frontend_url}/my-listings?secure_pay_cancel=1",
         metadata={
             "type": "secure_pay",
             "listing_id": str(data.listing_id),
