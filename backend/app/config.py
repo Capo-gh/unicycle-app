@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     sendgrid_from_email: Optional[str] = None
     stripe_secret_key: Optional[str] = None
     stripe_publishable_key: Optional[str] = None
+    stripe_webhook_secret: Optional[str] = None
+    sentry_dsn: Optional[str] = None
     super_admin_email: Optional[str] = None
 
     model_config = ConfigDict(env_file=".env", extra='ignore')

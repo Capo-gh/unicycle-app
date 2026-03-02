@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone, timedelta
-from ..database import get_db
+from ..database import get_db, SessionLocal
 from ..models.listing import Listing
 from ..models.transaction import Transaction, TransactionStatus
 from ..models.user import User
@@ -73,7 +73,7 @@ def create_boost_session(
         mode="payment",
         success_url=f"{frontend_url}?boost_success=1&listing_id={data.listing_id}&session_id={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{frontend_url}?boost_cancel=1",
-        metadata={"listing_id": str(data.listing_id), "user_id": str(current_user.id)},
+        metadata={"type": "boost", "listing_id": str(data.listing_id), "user_id": str(current_user.id)},
     )
 
     return {"checkout_url": session.url, "session_id": session.id}
@@ -159,6 +159,7 @@ def create_secure_pay_session(
         success_url=f"{frontend_url}?secure_pay_success=1&listing_id={data.listing_id}&session_id={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{frontend_url}?secure_pay_cancel=1",
         metadata={
+            "type": "secure_pay",
             "listing_id": str(data.listing_id),
             "buyer_id": str(current_user.id),
             "seller_id": str(listing.seller_id),
@@ -350,3 +351,89 @@ def dispute_transaction(
         transaction.status = TransactionStatus.CANCELLED
         db.commit()
         return {"success": True, "admin_review": False, "refunded": True, "transaction_id": transaction.id}
+
+
+# ─── Stripe Webhook ─────────────────────────────────────────────────────────────
+
+@router.post("/webhook", include_in_schema=False)
+async def stripe_webhook(request: Request):
+    """
+    Server-side Stripe webhook handler.
+    Activates boosts and Secure Pay transactions without relying on browser redirects.
+    Set up in Stripe Dashboard → Developers → Webhooks → Add endpoint.
+    Events: checkout.session.completed
+    """
+    if not settings.stripe_secret_key or not settings.stripe_webhook_secret:
+        raise HTTPException(status_code=503, detail="Webhook not configured")
+
+    import stripe
+    stripe.api_key = settings.stripe_secret_key
+
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, settings.stripe_webhook_secret
+        )
+    except stripe.error.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid payload")
+
+    if event["type"] != "checkout.session.completed":
+        return {"received": True}
+
+    session = event["data"]["object"]
+    meta = session.get("metadata", {})
+    payment_type = meta.get("type")
+
+    db = SessionLocal()
+    try:
+        if payment_type == "boost":
+            listing_id = int(meta.get("listing_id", 0))
+            listing = db.query(Listing).filter(Listing.id == listing_id).first()
+            if listing and not listing.is_boosted:
+                now = datetime.now(timezone.utc)
+                listing.is_boosted = True
+                listing.boosted_at = now
+                listing.boosted_until = now + timedelta(hours=48)
+                db.commit()
+
+        elif payment_type == "secure_pay":
+            listing_id = int(meta.get("listing_id", 0))
+            buyer_id = int(meta.get("buyer_id", 0))
+            seller_id = int(meta.get("seller_id", 0))
+
+            if not (listing_id and buyer_id and seller_id):
+                return {"received": True}
+
+            # Only create if not already existing
+            existing = db.query(Transaction).filter(
+                Transaction.listing_id == listing_id,
+                Transaction.buyer_id == buyer_id,
+                Transaction.payment_status == "held"
+            ).first()
+
+            if not existing:
+                # Retrieve the payment intent to get its ID
+                payment_intent_id = session.get("payment_intent")
+                transaction = Transaction(
+                    listing_id=listing_id,
+                    buyer_id=buyer_id,
+                    seller_id=seller_id,
+                    status=TransactionStatus.INTERESTED,
+                    payment_method="secure_pay",
+                    stripe_payment_intent_id=payment_intent_id,
+                    payment_status="held",
+                )
+                db.add(transaction)
+                db.commit()
+
+    except Exception as e:
+        db.rollback()
+        print(f"[webhook] Error processing event: {e}")
+    finally:
+        db.close()
+
+    return {"received": True}

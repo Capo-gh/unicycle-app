@@ -1,4 +1,7 @@
 import os
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -19,6 +22,17 @@ from .models.saved_search import SavedSearch
 
 # Create database tables (new tables are auto-created here)
 Base.metadata.create_all(bind=engine)
+
+# Sentry error monitoring (only active when SENTRY_DSN env var is set)
+from .config import settings as _settings
+if _settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=_settings.sentry_dsn,
+        integrations=[FastApiIntegration(), SqlalchemyIntegration()],
+        traces_sample_rate=0.1,
+        environment=os.getenv("ENVIRONMENT", "production"),
+        send_default_pii=False,
+    )
 
 # Migrate: add new columns to existing tables if they don't exist
 with engine.connect() as conn:
