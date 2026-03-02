@@ -108,7 +108,7 @@ export default function ItemDetailScreen({ route, navigation }) {
                     )}
                     <TouchableOpacity
                         onPress={() => {
-                            const WEB_BASE = 'https://unicycle-app.vercel.app';
+                            const WEB_BASE = 'https://unicycleapp.ca';
                             Share.share({
                                 message: `${listing.title} - $${listing.price}\n${WEB_BASE}?listing=${listing.id}`,
                                 url: `${WEB_BASE}?listing=${listing.id}`,
