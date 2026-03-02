@@ -8,6 +8,7 @@ import {
     Alert,
     Image,
     ActivityIndicator,
+    Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -161,7 +162,7 @@ export default function SettingsScreen({ navigation }) {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Support</Text>
                     <View style={styles.card}>
-                        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('HelpSupport')}>
+                        <TouchableOpacity style={styles.menuItem} onPress={() => Linking.openURL('mailto:hello@unicycleapp.ca')}>
                             <View style={styles.menuItemLeft}>
                                 <Ionicons name="help-circle-outline" size={22} color={COLORS.dark} />
                                 <Text style={styles.menuText}>Help & Support</Text>
@@ -169,16 +170,29 @@ export default function SettingsScreen({ navigation }) {
                             <Ionicons name="chevron-forward" size={20} color="#999" />
                         </TouchableOpacity>
                         <View style={styles.divider} />
-                        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('About')}>
+                        <TouchableOpacity style={styles.menuItem} onPress={() => Linking.openURL('https://unicycleapp.ca/terms')}>
+                            <View style={styles.menuItemLeft}>
+                                <Ionicons name="document-text-outline" size={22} color={COLORS.dark} />
+                                <Text style={styles.menuText}>Terms of Service</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#999" />
+                        </TouchableOpacity>
+                        <View style={styles.divider} />
+                        <TouchableOpacity style={styles.menuItem} onPress={() => Linking.openURL('https://unicycleapp.ca/privacy')}>
+                            <View style={styles.menuItemLeft}>
+                                <Ionicons name="shield-outline" size={22} color={COLORS.dark} />
+                                <Text style={styles.menuText}>Privacy Policy</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#999" />
+                        </TouchableOpacity>
+                        <View style={styles.divider} />
+                        <View style={styles.menuItem}>
                             <View style={styles.menuItemLeft}>
                                 <Ionicons name="information-circle-outline" size={22} color={COLORS.dark} />
-                                <Text style={styles.menuText}>About UniCycle</Text>
+                                <Text style={styles.menuText}>UniCycle</Text>
                             </View>
-                            <View style={styles.menuItemRight}>
-                                <Text style={styles.versionText}>v1.0.0</Text>
-                                <Ionicons name="chevron-forward" size={20} color="#999" />
-                            </View>
-                        </TouchableOpacity>
+                            <Text style={styles.versionText}>v1.0.0</Text>
+                        </View>
                     </View>
                 </View>
 

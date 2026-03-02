@@ -13,20 +13,59 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.unicycleapp.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "UniCycle needs access to your photo library to upload listing photos and your profile picture.",
+        "NSCameraUsageDescription": "UniCycle needs access to your camera to take photos for listings and your profile picture."
+      },
+      "associatedDomains": ["applinks:unicycleapp.ca", "applinks:www.unicycleapp.ca"]
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "package": "com.unicycleapp.app",
+      "versionCode": 1,
+      "edgeToEdgeEnabled": true,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "unicycleapp.ca"
+            },
+            {
+              "scheme": "https",
+              "host": "www.unicycleapp.ca"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-web-browser"
-    ]
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "UniCycle needs access to your photo library to upload listing photos and your profile picture.",
+          "cameraPermission": "UniCycle needs access to your camera to take photos for listings and your profile picture."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    }
   }
 }

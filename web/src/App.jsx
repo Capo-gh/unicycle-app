@@ -22,6 +22,9 @@ import Signup from './pages/Signup';
 import VerifyEmail from './pages/VerifyEmail';
 import CheckEmail from './pages/CheckEmail';
 import ResetPassword from './pages/ResetPassword';
+import Landing from './pages/Landing';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
 import { activateBoost, activateSecurePay } from './api/payments';
 
 function AppInner() {
@@ -97,6 +100,16 @@ function AppInner() {
       {showOnboarding && <OnboardingModal onDismiss={() => setShowOnboarding(false)} />}
       <Routes>
         {/* Public routes */}
+        <Route
+          path="/"
+          element={
+            isLoading ? null : user
+              ? <Navigate to="/browse" replace />
+              : <Landing />
+          }
+        />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/check-email" element={<CheckEmail />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
@@ -105,7 +118,6 @@ function AppInner() {
         {/* Protected routes — wrapped in Layout */}
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
-            <Route index element={<Navigate to="/browse" replace />} />
             <Route path="/browse" element={<Listings />} />
             <Route path="/item/:id" element={<ItemDetail />} />
             <Route path="/sell" element={<SellItem />} />
@@ -124,8 +136,8 @@ function AppInner() {
           </Route>
         </Route>
 
-        {/* Catch-all → browse */}
-        <Route path="*" element={<Navigate to="/browse" replace />} />
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );

@@ -333,7 +333,11 @@ export default function Signup() {
 
             {/* Footer */}
             <p className="text-xs text-gray-500 mt-6 text-center max-w-md">
-                {t('auth.termsNotice')}
+                By continuing, you agree to UniCycle's{' '}
+                <a href="/terms" className="underline hover:text-gray-700">Terms of Service</a>
+                {' '}and{' '}
+                <a href="/privacy" className="underline hover:text-gray-700">Privacy Policy</a>.
+                Only verified students can access the marketplace.
             </p>
         </div>
     );
