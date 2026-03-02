@@ -76,7 +76,10 @@ def get_saved(
         joinedload(Listing.seller)
     ).filter(
         Listing.id.in_(listing_ids),
-        Listing.is_active == True
+        Listing.is_active == True,
+        Listing.seller_id.in_(
+            db.query(User.id).filter(User.is_suspended == False)
+        )
     ).order_by(Listing.created_at.desc()).all()
 
     return listings

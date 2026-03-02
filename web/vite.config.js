@@ -8,12 +8,14 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'icons/*.png'],
+      includeAssets: ['favicon.ico'],
+      // IMPORTANT: Add icon-192.png and icon-512.png to web/public/icons/
+      // Use your app icon (same as mobile/assets/icon.png), resized to 192x192 and 512x512
       manifest: {
         name: 'UniCycle',
         short_name: 'UniCycle',
         description: 'The student marketplace for Montreal universities',
-        theme_color: '#10B981',
+        theme_color: '#22c55e',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: '/',
