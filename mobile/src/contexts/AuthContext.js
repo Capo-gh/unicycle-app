@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { login as loginApi, signup as signupApi, getCurrentUser } from '../api/auth';
+import { setLogoutCallback } from '../api/authCallback';
 
 const AuthContext = createContext({});
 
@@ -62,6 +63,11 @@ export const AuthProvider = ({ children }) => {
         await AsyncStorage.removeItem('token');
         await AsyncStorage.removeItem('user');
     };
+
+    // Register logout so the axios interceptor can call it on 401/suspended 403
+    useEffect(() => {
+        setLogoutCallback(logout);
+    }, []);
 
     const updateUser = async (updates) => {
         const updatedUser = { ...user, ...updates };
