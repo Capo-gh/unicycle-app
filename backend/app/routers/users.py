@@ -22,6 +22,10 @@ class UpdateProfileRequest(BaseModel):
     avatar_url: Optional[str] = None
 
 
+class PushTokenRequest(BaseModel):
+    token: str
+
+
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user_profile(
     user_id: int,
@@ -108,3 +112,18 @@ def update_profile(
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.put("/me/push-token")
+def register_push_token(
+    body: PushTokenRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Register or update the Expo push notification token for the current user."""
+    token = body.token.strip()
+    if not token.startswith("ExponentPushToken"):
+        raise HTTPException(status_code=400, detail="Invalid Expo push token format")
+    current_user.push_token = token
+    db.commit()
+    return {"message": "Push token registered"}

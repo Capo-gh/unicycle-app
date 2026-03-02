@@ -16,6 +16,7 @@ class User(Base):
     token_created_at = Column(DateTime(timezone=True), nullable=True)
 
     avatar_url = Column(String, nullable=True)
+    push_token = Column(String, nullable=True)  # Expo push notification token
 
     is_admin = Column(Boolean, default=False)
     is_super_admin = Column(Boolean, default=False)

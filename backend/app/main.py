@@ -101,6 +101,9 @@ with engine.connect() as conn:
     if "avatar_url" not in existing_columns:
         conn.execute(text("ALTER TABLE users ADD COLUMN avatar_url VARCHAR"))
         conn.commit()
+    if "push_token" not in existing_columns:
+        conn.execute(text("ALTER TABLE users ADD COLUMN push_token VARCHAR"))
+        conn.commit()
 
     # Request university column
     request_columns = [col["name"] for col in inspector.get_columns("requests")]

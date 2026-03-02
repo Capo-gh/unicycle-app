@@ -13,6 +13,7 @@ from ..schemas.message import (
 from ..utils.dependencies import get_current_user_required
 from .notifications import send_user_notification
 from ..utils.email import send_message_email
+from ..utils.push import send_push_notification
 from .ws import manager as ws_manager
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
@@ -240,6 +241,7 @@ async def send_message(
     recipient_id = conversation.seller_id if current_user.id == conversation.buyer_id else conversation.buyer_id
 
     # Push message to recipient via WebSocket if they have an active connection
+    recipient_on_ws = False
     try:
         await ws_manager.send_to_user(recipient_id, {
             "type": "new_message",
@@ -257,8 +259,24 @@ async def send_message(
                 },
             },
         })
+        recipient_on_ws = recipient_id in ws_manager.active_connections
     except Exception as e:
         print(f"[ws] Failed to push message: {e}")
+
+    # Send OS push notification if recipient is not on WebSocket (app is in background/closed)
+    if not recipient_on_ws:
+        try:
+            recipient_user = db.query(User).filter(User.id == recipient_id).first()
+            if recipient_user and getattr(recipient_user, "push_token", None):
+                listing_title = conversation.listing.title if conversation.listing else "an item"
+                send_push_notification(
+                    token=recipient_user.push_token,
+                    title=f"New message from {current_user.name}",
+                    body=f"{message_data.text[:80]}..." if len(message_data.text) > 80 else message_data.text,
+                    data={"conversation_id": conversation_id, "type": "message"},
+                )
+        except Exception as e:
+            print(f"[push] Failed to send push notification: {e}")
 
     # Notify the recipient (non-critical — separate commit)
     listing_title = conversation.listing.title if conversation.listing else "an item"

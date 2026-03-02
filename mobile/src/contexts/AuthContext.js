@@ -1,9 +1,46 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 import { login as loginApi, signup as signupApi, getCurrentUser } from '../api/auth';
 import { setLogoutCallback } from '../api/authCallback';
+import { registerPushToken } from '../api/users';
 
 const AuthContext = createContext({});
+
+// Configure how notifications appear when app is in foreground
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+    }),
+});
+
+async function registerForPushNotifications() {
+    if (Platform.OS === 'web') return null;
+
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') {
+        return null;
+    }
+
+    // Get the Expo push token
+    try {
+        const tokenData = await Notifications.getExpoPushTokenAsync();
+        return tokenData.data;
+    } catch (e) {
+        console.log('[push] Could not get push token:', e);
+        return null;
+    }
+}
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -14,6 +51,19 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         loadUser();
     }, []);
+
+    // Register for push notifications when user logs in
+    useEffect(() => {
+        if (user) {
+            registerForPushNotifications().then((pushToken) => {
+                if (pushToken) {
+                    registerPushToken(pushToken).catch((e) =>
+                        console.log('[push] Failed to register push token:', e)
+                    );
+                }
+            });
+        }
+    }, [user?.id]);
 
     const loadUser = async () => {
         try {

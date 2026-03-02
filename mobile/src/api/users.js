@@ -15,3 +15,8 @@ export const updateProfile = async (fields) => {
     const response = await apiClient.put('/users/me', fields);
     return response.data;
 };
+
+export const registerPushToken = async (token) => {
+    const response = await apiClient.put('/users/me/push-token', { token });
+    return response.data;
+};

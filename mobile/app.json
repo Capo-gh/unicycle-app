@@ -60,6 +60,14 @@
           "photosPermission": "UniCycle needs access to your photo library to upload listing photos and your profile picture.",
           "cameraPermission": "UniCycle needs access to your camera to take photos for listings and your profile picture."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#22c55e",
+          "sounds": []
+        }
       ]
     ],
     "extra": {
