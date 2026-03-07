@@ -65,9 +65,10 @@ function AppInner() {
     }
 
     if (params.get('secure_pay_success') && params.get('listing_id') && params.get('session_id')) {
-      activateSecurePay(parseInt(params.get('listing_id')), params.get('session_id'))
+      const listingId = params.get('listing_id');
+      activateSecurePay(parseInt(listingId), params.get('session_id'))
         .catch((e) => console.error('Secure pay activation failed:', e));
-      navigate('/my-listings', { replace: true });
+      navigate(`/item/${listingId}`, { replace: true });
       return;
     }
 
