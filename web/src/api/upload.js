@@ -6,6 +6,7 @@ export const uploadImage = async (file) => {
 
     const response = await apiClient.post('/upload/image', formData, {
         timeout: 60000,
+        headers: { 'Content-Type': undefined },
     });
     return response.data.url;
 };
@@ -18,6 +19,7 @@ export const uploadImages = async (files) => {
 
     const response = await apiClient.post('/upload/images', formData, {
         timeout: 60000,
+        headers: { 'Content-Type': undefined },
     });
     return response.data;
 };
