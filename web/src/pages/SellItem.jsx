@@ -70,11 +70,13 @@ export default function SellItem() {
     const compressAndUpload = async (file) => {
         let fileToUpload = file;
         if (file.type.startsWith('image/') && file.size > 500 * 1024) {
-            fileToUpload = await imageCompression(file, {
+            const compressed = await imageCompression(file, {
                 maxSizeMB: 1,
                 maxWidthOrHeight: 1920,
                 useWebWorker: true,
             });
+            // Preserve filename — imageCompression may return a Blob without a name
+            fileToUpload = new File([compressed], file.name, { type: compressed.type || file.type });
         }
         return await uploadImage(fileToUpload);
     };
