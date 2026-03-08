@@ -5,9 +5,7 @@ export const uploadImage = async (file) => {
     formData.append('file', file);
 
     const response = await apiClient.post('/upload/image', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
+        timeout: 60000,
     });
     return response.data.url;
 };
@@ -19,9 +17,7 @@ export const uploadImages = async (files) => {
     });
 
     const response = await apiClient.post('/upload/images', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
+        timeout: 60000,
     });
     return response.data;
 };
