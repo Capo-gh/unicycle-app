@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 
 export const useMarketplaceStore = create((set) => ({
-    currentMarketplace: '',
-    setCurrentMarketplace: (marketplace) => set({ currentMarketplace: marketplace }),
+    currentMarketplace: localStorage.getItem('currentMarketplace') || '',
+    setCurrentMarketplace: (marketplace) => {
+        localStorage.setItem('currentMarketplace', marketplace);
+        set({ currentMarketplace: marketplace });
+    },
 }));

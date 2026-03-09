@@ -33,6 +33,7 @@ export const useAuthStore = create((set) => ({
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('currentPage');
+        localStorage.removeItem('currentMarketplace');
         set({ user: null });
     },
 }));
