@@ -57,13 +57,14 @@ export default function SellItem() {
     };
 
     const handleSafeZoneSelect = (e) => {
-        const zone = safeZones.find(z => z.name === e.target.value);
-        if (zone) {
-            setFormData(prev => ({
-                ...prev,
-                safeZone: zone.name,
-                safeZoneAddress: zone.address
-            }));
+        const value = e.target.value;
+        if (value === 'Other') {
+            setFormData(prev => ({ ...prev, safeZone: 'Other', safeZoneAddress: '' }));
+        } else {
+            const zone = safeZones.find(z => z.name === value);
+            if (zone) {
+                setFormData(prev => ({ ...prev, safeZone: zone.name, safeZoneAddress: zone.address }));
+            }
         }
     };
 
@@ -352,10 +353,19 @@ export default function SellItem() {
                             {safeZones.map(zone => (
                                 <option key={zone.name} value={zone.name}>{zone.name}</option>
                             ))}
+                            <option value="Other">Other (enter custom address)</option>
                         </select>
-                        {formData.safeZoneAddress && (
+                        {formData.safeZone === 'Other' ? (
+                            <input
+                                type="text"
+                                placeholder="e.g. 123 Main St, lobby — or a coffee shop name"
+                                value={formData.safeZoneAddress}
+                                onChange={e => setFormData(prev => ({ ...prev, safeZoneAddress: e.target.value }))}
+                                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
+                            />
+                        ) : formData.safeZoneAddress ? (
                             <p className="text-sm text-gray-600">{formData.safeZoneAddress}</p>
-                        )}
+                        ) : null}
                     </div>
 
                     {error && (

@@ -332,12 +332,19 @@ export default function SellScreen({ navigation }) {
                         </View>
                         <Ionicons name="chevron-down" size={20} color="#999" />
                     </TouchableOpacity>
-                    {formData.safeZoneAddress && (
+                    {formData.safeZone === 'Other' ? (
+                        <TextInput
+                            style={[styles.input, { marginTop: 12 }]}
+                            placeholder="e.g. 123 Main St, lobby — or a coffee shop name"
+                            value={formData.safeZoneAddress}
+                            onChangeText={(text) => setFormData({ ...formData, safeZoneAddress: text })}
+                        />
+                    ) : formData.safeZoneAddress ? (
                         <View style={styles.addressBox}>
                             <Ionicons name="location-outline" size={16} color="#666" />
                             <Text style={styles.addressText}>{formData.safeZoneAddress}</Text>
                         </View>
-                    )}
+                    ) : null}
                 </View>
 
                 {/* Submit Button */}
@@ -468,6 +475,26 @@ export default function SellScreen({ navigation }) {
                                     )}
                                 </TouchableOpacity>
                             ))}
+                            <TouchableOpacity
+                                style={[styles.safeZoneItem, formData.safeZone === 'Other' && styles.safeZoneItemActive]}
+                                onPress={() => {
+                                    setFormData({ ...formData, safeZone: 'Other', safeZoneAddress: '' });
+                                    setShowSafeZonePicker(false);
+                                }}
+                            >
+                                <View style={styles.safeZoneItemContent}>
+                                    <View style={styles.safeZoneItemHeader}>
+                                        <Ionicons name="pencil" size={18} color={formData.safeZone === 'Other' ? COLORS.green : '#666'} />
+                                        <Text style={[styles.safeZoneItemTitle, formData.safeZone === 'Other' && styles.safeZoneItemTitleActive]}>
+                                            Other
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.safeZoneItemSubtitle}>Enter a custom address</Text>
+                                </View>
+                                {formData.safeZone === 'Other' && (
+                                    <Ionicons name="checkmark-circle" size={24} color={COLORS.green} />
+                                )}
+                            </TouchableOpacity>
                         </ScrollView>
                     </View>
                 </TouchableOpacity>

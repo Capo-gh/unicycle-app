@@ -268,7 +268,7 @@ export default function RequestsScreen({ navigation }) {
 }
 
 // Recursive Reply Component
-function ReplyItem({ reply, request, user, depth, onReplyTo, onDeleteReply, formatTimeAgo, maxDepth = 3 }) {
+function ReplyItem({ reply, request, user, depth, onReplyTo, onDeleteReply, formatTimeAgo, onNavigateToProfile, maxDepth = 3 }) {
     const isOP = reply.author_id === request.author_id;
     const canReply = depth < maxDepth;
     const canDelete = user?.id === reply.author_id || user?.id === request.author_id;
@@ -277,11 +277,16 @@ function ReplyItem({ reply, request, user, depth, onReplyTo, onDeleteReply, form
         <View style={[styles.replyItem, { marginLeft: depth > 0 ? 16 : 0 }]}>
             {depth > 0 && <View style={styles.replyNestLine} />}
             <View style={styles.replyHeader}>
-                <View style={[styles.replyAvatar, depth > 0 && { width: 28, height: 28, borderRadius: 14 }]}>
-                    <Text style={[styles.replyAvatarText, depth > 0 && { fontSize: 12 }]}>
-                        {reply.author?.name?.charAt(0) || '?'}
-                    </Text>
-                </View>
+                <TouchableOpacity
+                    onPress={() => onNavigateToProfile && reply.author_id && onNavigateToProfile(reply.author_id)}
+                    disabled={!reply.author_id}
+                >
+                    <View style={[styles.replyAvatar, depth > 0 && { width: 28, height: 28, borderRadius: 14 }]}>
+                        <Text style={[styles.replyAvatarText, depth > 0 && { fontSize: 12 }]}>
+                            {reply.author?.name?.charAt(0) || '?'}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
                 <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         <Text style={styles.replyAuthor}>{reply.author?.name}</Text>
@@ -325,6 +330,7 @@ function ReplyItem({ reply, request, user, depth, onReplyTo, onDeleteReply, form
                             onReplyTo={onReplyTo}
                             onDeleteReply={onDeleteReply}
                             formatTimeAgo={formatTimeAgo}
+                            onNavigateToProfile={onNavigateToProfile}
                             maxDepth={maxDepth}
                         />
                     ))}
@@ -450,6 +456,7 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteRe
                                     onReplyTo={handleReplyTo}
                                     onDeleteReply={onDeleteReply}
                                     formatTimeAgo={formatTimeAgo}
+                                    onNavigateToProfile={onNavigateToProfile}
                                 />
                             ))
                         )}

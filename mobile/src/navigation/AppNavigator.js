@@ -25,6 +25,7 @@ import HelpSupportScreen from '../screens/HelpSupportScreen';
 import AboutScreen from '../screens/AboutScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 import SavedScreen from '../screens/SavedScreen';
+import SavedSearchesScreen from '../screens/SavedSearchesScreen';
 import AnnouncementModal from '../components/AnnouncementModal';
 
 const Stack = createNativeStackNavigator();
@@ -144,6 +145,11 @@ function ProfileStack() {
                 name="SavedList"
                 component={SavedScreen}
                 options={{ headerShown: true, title: 'Saved', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
+                name="SavedSearches"
+                component={SavedSearchesScreen}
+                options={{ headerShown: true, title: 'Saved Searches', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
                 name="Notifications"

@@ -296,6 +296,17 @@ export default function ProfileScreen({ navigation }) {
 
                     <TouchableOpacity
                         style={styles.menuItem}
+                        onPress={() => navigation.navigate('SavedSearches')}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <Ionicons name="notifications-outline" size={22} color={COLORS.dark} />
+                            <Text style={styles.menuText}>Saved Searches</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#999" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.menuItem}
                         onPress={logout}
                     >
                         <View style={styles.menuItemLeft}>
