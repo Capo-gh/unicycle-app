@@ -198,6 +198,20 @@ export default function UserProfileScreen({ route, navigation }) {
                     </View>
                 </View>
 
+                {/* Message User button */}
+                {currentUser && currentUser.id !== userId && listings.some(l => !l.is_sold) && (
+                    <TouchableOpacity
+                        style={styles.messageBtn}
+                        onPress={() => {
+                            const activeListing = listings.find(l => !l.is_sold);
+                            navigation.navigate('ItemDetail', { listing: activeListing });
+                        }}
+                    >
+                        <Ionicons name="chatbubble-outline" size={16} color="#fff" />
+                        <Text style={styles.messageBtnText}>Message User</Text>
+                    </TouchableOpacity>
+                )}
+
                 {/* Action buttons */}
                 <View style={styles.actionRow}>
                     {canReview && (
@@ -500,6 +514,19 @@ const styles = StyleSheet.create({
     ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
     ratingText: { fontSize: 12, color: '#6b7280', marginLeft: 4 },
     noReviews: { fontSize: 12, color: '#9ca3af' },
+
+    messageBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        marginHorizontal: 16,
+        marginTop: 12,
+        paddingVertical: 12,
+        backgroundColor: COLORS.green,
+        borderRadius: 10,
+    },
+    messageBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 
     actionRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 12 },
     reviewBtn: {

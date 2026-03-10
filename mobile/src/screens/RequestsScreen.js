@@ -150,6 +150,7 @@ export default function RequestsScreen({ navigation }) {
                 onDelete={handleDeleteRequest}
                 onDeleteReply={handleDeleteReply}
                 formatTimeAgo={formatTimeAgo}
+                onNavigateToProfile={(userId) => navigation.navigate('UserProfile', { userId })}
             />
         );
     }
@@ -160,9 +161,13 @@ export default function RequestsScreen({ navigation }) {
             onPress={() => handleSelectRequest(item.id)}
         >
             <View style={styles.requestHeader}>
-                <View style={styles.avatar}>
+                <TouchableOpacity
+                    style={styles.avatar}
+                    onPress={() => navigation.navigate('UserProfile', { userId: item.author_id })}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
                     <Text style={styles.avatarText}>{item.author?.name?.charAt(0) || '?'}</Text>
-                </View>
+                </TouchableOpacity>
                 <View style={styles.requestContent}>
                     <View style={styles.badges}>
                         {item.urgent && (
@@ -342,7 +347,7 @@ function countAllReplies(replies) {
 }
 
 // Request Detail Component
-function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteReply, formatTimeAgo }) {
+function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteReply, formatTimeAgo, onNavigateToProfile }) {
     const [replyText, setReplyText] = useState('');
     const [sending, setSending] = useState(false);
     const [replyingTo, setReplyingTo] = useState(null);
@@ -389,9 +394,13 @@ function RequestDetail({ request, user, onBack, onAddReply, onDelete, onDeleteRe
                 <ScrollView style={styles.detailContent}>
                     <View style={styles.requestCard}>
                         <View style={styles.requestCardHeader}>
-                            <View style={styles.avatar}>
+                            <TouchableOpacity
+                                style={styles.avatar}
+                                onPress={() => onNavigateToProfile && onNavigateToProfile(request.author_id)}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
                                 <Text style={styles.avatarText}>{request.author?.name?.charAt(0) || '?'}</Text>
-                            </View>
+                            </TouchableOpacity>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.authorName}>{request.author?.name}</Text>
                                 <Text style={styles.authorUniversity}>{request.author?.university}</Text>

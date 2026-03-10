@@ -69,11 +69,34 @@ function MainTabs() {
             })}
         >
             <Tab.Screen name="Browse" component={BrowseStack} />
-            <Tab.Screen name="Requests" component={RequestsScreen} />
+            <Tab.Screen name="Requests" component={RequestsStack} />
             <Tab.Screen name="Sell" component={SellScreen} />
             <Tab.Screen name="Messages" component={MessagesScreen} />
             <Tab.Screen name="Profile" component={ProfileStack} />
         </Tab.Navigator>
+    );
+}
+
+// Requests Stack (for navigating to user profiles from requests)
+function RequestsStack() {
+    return (
+        <Stack.Navigator>
+            <Stack.Screen
+                name="RequestsList"
+                component={RequestsScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="UserProfile"
+                component={UserProfileScreen}
+                options={{ headerShown: true, title: 'User Profile', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
+                name="ItemDetail"
+                component={ItemDetailScreen}
+                options={{ headerShown: true, title: 'Item Details', headerBackTitle: 'Back' }}
+            />
+        </Stack.Navigator>
     );
 }
 

@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getListings } from '../api/listings';
 import { toggleSave, getSavedIds } from '../api/saved';
+import { saveSearch } from '../api/savedSearches';
 import { COLORS } from '../../../shared/constants/colors';
 import NotificationBell from '../components/NotificationBell';
 
@@ -79,6 +80,24 @@ export default function BrowseScreen({ navigation }) {
     });
 
     const hasActiveFilters = filters.minPrice || filters.maxPrice || filters.condition !== 'All' || filters.sort !== 'newest';
+    const hasSearchToSave = searchQuery.trim() || selectedCategory !== 'All' || hasActiveFilters;
+
+    const [searchSaved, setSearchSaved] = useState(false);
+
+    const handleSaveSearch = async () => {
+        try {
+            await saveSearch({
+                query: searchQuery.trim() || null,
+                category: selectedCategory !== 'All' ? selectedCategory : null,
+                min_price: filters.minPrice ? parseFloat(filters.minPrice) : null,
+                max_price: filters.maxPrice ? parseFloat(filters.maxPrice) : null,
+                condition: filters.condition !== 'All' ? filters.condition : null,
+                university: currentMarketplace !== ALL_MONTREAL ? currentMarketplace : null,
+            });
+            setSearchSaved(true);
+            setTimeout(() => setSearchSaved(false), 3000);
+        } catch { /* ignore */ }
+    };
 
     useEffect(() => {
         getSavedIds().then(ids => setSavedIds(new Set(ids))).catch(() => {});
@@ -240,6 +259,14 @@ export default function BrowseScreen({ navigation }) {
                         <Ionicons name="options-outline" size={22} color={(showFilterModal || hasActiveFilters) ? '#fff' : '#666'} />
                         {hasActiveFilters && !showFilterModal && <View style={styles.filterDot} />}
                     </TouchableOpacity>
+                    {hasSearchToSave && (
+                        <TouchableOpacity
+                            style={[styles.filterButton, searchSaved && styles.filterButtonActive]}
+                            onPress={handleSaveSearch}
+                        >
+                            <Ionicons name={searchSaved ? 'bookmark' : 'bookmark-outline'} size={22} color={searchSaved ? '#fff' : '#666'} />
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {/* Category Chips */}
