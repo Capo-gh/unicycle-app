@@ -432,8 +432,15 @@ export default function Listings() {
                                     </div>
                                     <div className="p-3">
                                         <h3 className="font-medium text-gray-900 text-sm truncate">{item.title}</h3>
-                                        <p className="text-unicycle-green font-bold mt-1">
-                                            {item.price === 0 ? 'Free' : formatPrice(item.price)}
+                                        <p className="mt-1 flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-unicycle-green font-bold">
+                                                {item.price === 0 ? 'Free' : formatPrice(item.price)}
+                                            </span>
+                                            {item.original_price > item.price && (
+                                                <span className="text-gray-400 text-xs line-through">
+                                                    {formatPrice(item.original_price)}
+                                                </span>
+                                            )}
                                         </p>
                                         <p className="text-xs text-gray-500 mt-1 truncate">{item.category || 'Other'}</p>
                                     </div>

@@ -16,6 +16,7 @@ import Messages from './pages/Messages';
 import Requests from './pages/Requests';
 import MyListings from './pages/MyListings';
 import Saved from './pages/Saved';
+import SavedSearches from './pages/SavedSearches';
 import Settings from './pages/Settings';
 import Admin from './pages/Admin';
 import Signup from './pages/Signup';
@@ -42,7 +43,7 @@ function AppInner() {
   // Set marketplace to user's university when user is first confirmed
   useEffect(() => {
     if (user) {
-      setCurrentMarketplace(user.university || '');
+      setCurrentMarketplace(user.is_sponsor ? 'all' : (user.university || ''));
     }
   }, [user?.id]);
 
@@ -126,6 +127,7 @@ function AppInner() {
             <Route path="/messages" element={<Messages />} />
             <Route path="/requests" element={<Requests />} />
             <Route path="/saved" element={<Saved />} />
+            <Route path="/saved-searches" element={<SavedSearches />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/user/:id" element={<UserProfile />} />
             <Route path="/settings" element={<Settings />} />

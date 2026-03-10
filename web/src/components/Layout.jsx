@@ -55,7 +55,7 @@ export default function Layout() {
         if (pathname === '/requests') return 'requests';
         if (pathname === '/sell') return 'sell';
         if (pathname === '/messages') return 'messages';
-        if (pathname === '/profile' || pathname === '/settings' || pathname === '/my-listings' || pathname === '/saved') return 'profile';
+        if (pathname === '/profile' || pathname === '/settings' || pathname === '/my-listings' || pathname === '/saved' || pathname === '/saved-searches') return 'profile';
         if (pathname === '/admin') return 'admin';
         return 'listings';
     };

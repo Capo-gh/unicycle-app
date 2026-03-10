@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, ShieldCheck, MessageCircle, Send, ArrowLeft, Trash2, Languages } from 'lucide-react';
+import { Search, ShieldCheck, MessageCircle, Send, ArrowLeft, Archive, ArchiveRestore, Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { getConversations, getConversation, sendMessage, createConversation, archiveConversation } from '../api/messages';
+import { getConversations, getConversation, sendMessage, createConversation, archiveConversation, unarchiveConversation } from '../api/messages';
 
 async function translateText(text, targetLang) {
     const sourceLang = targetLang === 'fr' ? 'en' : 'fr';
@@ -31,6 +31,7 @@ export default function Messages() {
     const [translatedMessages, setTranslatedMessages] = useState({});
     const [translatingId, setTranslatingId] = useState(null);
     const [loadingConv, setLoadingConv] = useState(false);
+    const [showArchived, setShowArchived] = useState(false);
     const messagesEndRef = useRef(null);
     const wsRef = useRef(null);
 
@@ -39,7 +40,7 @@ export default function Messages() {
 
     useEffect(() => {
         fetchConversations();
-    }, []);
+    }, [showArchived]);
 
     useEffect(() => {
         if (incomingRequest?.listingId) {
@@ -83,10 +84,13 @@ export default function Messages() {
         let timeoutId = null;
 
         const connect = () => {
-            const ws = new WebSocket(`${wsBase}/ws/conversations/${selectedConvId}?token=${token}`);
+            const ws = new WebSocket(`${wsBase}/ws/conversations/${selectedConvId}`);
             wsRef.current = ws;
 
-            ws.onopen = () => { reconnectDelay = 1000; };
+            ws.onopen = () => {
+                reconnectDelay = 1000;
+                ws.send(JSON.stringify({ type: 'auth', token }));
+            };
 
             ws.onmessage = (event) => {
                 try {
@@ -129,7 +133,7 @@ export default function Messages() {
         setLoading(true);
         setError(null);
         try {
-            const data = await getConversations();
+            const data = await getConversations({ includeArchived: showArchived });
             setConversations(data);
         } catch (err) {
             console.error('Error fetching conversations:', err);
@@ -216,7 +220,7 @@ export default function Messages() {
     };
 
     const handleArchiveConversation = async (convId) => {
-        if (!confirm('Archive this conversation?')) return;
+        if (!confirm('Archive this conversation?\n\nIt will be hidden from your inbox. You can view it anytime under Archived, and it restores automatically if either side sends a new message.')) return;
         try {
             await archiveConversation(convId);
             setConversations(prev => prev.filter(c => c.id !== convId));
@@ -226,6 +230,19 @@ export default function Messages() {
             }
         } catch (err) {
             console.error('Error archiving conversation:', err);
+        }
+    };
+
+    const handleUnarchiveConversation = async (convId) => {
+        try {
+            await unarchiveConversation(convId);
+            setConversations(prev => prev.filter(c => c.id !== convId));
+            if (selectedConvId === convId) {
+                setSelectedConvId(null);
+                setActiveConversation(null);
+            }
+        } catch (err) {
+            console.error('Error unarchiving conversation:', err);
         }
     };
 
@@ -254,7 +271,16 @@ export default function Messages() {
             {/* LEFT: Conversation List */}
             <div className={`w-full lg:w-96 bg-white flex flex-col border-r border-gray-200 ${selectedConvId ? 'hidden lg:flex' : 'flex'}`}>
                 <div className="px-4 py-4 border-b border-gray-200 flex-shrink-0">
-                    <h1 className="text-xl font-bold text-unicycle-green mb-3">{t('messages.title')}</h1>
+                    <div className="flex items-center justify-between mb-3">
+                        <h1 className="text-xl font-bold text-unicycle-green">{t('messages.title')}</h1>
+                        <button
+                            onClick={() => { setShowArchived(v => !v); setSelectedConvId(null); setActiveConversation(null); }}
+                            className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors ${showArchived ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'}`}
+                        >
+                            <Archive className="w-3.5 h-3.5" />
+                            {showArchived ? 'Back to Inbox' : 'Archived'}
+                        </button>
+                    </div>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <input
@@ -470,13 +496,23 @@ export default function Messages() {
                                     )}
                                 </div>
                             </div>
-                            <button
-                                onClick={() => handleArchiveConversation(activeConversation.id)}
-                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full"
-                                title="Archive conversation"
-                            >
-                                <Trash2 className="w-5 h-5" />
-                            </button>
+                            {showArchived ? (
+                                <button
+                                    onClick={() => handleUnarchiveConversation(activeConversation.id)}
+                                    className="p-2 text-gray-400 hover:text-unicycle-green hover:bg-green-50 rounded-full"
+                                    title="Restore to inbox"
+                                >
+                                    <ArchiveRestore className="w-5 h-5" />
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => handleArchiveConversation(activeConversation.id)}
+                                    className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-full"
+                                    title="Archive conversation"
+                                >
+                                    <Archive className="w-5 h-5" />
+                                </button>
+                            )}
                         </div>
 
                         {/* Messages Area */}

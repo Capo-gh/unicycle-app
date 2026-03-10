@@ -65,6 +65,9 @@ with engine.connect() as conn:
     if "review_prompt_sent" not in listing_columns:
         conn.execute(text("ALTER TABLE listings ADD COLUMN review_prompt_sent BOOLEAN DEFAULT FALSE"))
         conn.commit()
+    if "original_price" not in listing_columns:
+        conn.execute(text("ALTER TABLE listings ADD COLUMN original_price FLOAT"))
+        conn.commit()
 
     # Transaction payment columns
     if "payment_method" not in transaction_columns:

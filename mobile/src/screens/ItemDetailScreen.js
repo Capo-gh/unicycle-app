@@ -474,7 +474,14 @@ export default function ItemDetailScreen({ route, navigation }) {
                                 <Text style={styles.metaText}>{listing.condition}</Text>
                             </View>
                         </View>
-                        <Text style={[styles.price, isSold && styles.priceSold]}>${listing.price}</Text>
+                        <View style={styles.priceRow}>
+                            <Text style={[styles.price, isSold && styles.priceSold]}>
+                                {listing.price === 0 ? 'Free' : `$${listing.price}`}
+                            </Text>
+                            {!isSold && listing.original_price > listing.price && (
+                                <Text style={styles.originalPrice}>${listing.original_price}</Text>
+                            )}
+                        </View>
                     </View>
                     {isSold && !isOwner && (
                         <Text style={styles.soldText}>This item has been sold</Text>
@@ -980,10 +987,20 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#999',
     },
+    priceRow: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        gap: 8,
+    },
     price: {
         fontSize: 24,
         fontWeight: 'bold',
         color: COLORS.green,
+    },
+    originalPrice: {
+        fontSize: 16,
+        color: '#9ca3af',
+        textDecorationLine: 'line-through',
     },
     priceSold: {
         color: '#999',

@@ -74,6 +74,7 @@ class ListingResponse(BaseModel):
     title: str
     description: str
     price: float
+    original_price: Optional[float] = None
     category: str
     condition: str
     safe_zone: str

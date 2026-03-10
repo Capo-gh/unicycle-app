@@ -33,6 +33,7 @@ def create_listing(
     db_listing = Listing(
         **listing_data.model_dump(),
         seller_id=current_user.id,
+        original_price=listing_data.price,
         expires_at=datetime.now(timezone.utc) + timedelta(days=60)
     )
     db.add(db_listing)
@@ -236,6 +237,8 @@ def update_listing(
     
     update_data = listing_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
+        if field == 'original_price':
+            continue  # Never overwrite original_price via update
         setattr(listing, field, value)
     
     db.commit()

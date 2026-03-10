@@ -1,4 +1,5 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends
+import json
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models.user import User
@@ -45,11 +46,23 @@ manager = ConnectionManager()
 async def websocket_endpoint(
     websocket: WebSocket,
     conversation_id: int,
-    token: str = Query(...),
     db: Session = Depends(get_db),
 ):
-    # Authenticate via query param (browsers can't set headers for WebSocket)
-    email = verify_token(token)
+    # Accept first, then authenticate via first message (avoids token in URL/logs)
+    await websocket.accept()
+
+    try:
+        raw = await websocket.receive_text()
+        data = json.loads(raw)
+    except Exception:
+        await websocket.close(code=4001)
+        return
+
+    if data.get("type") != "auth" or not data.get("token"):
+        await websocket.close(code=4001)
+        return
+
+    email = verify_token(data["token"])
     if not email:
         await websocket.close(code=4001)
         return
@@ -67,7 +80,8 @@ async def websocket_endpoint(
         await websocket.close(code=4003)
         return
 
-    await manager.connect(websocket, user.id)
+    # Auth passed — register connection
+    manager.active_connections.setdefault(user.id, []).append(websocket)
     try:
         while True:
             # Keep alive; receive_text raises WebSocketDisconnect on client close

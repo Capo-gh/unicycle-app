@@ -19,6 +19,7 @@ import { toggleSave, getSavedIds } from '../api/saved';
 import { saveSearch } from '../api/savedSearches';
 import { COLORS } from '../../../shared/constants/colors';
 import NotificationBell from '../components/NotificationBell';
+import { useAuth } from '../contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -61,11 +62,14 @@ const sortOptions = [
 ];
 
 export default function BrowseScreen({ navigation }) {
+    const { user } = useAuth();
     const [listings, setListings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showMarketplacePicker, setShowMarketplacePicker] = useState(false);
     const [showFilterModal, setShowFilterModal] = useState(false);
-    const [currentMarketplace, setCurrentMarketplace] = useState('McGill University');
+    const [currentMarketplace, setCurrentMarketplace] = useState(
+        user?.is_sponsor ? ALL_MONTREAL : (user?.university || 'McGill University')
+    );
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
 
@@ -205,7 +209,12 @@ export default function BrowseScreen({ navigation }) {
             </TouchableOpacity>
             <View style={styles.info}>
                 <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-                <Text style={styles.price}>{item.price === 0 ? 'Free' : `$${item.price}`}</Text>
+                <View style={styles.priceRow}>
+                    <Text style={styles.price}>{item.price === 0 ? 'Free' : `$${item.price}`}</Text>
+                    {item.original_price > item.price && (
+                        <Text style={styles.originalPrice}>${item.original_price}</Text>
+                    )}
+                </View>
                 <Text style={styles.category}>{item.category}</Text>
             </View>
         </TouchableOpacity>
@@ -714,6 +723,12 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         color: COLORS.green,
+        marginBottom: 4,
+    },
+    originalPrice: {
+        fontSize: 13,
+        color: '#9ca3af',
+        textDecorationLine: 'line-through',
         marginBottom: 4,
     },
     category: {

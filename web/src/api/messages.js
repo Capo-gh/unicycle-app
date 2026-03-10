@@ -4,8 +4,10 @@ import apiClient from './client';
 // CONVERSATION ENDPOINTS
 // ═══════════════════════════════════════════════════════════════════
 
-export const getConversations = async () => {
-    const response = await apiClient.get('/messages/conversations');
+export const getConversations = async ({ includeArchived = false } = {}) => {
+    const response = await apiClient.get('/messages/conversations', {
+        params: includeArchived ? { include_archived: true } : {}
+    });
     return response.data;
 };
 
@@ -24,6 +26,10 @@ export const createConversation = async (listingId, initialMessage) => {
 
 export const archiveConversation = async (conversationId) => {
     await apiClient.delete(`/messages/conversations/${conversationId}`);
+};
+
+export const unarchiveConversation = async (conversationId) => {
+    await apiClient.put(`/messages/conversations/${conversationId}/unarchive`);
 };
 
 

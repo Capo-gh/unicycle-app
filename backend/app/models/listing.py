@@ -11,6 +11,7 @@ class Listing(Base):
     title = Column(String, nullable=False)
     description = Column(Text, nullable=False)
     price = Column(Float, nullable=False)
+    original_price = Column(Float, nullable=True)  # Set on create; shows crossed-out if price later reduced
     category = Column(String, nullable=False)
     condition = Column(String, nullable=False)
     images = Column(Text, nullable=True)  # Comma-separated URLs

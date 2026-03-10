@@ -472,8 +472,15 @@ export default function ItemDetail() {
                                     <span>{item.condition}</span>
                                 </div>
                             </div>
-                            <div className={`text-3xl font-bold ${isSold ? 'text-gray-400 line-through' : 'text-unicycle-green'}`}>
-                                ${item.price}
+                            <div className="flex items-baseline gap-3">
+                                <div className={`text-3xl font-bold ${isSold ? 'text-gray-400 line-through' : 'text-unicycle-green'}`}>
+                                    {item.price === 0 ? 'Free' : `$${item.price}`}
+                                </div>
+                                {!isSold && item.original_price > item.price && (
+                                    <span className="text-gray-400 text-lg line-through">
+                                        ${item.original_price}
+                                    </span>
+                                )}
                             </div>
                         </div>
                         {isSold && !isOwner && (

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, ShieldCheck, Package, Star, Plus, Heart, Pencil, Check, X, Camera } from 'lucide-react';
+import { Settings, ShieldCheck, Package, Star, Plus, Heart, Bell, Pencil, Check, X, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { getMyListings } from '../api/listings';
@@ -333,6 +333,23 @@ export default function Profile() {
                         >
                             <Heart className="w-4 h-4" />
                             View Saved Items
+                        </button>
+                    </div>
+
+                    {/* Saved Searches */}
+                    <div>
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                                <Bell className="w-5 h-5" />
+                                Saved Searches
+                            </h3>
+                        </div>
+                        <button
+                            onClick={() => navigate('/saved-searches')}
+                            className="w-full py-2.5 border border-unicycle-green text-unicycle-green rounded-lg font-medium hover:bg-unicycle-green/5 transition-colors text-sm flex items-center justify-center gap-2"
+                        >
+                            <Bell className="w-4 h-4" />
+                            Manage Saved Searches
                         </button>
                     </div>
 

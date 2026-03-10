@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_, func, desc
 from typing import List
@@ -22,22 +22,35 @@ router = APIRouter(prefix="/messages", tags=["Messages"])
 # CONVERSATION ENDPOINTS
 @router.get("/conversations", response_model=List[ConversationListResponse])
 def get_conversations(
+    include_archived: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_required)
 ):
-    """Get all conversations for the current user"""
-    # Get conversations where user is buyer or seller, not archived
-    conversations = db.query(Conversation).options(
-        joinedload(Conversation.buyer),
-        joinedload(Conversation.seller),
-        joinedload(Conversation.listing),
-        joinedload(Conversation.messages).joinedload(Message.sender)
-    ).filter(
-        or_(
-            and_(Conversation.buyer_id == current_user.id, Conversation.archived_by_buyer == False),
-            and_(Conversation.seller_id == current_user.id, Conversation.archived_by_seller == False)
-        )
-    ).order_by(desc(Conversation.updated_at)).all()
+    """Get all conversations for the current user. include_archived=true returns only archived ones."""
+    if include_archived:
+        conversations = db.query(Conversation).options(
+            joinedload(Conversation.buyer),
+            joinedload(Conversation.seller),
+            joinedload(Conversation.listing),
+            joinedload(Conversation.messages).joinedload(Message.sender)
+        ).filter(
+            or_(
+                and_(Conversation.buyer_id == current_user.id, Conversation.archived_by_buyer == True),
+                and_(Conversation.seller_id == current_user.id, Conversation.archived_by_seller == True)
+            )
+        ).order_by(desc(Conversation.updated_at)).all()
+    else:
+        conversations = db.query(Conversation).options(
+            joinedload(Conversation.buyer),
+            joinedload(Conversation.seller),
+            joinedload(Conversation.listing),
+            joinedload(Conversation.messages).joinedload(Message.sender)
+        ).filter(
+            or_(
+                and_(Conversation.buyer_id == current_user.id, Conversation.archived_by_buyer == False),
+                and_(Conversation.seller_id == current_user.id, Conversation.archived_by_seller == False)
+            )
+        ).order_by(desc(Conversation.updated_at)).all()
     
     # Build response with last message and unread count
     result = []
@@ -194,6 +207,26 @@ def archive_conversation(
             detail="Not authorized to archive this conversation"
         )
     
+    db.commit()
+    return None
+
+
+@router.put("/conversations/{conversation_id}/unarchive", status_code=status.HTTP_204_NO_CONTENT)
+def unarchive_conversation(
+    conversation_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Restore an archived conversation back to the inbox."""
+    conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    if not conversation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+    if conversation.buyer_id == current_user.id:
+        conversation.archived_by_buyer = False
+    elif conversation.seller_id == current_user.id:
+        conversation.archived_by_seller = False
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     db.commit()
     return None
 
