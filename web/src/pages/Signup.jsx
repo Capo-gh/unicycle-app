@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Mail, User, Building2, ShieldCheck, Eye, EyeOff, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { signup, login, forgotPassword } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
 import LanguageToggle from '../components/LanguageToggle';
@@ -12,8 +12,9 @@ import logo from '../assets/unicycle-icon.png';
 export default function Signup() {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const location = useLocation();
     const { setUser } = useAuthStore();
-    const [isLogin, setIsLogin] = useState(false);
+    const [isLogin, setIsLogin] = useState(location.state?.mode === 'login');
     const [selectedUniversity, setSelectedUniversity] = useState('');
     const [email, setEmail] = useState('');
     const [name, setName] = useState('');

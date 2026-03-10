@@ -18,7 +18,7 @@ const FEATURES = [
     {
         icon: '🛒',
         title: 'Browse & Buy',
-        desc: 'Find textbooks, electronics, furniture, and more — listed by students at your university.',
+        desc: 'Find textbooks, electronics, furniture, and more. All listed by students at your university.',
     },
     {
         icon: '📦',
@@ -86,7 +86,7 @@ export default function Landing() {
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 max-w-3xl leading-tight mb-6">
                     Buy and sell{' '}
                     <span className="text-green-500">on campus</span>,<br />
-                    not on Kijiji.
+                    not on Kijiji or Facebook.
                 </h1>
                 <p className="text-lg text-gray-500 max-w-xl mb-10">
                     UniCycle is the student marketplace for Montreal universities.
@@ -98,7 +98,7 @@ export default function Landing() {
                         onClick={() => navigate('/signup')}
                         className="bg-green-500 hover:bg-green-600 text-white font-semibold px-8 py-3.5 rounded-xl text-lg transition-colors shadow-sm"
                     >
-                        Get started — it's free
+                        Get started, it's free
                     </button>
                     <button
                         onClick={() => navigate('/signup', { state: { mode: 'login' } })}
