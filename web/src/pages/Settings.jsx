@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, LogOut, Bell, Shield, HelpCircle, Info, ChevronRight, Check, CheckCheck, ChevronDown, ChevronUp, Languages, Camera, Moon } from 'lucide-react';
+import { ArrowLeft, LogOut, Bell, Shield, HelpCircle, Info, ChevronRight, Check, CheckCheck, ChevronDown, ChevronUp, Languages, Camera, Moon, Gift, Lock, Copy, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import imageCompression from 'browser-image-compression';
-import { updateProfile } from '../api/users';
+import { updateProfile, getBlockedUsers, toggleBlockUser } from '../api/users';
 import { uploadImage } from '../api/upload';
 import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from '../api/notifications';
+import { getReferralInfo, changePassword } from '../api/auth';
 import LanguageToggle from '../components/LanguageToggle';
 
 // ─── Notifications Sub-Page ───────────────────────────────────────────────────
@@ -414,6 +415,250 @@ function AboutPage({ onBack }) {
     );
 }
 
+// ─── Referral Sub-Page ───────────────────────────────────────────────────────
+function ReferralPage({ onBack }) {
+    const [info, setInfo] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [copied, setCopied] = useState(false);
+
+    useEffect(() => {
+        getReferralInfo().then(setInfo).catch(() => {}).finally(() => setLoading(false));
+    }, []);
+
+    const frontendUrl = window.location.origin;
+    const referralLink = info?.referral_code ? `${frontendUrl}/signup?ref=${info.referral_code}` : '';
+
+    const handleCopy = () => {
+        if (!referralLink) return;
+        navigator.clipboard.writeText(referralLink).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
+            <div className="bg-white border-b border-gray-200 sticky top-14 lg:top-0 z-10">
+                <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+                    <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <ArrowLeft className="w-6 h-6 text-gray-700" />
+                    </button>
+                    <h1 className="text-lg font-semibold text-gray-900">Invite Friends</h1>
+                </div>
+            </div>
+
+            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+                <div className="bg-unicycle-green/10 border border-unicycle-green/20 rounded-lg p-5 text-center">
+                    <Gift className="w-10 h-10 text-unicycle-green mx-auto mb-2" />
+                    <h2 className="font-bold text-gray-900 text-lg mb-1">Invite classmates, earn free boosts</h2>
+                    <p className="text-sm text-gray-600">For every friend who signs up with your link and completes their account, you get <span className="font-semibold text-unicycle-green">1 free listing boost</span> (worth $2).</p>
+                </div>
+
+                {loading ? (
+                    <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-7 w-7 border-b-2 border-unicycle-green" /></div>
+                ) : (
+                    <>
+                        {/* Stats */}
+                        <div className="bg-white rounded-lg shadow-sm p-4 flex divide-x divide-gray-100">
+                            <div className="flex-1 text-center">
+                                <p className="text-2xl font-bold text-unicycle-green">{info?.referred_count ?? 0}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Friends invited</p>
+                            </div>
+                            <div className="flex-1 text-center">
+                                <p className="text-2xl font-bold text-unicycle-green">{info?.boost_credits ?? 0}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Boost credits left</p>
+                            </div>
+                        </div>
+
+                        {/* Referral link */}
+                        <div className="bg-white rounded-lg shadow-sm p-4">
+                            <p className="text-sm font-medium text-gray-700 mb-2">Your invite link</p>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 truncate">
+                                    {referralLink}
+                                </div>
+                                <button
+                                    onClick={handleCopy}
+                                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${copied ? 'bg-green-100 text-green-700' : 'bg-unicycle-green text-white hover:bg-unicycle-green/90'}`}
+                                >
+                                    {copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                    {copied ? 'Copied!' : 'Copy'}
+                                </button>
+                            </div>
+                        </div>
+
+                        <p className="text-xs text-gray-400 text-center">Credits are awarded once your friend completes their account setup.</p>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ─── Change Password Sub-Page ─────────────────────────────────────────────────
+function ChangePasswordPage({ onBack }) {
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        if (newPassword.length < 6) { setError('New password must be at least 6 characters.'); return; }
+        if (newPassword !== confirmPassword) { setError('New passwords do not match.'); return; }
+        setLoading(true);
+        try {
+            await changePassword(currentPassword, newPassword);
+            setSuccess(true);
+        } catch (err) {
+            setError(err?.response?.data?.detail || 'Failed to change password. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
+            <div className="bg-white border-b border-gray-200 sticky top-14 lg:top-0 z-10">
+                <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+                    <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <ArrowLeft className="w-6 h-6 text-gray-700" />
+                    </button>
+                    <h1 className="text-lg font-semibold text-gray-900">Change Password</h1>
+                </div>
+            </div>
+
+            <div className="max-w-2xl mx-auto px-4 py-6">
+                {success ? (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                        <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
+                        <p className="font-semibold text-green-800">Password changed successfully!</p>
+                        <button onClick={onBack} className="mt-4 text-sm text-unicycle-green hover:underline">Go back</button>
+                    </div>
+                ) : (
+                    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Current password</label>
+                            <input
+                                type="password"
+                                value={currentPassword}
+                                onChange={e => setCurrentPassword(e.target.value)}
+                                required
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
+                                placeholder="Enter current password"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">New password</label>
+                            <input
+                                type="password"
+                                value={newPassword}
+                                onChange={e => setNewPassword(e.target.value)}
+                                required
+                                minLength={6}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
+                                placeholder="Min. 6 characters"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm new password</label>
+                            <input
+                                type="password"
+                                value={confirmPassword}
+                                onChange={e => setConfirmPassword(e.target.value)}
+                                required
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green"
+                                placeholder="Re-enter new password"
+                            />
+                        </div>
+                        {error && <p className="text-sm text-red-600">{error}</p>}
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-2.5 bg-unicycle-green text-white rounded-lg font-semibold hover:bg-unicycle-green/90 transition-colors disabled:opacity-50"
+                        >
+                            {loading ? 'Saving…' : 'Change Password'}
+                        </button>
+                    </form>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ─── Blocked Users Sub-Page ──────────────────────────────────────────────────
+function BlockedUsersPage({ onBack }) {
+    const [blocked, setBlocked] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [unblocking, setUnblocking] = useState(null);
+
+    useEffect(() => {
+        getBlockedUsers().then(setBlocked).catch(() => {}).finally(() => setLoading(false));
+    }, []);
+
+    const handleUnblock = async (userId, name) => {
+        setUnblocking(userId);
+        try {
+            await toggleBlockUser(userId);
+            setBlocked(prev => prev.filter(u => u.id !== userId));
+        } catch {
+            alert(`Failed to unblock ${name}`);
+        } finally {
+            setUnblocking(null);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
+            <div className="bg-white border-b border-gray-200 sticky top-14 lg:top-0 z-10">
+                <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+                    <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <ArrowLeft className="w-6 h-6 text-gray-700" />
+                    </button>
+                    <h1 className="text-lg font-semibold text-gray-900">Blocked Users</h1>
+                </div>
+            </div>
+
+            <div className="max-w-2xl mx-auto px-4 py-6">
+                {loading ? (
+                    <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-7 w-7 border-b-2 border-unicycle-green" /></div>
+                ) : blocked.length === 0 ? (
+                    <div className="bg-white rounded-lg p-8 text-center shadow-sm">
+                        <p className="text-gray-500">You haven't blocked anyone.</p>
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-lg shadow-sm divide-y divide-gray-100">
+                        {blocked.map(u => (
+                            <div key={u.id} className="flex items-center gap-3 px-4 py-3">
+                                <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-unicycle-blue to-unicycle-green flex items-center justify-center text-white font-semibold flex-shrink-0">
+                                    {u.avatar_url
+                                        ? <img src={u.avatar_url} alt={u.name} className="w-full h-full object-cover" />
+                                        : u.name?.charAt(0)
+                                    }
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-gray-900 text-sm truncate">{u.name}</p>
+                                    <p className="text-xs text-gray-500 truncate">{u.university}</p>
+                                </div>
+                                <button
+                                    onClick={() => handleUnblock(u.id, u.name)}
+                                    disabled={unblocking === u.id}
+                                    className="text-sm text-unicycle-green hover:underline disabled:opacity-50 flex-shrink-0"
+                                >
+                                    {unblocking === u.id ? '...' : 'Unblock'}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 // ─── Main Settings Page ───────────────────────────────────────────────────────
 export default function Settings() {
     const navigate = useNavigate();
@@ -460,13 +705,16 @@ export default function Settings() {
 
     const handleLogout = () => {
         storeLogout();
-        navigate('/signup', { replace: true });
+        navigate('/signup', { replace: true, state: { mode: 'login' } });
     };
 
     if (subPage === 'notifications') return <NotificationsPage onBack={() => setSubPage(null)} />;
     if (subPage === 'privacy') return <PrivacySafetyPage onBack={() => setSubPage(null)} />;
     if (subPage === 'help') return <HelpSupportPage onBack={() => setSubPage(null)} />;
     if (subPage === 'about') return <AboutPage onBack={() => setSubPage(null)} />;
+    if (subPage === 'referral') return <ReferralPage onBack={() => setSubPage(null)} />;
+    if (subPage === 'changePassword') return <ChangePasswordPage onBack={() => setSubPage(null)} />;
+    if (subPage === 'blocked') return <BlockedUsersPage onBack={() => setSubPage(null)} />;
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
@@ -572,6 +820,39 @@ export default function Settings() {
                         <div className="flex items-center gap-3">
                             <Shield className="w-5 h-5 text-gray-600" />
                             <span className="font-medium text-gray-900">Privacy & Safety</span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                    </button>
+
+                    <button
+                        onClick={() => setSubPage('changePassword')}
+                        className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <Lock className="w-5 h-5 text-gray-600" />
+                            <span className="font-medium text-gray-900">Change Password</span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                    </button>
+
+                    <button
+                        onClick={() => setSubPage('blocked')}
+                        className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <Shield className="w-5 h-5 text-gray-600" />
+                            <span className="font-medium text-gray-900">Blocked Users</span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                    </button>
+
+                    <button
+                        onClick={() => setSubPage('referral')}
+                        className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <Gift className="w-5 h-5 text-gray-600" />
+                            <span className="font-medium text-gray-900">Invite Friends</span>
                         </div>
                         <ChevronRight className="w-4 h-4 text-gray-400" />
                     </button>
