@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Pencil, Trash2, Plus, CheckCircle, Circle, Zap, RefreshCw, Clock } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Plus, CheckCircle, Circle, Zap, RefreshCw, Clock, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getMyListings, deleteListing, markAsSold, markAsUnsold, renewListing, bumpListing } from '../api/listings';
 import { createBoostSession } from '../api/payments';
@@ -225,6 +225,10 @@ export default function MyListings() {
                                                 );
                                             })()}
                                             <span className="text-xs text-gray-500 truncate">{listing.category}</span>
+                                            <span className="text-xs text-gray-400 flex items-center gap-0.5 flex-shrink-0">
+                                                <Eye className="w-3 h-3" />
+                                                {listing.view_count ?? 0}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>

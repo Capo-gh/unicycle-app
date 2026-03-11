@@ -37,3 +37,16 @@ export const forgotPassword = async (email) => {
     const response = await api.post('/auth/forgot-password', { email });
     return response.data;
 };
+
+export const getReferralInfo = async () => {
+    const response = await api.get('/auth/referral');
+    return response.data;
+};
+
+export const changePassword = async (currentPassword, newPassword) => {
+    const response = await api.post('/auth/change-password', {
+        current_password: currentPassword,
+        new_password: newPassword,
+    });
+    return response.data;
+};

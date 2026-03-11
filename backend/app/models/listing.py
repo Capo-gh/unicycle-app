@@ -37,6 +37,9 @@ class Listing(Base):
     # Post-sale review prompt
     review_prompt_sent = Column(Boolean, default=False)
 
+    # Analytics (seller-only)
+    view_count = Column(Integer, default=0)
+
     # Foreign keys
     seller_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     

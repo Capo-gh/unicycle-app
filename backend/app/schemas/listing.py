@@ -88,6 +88,7 @@ class ListingResponse(BaseModel):
     last_bumped_at: Optional[datetime] = None
     seller_id: int
     seller: Optional[SellerInfo] = None
+    view_count: Optional[int] = 0
     created_at: datetime
     updated_at: Optional[datetime] = None
 

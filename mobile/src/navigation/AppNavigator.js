@@ -26,6 +26,9 @@ import AboutScreen from '../screens/AboutScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 import SavedScreen from '../screens/SavedScreen';
 import SavedSearchesScreen from '../screens/SavedSearchesScreen';
+import InviteFriendsScreen from '../screens/InviteFriendsScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import BlockedUsersScreen from '../screens/BlockedUsersScreen';
 import AnnouncementModal from '../components/AnnouncementModal';
 
 const Stack = createNativeStackNavigator();
@@ -211,6 +214,21 @@ function ProfileStack() {
                 name="About"
                 component={AboutScreen}
                 options={{ headerShown: true, title: 'About', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
+                name="InviteFriends"
+                component={InviteFriendsScreen}
+                options={{ headerShown: true, title: 'Invite Friends', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
+                name="ChangePassword"
+                component={ChangePasswordScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="BlockedUsers"
+                component={BlockedUsersScreen}
+                options={{ headerShown: false }}
             />
         </Stack.Navigator>
     );

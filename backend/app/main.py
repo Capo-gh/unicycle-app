@@ -19,6 +19,7 @@ from .models.admin_log import AdminLog
 from .models.system_setting import SystemSetting
 from .models.saved_listing import SavedListing
 from .models.saved_search import SavedSearch
+from .models.user_block import UserBlock
 
 # Create database tables (new tables are auto-created here)
 Base.metadata.create_all(bind=engine)
@@ -68,6 +69,9 @@ with engine.connect() as conn:
     if "original_price" not in listing_columns:
         conn.execute(text("ALTER TABLE listings ADD COLUMN original_price FLOAT"))
         conn.commit()
+    if "view_count" not in listing_columns:
+        conn.execute(text("ALTER TABLE listings ADD COLUMN view_count INTEGER DEFAULT 0"))
+        conn.commit()
 
     # Transaction payment columns
     if "payment_method" not in transaction_columns:
@@ -94,6 +98,17 @@ with engine.connect() as conn:
     notification_columns = [col["name"] for col in inspector.get_columns("notifications")]
     if "recipient_user_id" not in notification_columns:
         conn.execute(text("ALTER TABLE notifications ADD COLUMN recipient_user_id INTEGER REFERENCES users(id)"))
+        conn.commit()
+
+    # Referral columns
+    if "referral_code" not in existing_columns:
+        conn.execute(text("ALTER TABLE users ADD COLUMN referral_code VARCHAR UNIQUE"))
+        conn.commit()
+    if "referred_by_id" not in existing_columns:
+        conn.execute(text("ALTER TABLE users ADD COLUMN referred_by_id INTEGER"))
+        conn.commit()
+    if "boost_credits" not in existing_columns:
+        conn.execute(text("ALTER TABLE users ADD COLUMN boost_credits INTEGER DEFAULT 0"))
         conn.commit()
 
     # User columns

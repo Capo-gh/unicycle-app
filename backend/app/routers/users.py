@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from ..database import get_db
 from ..models.user import User
 from ..models.report import Report
+from ..models.user_block import UserBlock
 from ..schemas.user import UserResponse
 from ..utils.dependencies import get_current_user_required
 from ..utils.email import send_report_email
@@ -25,6 +26,60 @@ class UpdateProfileRequest(BaseModel):
 class PushTokenRequest(BaseModel):
     token: str
 
+
+# ── Static /me routes (must be before /{user_id}) ────────────────────────────
+
+@router.put("/me", response_model=UserResponse)
+def update_profile(
+    body: UpdateProfileRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Update current user's profile (name and/or avatar)"""
+    if body.name is not None:
+        name = body.name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Name cannot be empty")
+        current_user.name = name
+    if body.avatar_url is not None:
+        if body.avatar_url and not body.avatar_url.startswith(("http://", "https://")):
+            raise HTTPException(status_code=400, detail="avatar_url must be a valid http/https URL")
+        current_user.avatar_url = body.avatar_url
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@router.put("/me/push-token")
+def register_push_token(
+    body: PushTokenRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Register or update the Expo push notification token for the current user."""
+    token = body.token.strip()
+    if not token.startswith("ExponentPushToken"):
+        raise HTTPException(status_code=400, detail="Invalid Expo push token format")
+    current_user.push_token = token
+    db.commit()
+    return {"message": "Push token registered"}
+
+
+@router.get("/blocked")
+def get_blocked_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Get the list of users the current user has blocked."""
+    blocks = db.query(UserBlock).filter(UserBlock.blocker_id == current_user.id).all()
+    blocked_ids = [b.blocked_id for b in blocks]
+    if not blocked_ids:
+        return []
+    users = db.query(User).filter(User.id.in_(blocked_ids)).all()
+    return [{"id": u.id, "name": u.name, "university": u.university, "avatar_url": u.avatar_url} for u in users]
+
+
+# ── Dynamic /{user_id} routes ─────────────────────────────────────────────────
 
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user_profile(
@@ -93,37 +148,31 @@ def report_user(
     return {"message": "Report submitted. Our team will review it within 24 hours."}
 
 
-@router.put("/me", response_model=UserResponse)
-def update_profile(
-    body: UpdateProfileRequest,
+@router.post("/{user_id}/block")
+def toggle_block(
+    user_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_required)
 ):
-    """Update current user's profile (name and/or avatar)"""
-    if body.name is not None:
-        name = body.name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="Name cannot be empty")
-        current_user.name = name
-    if body.avatar_url is not None:
-        if body.avatar_url and not body.avatar_url.startswith(("http://", "https://")):
-            raise HTTPException(status_code=400, detail="avatar_url must be a valid http/https URL")
-        current_user.avatar_url = body.avatar_url
-    db.commit()
-    db.refresh(current_user)
-    return current_user
+    """Block or unblock a user. Returns the new block state."""
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="You cannot block yourself")
 
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
 
-@router.put("/me/push-token")
-def register_push_token(
-    body: PushTokenRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_required)
-):
-    """Register or update the Expo push notification token for the current user."""
-    token = body.token.strip()
-    if not token.startswith("ExponentPushToken"):
-        raise HTTPException(status_code=400, detail="Invalid Expo push token format")
-    current_user.push_token = token
-    db.commit()
-    return {"message": "Push token registered"}
+    existing = db.query(UserBlock).filter(
+        UserBlock.blocker_id == current_user.id,
+        UserBlock.blocked_id == user_id
+    ).first()
+
+    if existing:
+        db.delete(existing)
+        db.commit()
+        return {"blocked": False, "message": f"{target.name} has been unblocked."}
+    else:
+        block = UserBlock(blocker_id=current_user.id, blocked_id=user_id)
+        db.add(block)
+        db.commit()
+        return {"blocked": True, "message": f"{target.name} has been blocked."}

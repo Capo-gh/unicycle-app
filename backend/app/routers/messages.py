@@ -6,6 +6,7 @@ from ..database import get_db
 from ..models.message import Conversation, Message
 from ..models.listing import Listing
 from ..models.user import User
+from ..models.user_block import UserBlock
 from ..schemas.message import (
     ConversationCreate, ConversationResponse, ConversationListResponse,
     MessageCreate, MessageResponse
@@ -101,6 +102,16 @@ def create_conversation(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot start a conversation with yourself"
         )
+
+    # Can't message a user you've blocked or who has blocked you
+    block = db.query(UserBlock).filter(
+        or_(
+            and_(UserBlock.blocker_id == current_user.id, UserBlock.blocked_id == listing.seller_id),
+            and_(UserBlock.blocker_id == listing.seller_id, UserBlock.blocked_id == current_user.id),
+        )
+    ).first()
+    if block:
+        raise HTTPException(status_code=403, detail="You cannot message this user.")
     
     # Check if conversation already exists
     existing = db.query(Conversation).filter(

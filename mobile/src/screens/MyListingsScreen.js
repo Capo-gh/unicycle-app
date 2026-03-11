@@ -148,6 +148,10 @@ export default function MyListingsScreen({ navigation }) {
                                 <Text style={styles.boostedBadgeText}>Boosted</Text>
                             </View>
                         )}
+                        <View style={styles.viewsBadge}>
+                            <Ionicons name="eye-outline" size={11} color="#9ca3af" />
+                            <Text style={styles.viewsBadgeText}>{listing.view_count ?? 0}</Text>
+                        </View>
                     </View>
                 </View>
             </TouchableOpacity>
@@ -310,6 +314,15 @@ const styles = StyleSheet.create({
     },
     soldBadgeText: {
         color: '#dc2626',
+    },
+    viewsBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+    },
+    viewsBadgeText: {
+        fontSize: 11,
+        color: '#9ca3af',
     },
     listingActions: {
         flexDirection: 'row',

@@ -53,3 +53,8 @@ export const uploadImages = async (formData) => {
     });
     return response.data;
 };
+
+export const boostWithCredit = async (id) => {
+    const response = await api.post(`/listings/${id}/boost-free`);
+    return response.data;
+};

@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../../../shared/constants/colors';
-import { getUserProfile, reportUser } from '../api/users';
+import { getUserProfile, reportUser, toggleBlockUser, getBlockedUsers } from '../api/users';
 import { getUserListings } from '../api/listings';
 import { getUserReviews, createReview, updateReview } from '../api/reviews';
 
@@ -64,6 +64,10 @@ export default function UserProfileScreen({ route, navigation }) {
         }
     };
 
+    // Block state
+    const [isBlocked, setIsBlocked] = useState(false);
+    const [blockLoading, setBlockLoading] = useState(false);
+
     // Report state
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportReason, setReportReason] = useState('');
@@ -78,14 +82,16 @@ export default function UserProfileScreen({ route, navigation }) {
         setLoading(true);
         setError(null);
         try {
-            const [userData, userListings, userReviews] = await Promise.all([
+            const [userData, userListings, userReviews, blockedList] = await Promise.all([
                 getUserProfile(userId),
                 getUserListings(userId),
                 getUserReviews(userId),
+                getBlockedUsers().catch(() => []),
             ]);
             setProfile(userData);
             setListings(userListings);
             setReviews(userReviews);
+            setIsBlocked(blockedList.some(u => u.id === userId));
         } catch (err) {
             console.error('Error fetching user profile:', err);
             setError('Failed to load profile');
@@ -138,6 +144,34 @@ export default function UserProfileScreen({ route, navigation }) {
         if (!images) return null;
         const list = typeof images === 'string' ? images.split(',') : images;
         return list[0] || null;
+    };
+
+    const handleToggleBlock = () => {
+        const action = isBlocked ? 'Unblock' : 'Block';
+        Alert.alert(
+            `${action} ${profile?.name}?`,
+            isBlocked
+                ? 'You will see their listings and messages again.'
+                : 'You will no longer see their listings or be able to message them.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: action,
+                    style: isBlocked ? 'default' : 'destructive',
+                    onPress: async () => {
+                        setBlockLoading(true);
+                        try {
+                            const result = await toggleBlockUser(userId);
+                            setIsBlocked(result.blocked);
+                        } catch (err) {
+                            Alert.alert('Error', err?.response?.data?.detail || 'Failed to update block status');
+                        } finally {
+                            setBlockLoading(false);
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     const hasReviewed = reviews?.reviews?.some(r => r.reviewer_id === currentUser?.id);
@@ -230,6 +264,18 @@ export default function UserProfileScreen({ route, navigation }) {
                         >
                             <Ionicons name="flag-outline" size={16} color="#ef4444" />
                             <Text style={styles.reportBtnText}>Report</Text>
+                        </TouchableOpacity>
+                    )}
+                    {canReport && (
+                        <TouchableOpacity
+                            style={[styles.reportBtn, isBlocked && styles.unblockBtn]}
+                            onPress={handleToggleBlock}
+                            disabled={blockLoading}
+                        >
+                            <Ionicons name={isBlocked ? 'lock-open-outline' : 'ban-outline'} size={16} color={isBlocked ? '#6b7280' : '#ef4444'} />
+                            <Text style={[styles.reportBtnText, isBlocked && { color: '#6b7280' }]}>
+                                {isBlocked ? 'Unblock' : 'Block'}
+                            </Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -553,6 +599,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
     reportBtnText: { color: '#ef4444', fontWeight: '600', fontSize: 14 },
+    unblockBtn: { borderColor: '#d1d5db' },
 
     tabs: {
         flexDirection: 'row',

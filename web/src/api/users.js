@@ -15,3 +15,13 @@ export const updateProfile = async (fields) => {
     const response = await apiClient.put('/users/me', fields);
     return response.data;
 };
+
+export const toggleBlockUser = async (userId) => {
+    const response = await apiClient.post(`/users/${userId}/block`);
+    return response.data;
+};
+
+export const getBlockedUsers = async () => {
+    const response = await apiClient.get('/users/blocked');
+    return response.data;
+};

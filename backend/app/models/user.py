@@ -26,6 +26,11 @@ class User(Base):
     # JSON array of university names, null = visible in all schools
     sponsored_universities = Column(String, nullable=True)
 
+    # Referral system
+    referral_code = Column(String, unique=True, nullable=True, index=True)
+    referred_by_id = Column(Integer, nullable=True)  # user.id of referrer
+    boost_credits = Column(Integer, default=0)  # free boost credits earned via referrals
+
     # Review stats (will be updated when reviews are added)
     avg_rating = Column(Float, default=0.0)
     review_count = Column(Integer, default=0)

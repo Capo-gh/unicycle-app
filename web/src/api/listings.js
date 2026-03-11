@@ -74,3 +74,8 @@ export const bumpListing = async (id) => {
     const response = await apiClient.post(`/listings/${id}/bump`);
     return response.data;
 };
+
+export const boostWithCredit = async (id) => {
+    const response = await apiClient.post(`/listings/${id}/boost-free`);
+    return response.data;
+};

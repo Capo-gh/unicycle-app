@@ -5,6 +5,7 @@ from typing import List, Optional
 from ..database import get_db
 from ..models.request import Request, Reply
 from ..models.user import User
+from ..models.user_block import UserBlock
 from ..schemas.request import (
     RequestCreate, RequestUpdate, RequestResponse, RequestListResponse,
     ReplyCreate, ReplyResponse
@@ -100,6 +101,12 @@ def get_requests(
     query = query.filter(
         or_(Request.university == current_user.university, Request.university == None)
     )
+
+    # Hide requests from blocked users (bidirectional)
+    blocked_by_me = db.query(UserBlock.blocked_id).filter(UserBlock.blocker_id == current_user.id)
+    blocking_me = db.query(UserBlock.blocker_id).filter(UserBlock.blocked_id == current_user.id)
+    query = query.filter(Request.author_id.notin_(blocked_by_me))
+    query = query.filter(Request.author_id.notin_(blocking_me))
 
     if category and category != 'All':
         if category == 'Urgent':

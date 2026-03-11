@@ -1,13 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from ..utils.limiter import limiter
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime, timezone
+import secrets
 from ..database import get_db
 from ..models.user import User
 from ..schemas.user import UserCreate, UserLogin, UserResponse, Token, SetPassword
 from ..utils.auth import get_password_hash, verify_password, create_access_token, verify_token
 from ..utils.email import send_verification_email, send_reset_email, generate_verification_token, is_token_expired
+from ..utils.dependencies import get_current_user_required
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -45,8 +48,19 @@ def signup(request: Request, user_data: UserCreate, db: Session = Depends(get_db
             detail=f"Email must end with {' or '.join('@' + d for d in allowed_domains)} for {user_data.university}"
         )
 
-    # Generate verification token
+    # Generate verification token and unique referral code
     verification_token = generate_verification_token()
+    referral_code = secrets.token_urlsafe(6)  # 8-char URL-safe code
+    # Ensure uniqueness
+    while db.query(User).filter(User.referral_code == referral_code).first():
+        referral_code = secrets.token_urlsafe(6)
+
+    # Resolve referrer if ref_code provided
+    referred_by_id = None
+    if user_data.ref_code:
+        referrer = db.query(User).filter(User.referral_code == user_data.ref_code).first()
+        if referrer:
+            referred_by_id = referrer.id
 
     # Create user without password
     new_user = User(
@@ -56,7 +70,9 @@ def signup(request: Request, user_data: UserCreate, db: Session = Depends(get_db
         hashed_password=None,  # Password will be set after email verification
         is_verified=False,
         verification_token=verification_token,
-        token_created_at=datetime.now(timezone.utc)
+        token_created_at=datetime.now(timezone.utc),
+        referral_code=referral_code,
+        referred_by_id=referred_by_id,
     )
 
     db.add(new_user)
@@ -231,6 +247,12 @@ def set_password(data: SetPassword, db: Session = Depends(get_db)):
     user.verification_token = None  # Clear token after password is set
     user.token_created_at = None
 
+    # Credit referrer 1 boost credit (only on first password set)
+    if user.referred_by_id:
+        referrer = db.query(User).filter(User.id == user.referred_by_id).first()
+        if referrer:
+            referrer.boost_credits = (referrer.boost_credits or 0) + 1
+
     db.commit()
     db.refresh(user)
 
@@ -348,3 +370,40 @@ def reset_password(request: Request, data: SetPassword, db: Session = Depends(ge
         "token_type": "bearer",
         "user": user
     }
+
+
+@router.get("/referral")
+def get_referral_info(
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db)
+):
+    """Get current user's referral code, referral count, and boost credits."""
+    referred_count = db.query(User).filter(User.referred_by_id == current_user.id).count()
+    return {
+        "referral_code": current_user.referral_code,
+        "referred_count": referred_count,
+        "boost_credits": current_user.boost_credits or 0,
+    }
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=6, max_length=128)
+
+
+@router.post("/change-password")
+def change_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db)
+):
+    """Change password — requires current password for verification."""
+    if not current_user.hashed_password:
+        raise HTTPException(status_code=400, detail="No password set on this account.")
+
+    if not verify_password(data.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect.")
+
+    current_user.hashed_password = get_password_hash(data.new_password)
+    db.commit()
+    return {"message": "Password changed successfully."}

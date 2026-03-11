@@ -124,6 +124,36 @@ export default function SettingsScreen({ navigation }) {
                     </View>
                 </View>
 
+                {/* Account Actions */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Account</Text>
+                    <View style={styles.card}>
+                        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChangePassword')}>
+                            <View style={styles.menuItemLeft}>
+                                <Ionicons name="lock-closed-outline" size={22} color={COLORS.dark} />
+                                <Text style={styles.menuText}>Change Password</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#999" />
+                        </TouchableOpacity>
+                        <View style={styles.divider} />
+                        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('BlockedUsers')}>
+                            <View style={styles.menuItemLeft}>
+                                <Ionicons name="person-remove-outline" size={22} color={COLORS.dark} />
+                                <Text style={styles.menuText}>Blocked Users</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#999" />
+                        </TouchableOpacity>
+                        <View style={styles.divider} />
+                        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('InviteFriends')}>
+                            <View style={styles.menuItemLeft}>
+                                <Ionicons name="gift-outline" size={22} color={COLORS.dark} />
+                                <Text style={styles.menuText}>Invite Friends</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#999" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
                 {/* Preferences */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Preferences</Text>

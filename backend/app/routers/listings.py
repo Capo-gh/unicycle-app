@@ -10,6 +10,7 @@ from ..models.user import User
 from ..models.transaction import Transaction
 from ..models.system_setting import SystemSetting
 from ..models.message import Conversation
+from ..models.user_block import UserBlock
 from ..schemas.listing import ListingCreate, ListingUpdate, ListingResponse
 from ..utils.dependencies import get_current_user_optional, get_current_user_required
 from ..utils.email import send_review_prompt_email
@@ -77,6 +78,12 @@ def get_listings(
             db.query(User.id).filter(User.is_suspended == False)
         )
     )
+
+    # Hide listings from users that the current user has blocked (and vice versa)
+    blocked_by_me = db.query(UserBlock.blocked_id).filter(UserBlock.blocker_id == current_user.id)
+    blocking_me = db.query(UserBlock.blocker_id).filter(UserBlock.blocked_id == current_user.id)
+    query = query.filter(Listing.seller_id.notin_(blocked_by_me))
+    query = query.filter(Listing.seller_id.notin_(blocking_me))
 
     # Filter out sold items by default
     if not include_sold:
@@ -203,13 +210,18 @@ def get_listing(
     listing = db.query(Listing).options(
         joinedload(Listing.seller)
     ).filter(Listing.id == listing_id).first()
-    
+
     if not listing:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Listing not found"
         )
-    
+
+    # Increment view count for non-owners
+    if listing.seller_id != current_user.id:
+        listing.view_count = (listing.view_count or 0) + 1
+        db.commit()
+
     return listing
 
 
@@ -438,6 +450,34 @@ def bump_listing(
 
     listing.last_bumped_at = now
     listing.updated_at = now
+    db.commit()
+    db.refresh(listing)
+    return listing
+
+
+@router.post("/{listing_id}/boost-free", response_model=ListingResponse)
+def boost_listing_free(
+    listing_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Use one boost credit (earned via referrals) to boost a listing for 48 hours."""
+    listing = db.query(Listing).options(
+        joinedload(Listing.seller)
+    ).filter(Listing.id == listing_id).first()
+
+    if not listing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found")
+    if listing.seller_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    if (current_user.boost_credits or 0) < 1:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No boost credits available. Invite friends to earn credits!")
+
+    now = datetime.now(timezone.utc)
+    listing.is_boosted = True
+    listing.boosted_at = now
+    listing.boosted_until = now + timedelta(hours=48)
+    current_user.boost_credits = current_user.boost_credits - 1
     db.commit()
     db.refresh(listing)
     return listing

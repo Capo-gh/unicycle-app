@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, ShieldCheck, Star, MapPin, Package, Flag, X, Pencil, MessageCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { getUserProfile, reportUser } from '../api/users';
+import { getUserProfile, reportUser, toggleBlockUser, getBlockedUsers } from '../api/users';
 import { getUserListings } from '../api/listings';
 import { firstImage } from '../utils/images';
 import { getUserReviews, createReview, updateReview } from '../api/reviews';
@@ -53,6 +53,10 @@ export default function UserProfile() {
         }
     };
 
+    // Block state
+    const [isBlocked, setIsBlocked] = useState(false);
+    const [blockLoading, setBlockLoading] = useState(false);
+
     // Report state
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportReason, setReportReason] = useState('');
@@ -68,14 +72,16 @@ export default function UserProfile() {
         setLoading(true);
         setError(null);
         try {
-            const [userData, userListings, userReviews] = await Promise.all([
+            const [userData, userListings, userReviews, blockedList] = await Promise.all([
                 getUserProfile(userId),
                 getUserListings(userId),
-                getUserReviews(userId)
+                getUserReviews(userId),
+                getBlockedUsers().catch(() => []),
             ]);
             setUser(userData);
             setListings(userListings);
             setReviews(userReviews);
+            setIsBlocked(blockedList.some(u => u.id === userId));
         } catch (err) {
             console.error('Error fetching user data:', err);
             setError('Failed to load user profile');
@@ -166,6 +172,18 @@ export default function UserProfile() {
             alert('Failed to submit report. Please try again.');
         } finally {
             setSubmittingReport(false);
+        }
+    };
+
+    const handleToggleBlock = async () => {
+        setBlockLoading(true);
+        try {
+            const result = await toggleBlockUser(userId);
+            setIsBlocked(result.blocked);
+        } catch (err) {
+            alert(err?.response?.data?.detail || 'Failed to update block status');
+        } finally {
+            setBlockLoading(false);
         }
     };
 
@@ -297,15 +315,28 @@ export default function UserProfile() {
                         </div>
                     )}
 
-                    {/* Report User */}
+                    {/* Report + Block row */}
                     {canReport && (
-                        <button
-                            onClick={() => setShowReportModal(true)}
-                            className="mt-3 w-full py-2 border border-red-200 text-red-500 rounded-lg hover:bg-red-50 transition-colors text-sm flex items-center justify-center gap-2"
-                        >
-                            <Flag className="w-4 h-4" />
-                            Report User
-                        </button>
+                        <div className="mt-3 flex gap-2">
+                            <button
+                                onClick={() => setShowReportModal(true)}
+                                className="flex-1 py-2 border border-red-200 text-red-500 rounded-lg hover:bg-red-50 transition-colors text-sm flex items-center justify-center gap-2"
+                            >
+                                <Flag className="w-4 h-4" />
+                                Report
+                            </button>
+                            <button
+                                onClick={handleToggleBlock}
+                                disabled={blockLoading}
+                                className={`flex-1 py-2 border rounded-lg transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-50 ${
+                                    isBlocked
+                                        ? 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                                        : 'border-red-200 text-red-500 hover:bg-red-50'
+                                }`}
+                            >
+                                {isBlocked ? 'Unblock' : 'Block'}
+                            </button>
+                        </div>
                     )}
                 </div>
 
