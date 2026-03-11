@@ -7,6 +7,7 @@ class UserCreate(BaseModel):
     email: str = Field(..., max_length=254)
     name: str = Field(..., min_length=1, max_length=100)
     university: str
+    ref_code: Optional[str] = None  # optional referral code from inviter
 
 
 class UserLogin(BaseModel):
@@ -26,6 +27,9 @@ class UserResponse(BaseModel):
     avg_rating: Optional[float] = 0.0
     review_count: Optional[int] = 0
     avatar_url: Optional[str] = None
+    boost_credits: Optional[int] = 0
+    is_sponsor: Optional[bool] = False
+    sponsored_category: Optional[str] = None
     created_at: datetime
 
     class Config:
