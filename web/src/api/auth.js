@@ -39,3 +39,16 @@ export const resetPassword = async (token, password) => {
     const response = await apiClient.post('/auth/reset-password', { token, password });
     return response.data;
 };
+
+export const getReferralInfo = async () => {
+    const response = await apiClient.get('/auth/referral');
+    return response.data;
+};
+
+export const changePassword = async (currentPassword, newPassword) => {
+    const response = await apiClient.post('/auth/change-password', {
+        current_password: currentPassword,
+        new_password: newPassword,
+    });
+    return response.data;
+};
