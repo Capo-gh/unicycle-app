@@ -293,10 +293,9 @@ allowed_origins = [
     "http://localhost:5173",
     "http://localhost:3000",
 ]
-frontend_url = os.getenv("FRONTEND_URL")
-if frontend_url:
-    clean_url = frontend_url.rstrip("/")
-    if clean_url not in allowed_origins:
+for frontend_url in os.getenv("FRONTEND_URL", "").split(","):
+    clean_url = frontend_url.strip().rstrip("/")
+    if clean_url and clean_url not in allowed_origins:
         allowed_origins.append(clean_url)
 
 app.add_middleware(
