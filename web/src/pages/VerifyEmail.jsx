@@ -4,11 +4,13 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import client from '../api/client';
 import { setPassword } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
+import { useMarketplaceStore } from '../store/marketplaceStore';
 
 export default function VerifyEmail() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { setUser } = useAuthStore();
+    const { setCurrentMarketplace } = useMarketplaceStore();
     const [status, setStatus] = useState('verifying'); // verifying, success, error, expired, set_password
     const [message, setMessage] = useState('');
     const [resending, setResending] = useState(false);
@@ -119,6 +121,7 @@ export default function VerifyEmail() {
 
             setTimeout(() => {
                 setUser(response.user);
+                setCurrentMarketplace(response.user?.is_sponsor ? 'all' : (response.user?.university || ''));
                 navigate('/browse', { replace: true });
             }, 1500);
 

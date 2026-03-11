@@ -15,6 +15,11 @@ export const useAuthStore = create((set) => ({
         try {
             const user = await getCurrentUser();
             localStorage.setItem('user', JSON.stringify(user));
+            // Only initialize marketplace if not already chosen (preserve user's selection on refresh)
+            if (!localStorage.getItem('currentMarketplace')) {
+                const defaultMarketplace = user?.is_sponsor ? 'all' : (user?.university || '');
+                localStorage.setItem('currentMarketplace', defaultMarketplace);
+            }
             set({ user, isLoading: false });
         } catch {
             localStorage.removeItem('token');

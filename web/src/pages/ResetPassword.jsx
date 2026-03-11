@@ -3,11 +3,13 @@ import { Lock, Eye, EyeOff, Loader, CheckCircle, XCircle } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { resetPassword } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
+import { useMarketplaceStore } from '../store/marketplaceStore';
 
 export default function ResetPassword() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { setUser } = useAuthStore();
+    const { setCurrentMarketplace } = useMarketplaceStore();
     const token = decodeURIComponent((searchParams.get('reset_token') || '').trim());
     const [password, setPasswordInput] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -34,6 +36,7 @@ export default function ResetPassword() {
             setDone(true);
             setTimeout(() => {
                 setUser(response.user);
+                setCurrentMarketplace(response.user?.is_sponsor ? 'all' : (response.user?.university || ''));
                 navigate('/browse', { replace: true });
             }, 1500);
         } catch (err) {

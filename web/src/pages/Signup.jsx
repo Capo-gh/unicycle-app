@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, User, Building2, ShieldCheck, Eye, EyeOff, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { signup, login, forgotPassword } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
+import { useMarketplaceStore } from '../store/marketplaceStore';
 import LanguageToggle from '../components/LanguageToggle';
 
 // Import logo
@@ -14,7 +15,9 @@ export default function Signup() {
     const navigate = useNavigate();
     const location = useLocation();
     const { setUser } = useAuthStore();
+    const { setCurrentMarketplace } = useMarketplaceStore();
     const [isLogin, setIsLogin] = useState(location.state?.mode === 'login');
+    const [refCode, setRefCode] = useState('');
     const [selectedUniversity, setSelectedUniversity] = useState('');
     const [email, setEmail] = useState('');
     const [name, setName] = useState('');
@@ -38,6 +41,13 @@ export default function Signup() {
         { name: 'Université de Sherbrooke', domains: ['usherbrooke.ca'] },
         { name: 'HEC Montréal', domains: ['hec.ca'] },
     ];
+
+    // Read referral code from URL ?ref=CODE
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const ref = params.get('ref');
+        if (ref) setRefCode(ref);
+    }, []);
 
     const selectedUni = universities.find(u => u.name === selectedUniversity);
 
@@ -79,7 +89,8 @@ export default function Signup() {
                 response = await signup({
                     email: email,
                     name: name,
-                    university: selectedUniversity
+                    university: selectedUniversity,
+                    ...(refCode && { ref_code: refCode }),
                 });
             }
 
@@ -89,6 +100,7 @@ export default function Signup() {
             } else {
                 localStorage.setItem('token', response.access_token);
                 setUser(response.user);
+                setCurrentMarketplace(response.user?.is_sponsor ? 'all' : (response.user?.university || ''));
                 navigate('/browse', { replace: true });
             }
 
