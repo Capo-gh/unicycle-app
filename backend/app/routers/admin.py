@@ -648,6 +648,7 @@ def create_business_user(
         hashed_password=hashed_pw,
         university=body.university or "Business",
         is_verified=True,
+        is_sponsor=True,
     )
     db.add(new_user)
     db.commit()
