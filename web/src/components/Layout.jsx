@@ -19,7 +19,7 @@ export default function Layout() {
     const { currentMarketplace, setCurrentMarketplace } = useMarketplaceStore();
     const [unreadMessages, setUnreadMessages] = useState(0);
 
-    const isAdmin = user?.is_admin === true;
+    const isAdmin = user?.is_admin === true && localStorage.getItem('hideAdmin') !== 'true';
 
     useEffect(() => {
         const fetchUnread = async () => {
