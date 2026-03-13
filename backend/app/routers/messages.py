@@ -278,7 +278,8 @@ async def send_message(
     message = Message(
         text=message_data.text,
         conversation_id=conversation_id,
-        sender_id=current_user.id
+        sender_id=current_user.id,
+        reply_to_id=message_data.reply_to_id if message_data.reply_to_id else None
     )
     db.add(message)
 

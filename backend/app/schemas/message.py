@@ -25,8 +25,18 @@ class ListingBasic(BaseModel):
 
 
 # MESSAGE SCHEMAS
+class ReplyPreview(BaseModel):
+    id: int
+    text: str
+    sender: UserBasic
+
+    class Config:
+        from_attributes = True
+
+
 class MessageCreate(BaseModel):
     text: str
+    reply_to_id: Optional[int] = None
 
 
 class MessageResponse(BaseModel):
@@ -37,7 +47,9 @@ class MessageResponse(BaseModel):
     sender: UserBasic
     is_read: bool
     created_at: datetime
-    
+    reply_to_id: Optional[int] = None
+    reply_to: Optional[ReplyPreview] = None
+
     class Config:
         from_attributes = True
 

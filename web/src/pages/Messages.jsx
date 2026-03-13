@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, ShieldCheck, MessageCircle, Send, ArrowLeft, Archive, ArchiveRestore, Languages } from 'lucide-react';
+import { Search, ShieldCheck, MessageCircle, Send, ArrowLeft, Archive, ArchiveRestore, Languages, Trash2, Reply } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
@@ -31,6 +31,7 @@ export default function Messages() {
     const [translatedMessages, setTranslatedMessages] = useState({});
     const [translatingId, setTranslatingId] = useState(null);
     const [hoveredMsgId, setHoveredMsgId] = useState(null);
+    const [replyingTo, setReplyingTo] = useState(null); // { id, text, senderName }
     const [loadingConv, setLoadingConv] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
     const messagesEndRef = useRef(null);
@@ -176,7 +177,7 @@ export default function Messages() {
                 setMessageText('');
                 handleSelectConversation(conv.id);
             } else if (selectedConvId && selectedConvId !== 'new') {
-                const newMessage = await sendMessage(selectedConvId, textToSend);
+                const newMessage = await sendMessage(selectedConvId, textToSend, replyingTo?.id || null);
                 setActiveConversation(prev => ({
                     ...prev,
                     messages: [...prev.messages, newMessage]
@@ -187,6 +188,7 @@ export default function Messages() {
                         : c
                 ));
                 setMessageText('');
+                setReplyingTo(null);
             }
         } catch (err) {
             console.error('Error sending message:', err);
@@ -350,10 +352,9 @@ export default function Messages() {
                         }).map(conv => {
                             const otherPerson = getOtherPerson(conv);
                             return (
-                                <button
+                                <div
                                     key={conv.id}
-                                    onClick={() => handleSelectConversation(conv.id)}
-                                    className={`w-full text-left p-4 flex gap-3 hover:bg-gray-50 transition-colors border-b border-gray-100 ${selectedConvId === conv.id ? 'bg-unicycle-green/10' : ''}`}
+                                    className={`group w-full text-left p-4 flex gap-3 hover:bg-gray-50 transition-colors border-b border-gray-100 ${selectedConvId === conv.id ? 'bg-unicycle-green/10' : ''}`}
                                 >
                                     <div className="relative flex-shrink-0">
                                         <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-unicycle-blue to-unicycle-green flex items-center justify-center text-white font-semibold text-lg">
@@ -368,7 +369,7 @@ export default function Messages() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex-1 min-w-0">
+                                    <button className="flex-1 min-w-0 text-left" onClick={() => handleSelectConversation(conv.id)}>
                                         <div className="flex justify-between items-start mb-1">
                                             <div className="flex items-center gap-2">
                                                 <h3 className="font-semibold text-gray-900 text-sm truncate">
@@ -386,8 +387,25 @@ export default function Messages() {
                                         <p className={`text-sm truncate ${conv.unread_count > 0 ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
                                             {conv.last_message?.text || 'No messages yet'}
                                         </p>
-                                    </div>
-                                </button>
+                                    </button>
+                                    {showArchived ? (
+                                        <button
+                                            onClick={() => handleUnarchiveConversation(conv.id)}
+                                            className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-unicycle-green transition-all flex-shrink-0 self-center"
+                                            title="Restore to inbox"
+                                        >
+                                            <ArchiveRestore className="w-4 h-4" />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleArchiveConversation(conv.id)}
+                                            className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-orange-500 transition-all flex-shrink-0 self-center"
+                                            title="Archive"
+                                        >
+                                            <Archive className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
                             );
                         })}
                     </div>
@@ -563,6 +581,12 @@ export default function Messages() {
 
                                             {/* Message Bubble + translate button */}
                                             <div className={`max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                            {msg.reply_to && (
+                                                <div className={`mb-1 px-3 py-1.5 rounded-lg border-l-4 text-xs max-w-full ${isMe ? 'bg-white/20 border-white/60 text-white/90' : 'bg-gray-100 border-gray-400 text-gray-600'}`}>
+                                                    <p className="font-semibold truncate">{msg.reply_to.sender?.name}</p>
+                                                    <p className="truncate opacity-80">{msg.reply_to.text}</p>
+                                                </div>
+                                            )}
                                                 <div className={`px-4 py-2 rounded-2xl text-sm ${isMe
                                                     ? 'bg-unicycle-green text-white rounded-tr-sm'
                                                     : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'
@@ -588,13 +612,24 @@ export default function Messages() {
                                                     </button>
                                                 )}
                                                 {hoveredMsgId === msg.id && (
-                                                    <button
-                                                        onClick={() => handleHideMessage(msg.id)}
-                                                        className="mt-1 text-[10px] text-gray-300 hover:text-red-400 transition-colors"
-                                                        title="Delete for me"
-                                                    >
-                                                        Delete for me
-                                                    </button>
+                                                    <div className={`mt-1 flex items-center gap-3 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                                        <button
+                                                            onClick={() => setReplyingTo({ id: msg.id, text: msg.text, senderName: msg.sender?.name })}
+                                                            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-unicycle-green transition-colors"
+                                                            title="Reply"
+                                                        >
+                                                            <Reply className="w-3 h-3" />
+                                                            Reply
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleHideMessage(msg.id)}
+                                                            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                                                            title="Delete for me"
+                                                        >
+                                                            <Trash2 className="w-3 h-3" />
+                                                            Delete
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
@@ -605,14 +640,24 @@ export default function Messages() {
                         </div>
 
                         {/* Input */}
-                        <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
-                            <div className="flex gap-2 items-end">
+                        <div className="bg-white border-t border-gray-200 flex-shrink-0">
+                            {replyingTo && (
+                                <div className="flex items-center gap-2 px-4 pt-2 pb-1 bg-gray-50 border-b border-gray-100">
+                                    <Reply className="w-3.5 h-3.5 text-unicycle-green flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] font-semibold text-unicycle-green">{replyingTo.senderName}</p>
+                                        <p className="text-xs text-gray-500 truncate">{replyingTo.text}</p>
+                                    </div>
+                                    <button onClick={() => setReplyingTo(null)} className="text-gray-400 hover:text-gray-600 flex-shrink-0">✕</button>
+                                </div>
+                            )}
+                            <div className="flex gap-2 items-end p-4">
                                 <input
                                     type="text"
                                     value={messageText}
                                     onChange={(e) => setMessageText(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && !sending && handleSendMessage()}
-                                    placeholder={t('messages.typePlaceholder')}
+                                    placeholder={replyingTo ? `Reply to ${replyingTo.senderName}...` : t('messages.typePlaceholder')}
                                     className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-unicycle-green resize-none"
                                     disabled={sending}
                                 />

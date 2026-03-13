@@ -11,6 +11,7 @@ import {
     Alert,
     Image,
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,6 +31,7 @@ export default function MessagesScreen({ route }) {
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
+    const [replyingTo, setReplyingTo] = useState(null); // { id, text, senderName }
     const [translatedMessages, setTranslatedMessages] = useState({});
     const [translatingId, setTranslatingId] = useState(null);
     const { user } = useAuth();
@@ -193,7 +195,7 @@ export default function MessagesScreen({ route }) {
                 await fetchConversations();
                 handleSelectConversation(conv.id);
             } else {
-                const newMessage = await sendMessage(selectedConvId, text);
+                const newMessage = await sendMessage(selectedConvId, text, replyingTo?.id || null);
                 setActiveConversation(prev => ({
                     ...prev,
                     messages: [...prev.messages, newMessage]
@@ -204,6 +206,7 @@ export default function MessagesScreen({ route }) {
                         : c
                 ));
                 setMessageText('');
+                setReplyingTo(null);
             }
         } catch (error) {
             console.error('Error sending message:', error);
@@ -464,7 +467,32 @@ export default function MessagesScreen({ route }) {
                         )}
                         renderItem={({ item }) => {
                             const isMe = item.sender_id === user?.id;
+
+                            const renderReplyAction = () => (
+                                <TouchableOpacity
+                                    style={styles.swipeReplyAction}
+                                    onPress={() => setReplyingTo({ id: item.id, text: item.text, senderName: item.sender?.name || 'Unknown' })}
+                                >
+                                    <Ionicons name="return-down-back-outline" size={20} color="#fff" />
+                                </TouchableOpacity>
+                            );
+
+                            const renderDeleteAction = () => (
+                                <TouchableOpacity
+                                    style={styles.swipeDeleteAction}
+                                    onPress={() => handleHideMessage(item.id)}
+                                >
+                                    <Ionicons name="trash-outline" size={20} color="#fff" />
+                                </TouchableOpacity>
+                            );
+
                             return (
+                                <Swipeable
+                                    renderLeftActions={renderReplyAction}
+                                    renderRightActions={renderDeleteAction}
+                                    overshootLeft={false}
+                                    overshootRight={false}
+                                >
                                 <View style={[
                                     styles.messageRow,
                                     isMe ? styles.myMessageRow : styles.theirMessageRow
@@ -478,11 +506,12 @@ export default function MessagesScreen({ route }) {
                                         </View>
                                     )}
                                     <View style={{ maxWidth: '78%', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
-                                        <TouchableOpacity
-                                            onLongPress={() => handleHideMessage(item.id)}
-                                            delayLongPress={500}
-                                            activeOpacity={0.85}
-                                        >
+                                        {item.reply_to && (
+                                            <View style={[styles.replyPreview, isMe ? styles.replyPreviewMe : styles.replyPreviewThem]}>
+                                                <Text style={styles.replyPreviewName}>{item.reply_to.sender?.name}</Text>
+                                                <Text style={styles.replyPreviewText} numberOfLines={1}>{item.reply_to.text}</Text>
+                                            </View>
+                                        )}
                                         <View style={[
                                             styles.messageBubble,
                                             isMe ? styles.myMessage : styles.theirMessage
@@ -500,7 +529,6 @@ export default function MessagesScreen({ route }) {
                                                 {formatTimeAgo(item.created_at)}
                                             </Text>
                                         </View>
-                                        </TouchableOpacity>
                                         {!isMe && (
                                             <TouchableOpacity
                                                 onPress={() => translateMessage(item.id, item.text)}
@@ -522,15 +550,28 @@ export default function MessagesScreen({ route }) {
                                         </View>
                                     )}
                                 </View>
+                                </Swipeable>
                             );
                         }}
                         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
                     />
 
+                    {replyingTo && (
+                        <View style={styles.replyBanner}>
+                            <Ionicons name="return-down-back-outline" size={14} color={COLORS.green} />
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.replyBannerName}>{replyingTo.senderName}</Text>
+                                <Text style={styles.replyBannerText} numberOfLines={1}>{replyingTo.text}</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => setReplyingTo(null)}>
+                                <Ionicons name="close" size={16} color="#9ca3af" />
+                            </TouchableOpacity>
+                        </View>
+                    )}
                     <View style={styles.messageInput}>
                         <TextInput
                             style={styles.messageTextInput}
-                            placeholder="Type a message..."
+                            placeholder={replyingTo ? `Reply to ${replyingTo.senderName}...` : 'Type a message...'}
                             value={messageText}
                             onChangeText={setMessageText}
                             multiline
@@ -553,7 +594,18 @@ export default function MessagesScreen({ route }) {
         const otherPerson = getOtherPerson(item);
         const hasUnread = item.unread_count > 0;
 
+        const renderArchiveAction = () => (
+            <TouchableOpacity
+                style={styles.swipeArchiveAction}
+                onPress={() => showArchived ? handleUnarchive(item.id) : handleArchive(item.id)}
+            >
+                <Ionicons name={showArchived ? 'arrow-undo-outline' : 'archive-outline'} size={22} color="#fff" />
+                <Text style={styles.swipeActionText}>{showArchived ? 'Restore' : 'Archive'}</Text>
+            </TouchableOpacity>
+        );
+
         return (
+            <Swipeable renderRightActions={renderArchiveAction} overshootRight={false}>
             <TouchableOpacity
                 style={styles.conversationItem}
                 onPress={() => handleSelectConversation(item.id)}
@@ -589,6 +641,7 @@ export default function MessagesScreen({ route }) {
                     </View>
                 )}
             </TouchableOpacity>
+            </Swipeable>
         );
     };
 
@@ -1004,5 +1057,83 @@ const styles = StyleSheet.create({
         fontSize: 9,
         fontWeight: '600',
         color: COLORS.green,
+    },
+    // Swipe actions
+    swipeArchiveAction: {
+        backgroundColor: '#f97316',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 80,
+        paddingHorizontal: 8,
+        gap: 4,
+    },
+    swipeReplyAction: {
+        backgroundColor: COLORS.green,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 56,
+        marginBottom: 8,
+        borderRadius: 8,
+    },
+    swipeDeleteAction: {
+        backgroundColor: '#ef4444',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 56,
+        marginBottom: 8,
+        borderRadius: 8,
+    },
+    swipeActionText: {
+        color: '#fff',
+        fontSize: 11,
+        fontWeight: '600',
+    },
+    // Reply preview inside bubble
+    replyPreview: {
+        borderLeftWidth: 3,
+        paddingLeft: 8,
+        paddingVertical: 4,
+        paddingRight: 8,
+        marginBottom: 4,
+        borderRadius: 4,
+        maxWidth: '100%',
+    },
+    replyPreviewMe: {
+        borderLeftColor: 'rgba(255,255,255,0.6)',
+        backgroundColor: 'rgba(255,255,255,0.15)',
+    },
+    replyPreviewThem: {
+        borderLeftColor: '#9ca3af',
+        backgroundColor: '#f3f4f6',
+    },
+    replyPreviewName: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: COLORS.green,
+        marginBottom: 1,
+    },
+    replyPreviewText: {
+        fontSize: 11,
+        color: '#6b7280',
+    },
+    // Reply banner above input
+    replyBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: '#f9fafb',
+        borderTopWidth: 1,
+        borderTopColor: '#e5e7eb',
+    },
+    replyBannerName: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: COLORS.green,
+    },
+    replyBannerText: {
+        fontSize: 11,
+        color: '#6b7280',
     },
 });

@@ -38,9 +38,10 @@ export const hideMessage = async (conversationId, messageId) => {
     await apiClient.delete(`/messages/conversations/${conversationId}/messages/${messageId}`);
 };
 
-export const sendMessage = async (conversationId, text) => {
+export const sendMessage = async (conversationId, text, replyToId = null) => {
     const response = await apiClient.post(`/messages/conversations/${conversationId}/messages`, {
-        text
+        text,
+        ...(replyToId ? { reply_to_id: replyToId } : {})
     });
     return response.data;
 };

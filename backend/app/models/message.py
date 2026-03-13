@@ -49,10 +49,14 @@ class Message(Base):
     # Soft-hide per user (only hides from that user's view; message stays in DB)
     hidden_by_buyer = Column(Boolean, default=False)
     hidden_by_seller = Column(Boolean, default=False)
-    
+
+    # Reply-to (for threaded replies like WhatsApp)
+    reply_to_id = Column(Integer, ForeignKey("messages.id", ondelete="SET NULL"), nullable=True)
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     # Relationships
     conversation = relationship("Conversation", back_populates="messages")
     sender = relationship("User", backref="sent_messages")
+    reply_to = relationship("Message", foreign_keys=[reply_to_id], remote_side="Message.id", lazy="select")

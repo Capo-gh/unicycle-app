@@ -145,6 +145,9 @@ with engine.connect() as conn:
     if "hidden_by_seller" not in message_columns:
         conn.execute(text("ALTER TABLE messages ADD COLUMN hidden_by_seller BOOLEAN DEFAULT FALSE"))
         conn.commit()
+    if "reply_to_id" not in message_columns:
+        conn.execute(text("ALTER TABLE messages ADD COLUMN reply_to_id INTEGER REFERENCES messages(id) ON DELETE SET NULL"))
+        conn.commit()
 
     # Request university column
     request_columns = [col["name"] for col in inspector.get_columns("requests")]
