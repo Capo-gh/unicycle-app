@@ -45,6 +45,10 @@ class Message(Base):
     
     # Read status
     is_read = Column(Boolean, default=False)
+
+    # Soft-hide per user (only hides from that user's view; message stays in DB)
+    hidden_by_buyer = Column(Boolean, default=False)
+    hidden_by_seller = Column(Boolean, default=False)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())

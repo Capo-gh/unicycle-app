@@ -137,6 +137,15 @@ with engine.connect() as conn:
         conn.execute(text("ALTER TABLE users ADD COLUMN push_token VARCHAR"))
         conn.commit()
 
+    # Message hidden-by columns
+    message_columns = [col["name"] for col in inspector.get_columns("messages")]
+    if "hidden_by_buyer" not in message_columns:
+        conn.execute(text("ALTER TABLE messages ADD COLUMN hidden_by_buyer BOOLEAN DEFAULT FALSE"))
+        conn.commit()
+    if "hidden_by_seller" not in message_columns:
+        conn.execute(text("ALTER TABLE messages ADD COLUMN hidden_by_seller BOOLEAN DEFAULT FALSE"))
+        conn.commit()
+
     # Request university column
     request_columns = [col["name"] for col in inspector.get_columns("requests")]
     if "university" not in request_columns:

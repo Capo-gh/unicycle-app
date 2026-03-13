@@ -188,7 +188,15 @@ def get_conversation(
         if message.sender_id != current_user.id and not message.is_read:
             message.is_read = True
     db.commit()
-    
+
+    # Filter out messages hidden by this user
+    is_buyer = conversation.buyer_id == current_user.id
+    visible = [
+        m for m in conversation.messages
+        if not (is_buyer and m.hidden_by_buyer) and not (not is_buyer and m.hidden_by_seller)
+    ]
+    conversation.messages = visible
+
     return conversation
 
 
@@ -356,6 +364,35 @@ async def send_message(
         print(f"[email] Failed to send message email: {e}")
 
     return message
+
+
+@router.delete("/conversations/{conversation_id}/messages/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
+def hide_message(
+    conversation_id: int,
+    message_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Hide a message for the current user only (soft delete)."""
+    conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    if not conversation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+    if conversation.buyer_id != current_user.id and conversation.seller_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    message = db.query(Message).filter(
+        Message.id == message_id,
+        Message.conversation_id == conversation_id
+    ).first()
+    if not message:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found")
+
+    if conversation.buyer_id == current_user.id:
+        message.hidden_by_buyer = True
+    else:
+        message.hidden_by_seller = True
+    db.commit()
+    return None
 
 
 @router.get("/unread-count")

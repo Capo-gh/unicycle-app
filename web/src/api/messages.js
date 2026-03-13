@@ -34,6 +34,10 @@ export const unarchiveConversation = async (conversationId) => {
 
 
 // MESSAGE ENDPOINTS
+export const hideMessage = async (conversationId, messageId) => {
+    await apiClient.delete(`/messages/conversations/${conversationId}/messages/${messageId}`);
+};
+
 export const sendMessage = async (conversationId, text) => {
     const response = await apiClient.post(`/messages/conversations/${conversationId}/messages`, {
         text

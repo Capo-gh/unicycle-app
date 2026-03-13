@@ -1,7 +1,9 @@
 import api from './client';
 
-export const getConversations = async () => {
-    const response = await api.get('/messages/conversations');
+export const getConversations = async ({ includeArchived = false } = {}) => {
+    const response = await api.get('/messages/conversations', {
+        params: includeArchived ? { include_archived: true } : {}
+    });
     return response.data;
 };
 
@@ -28,4 +30,12 @@ export const sendMessage = async (conversationId, text) => {
 export const archiveConversation = async (id) => {
     const response = await api.delete(`/messages/conversations/${id}`);
     return response.data;
+};
+
+export const unarchiveConversation = async (id) => {
+    await api.put(`/messages/conversations/${id}/unarchive`);
+};
+
+export const hideMessage = async (conversationId, messageId) => {
+    await api.delete(`/messages/conversations/${conversationId}/messages/${messageId}`);
 };

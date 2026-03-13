@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../../../shared/constants/colors';
-import { getConversations, getConversation, sendMessage, createConversation, archiveConversation } from '../api/messages';
+import { getConversations, getConversation, sendMessage, createConversation, archiveConversation, unarchiveConversation, hideMessage } from '../api/messages';
 import { API_BASE_URL } from '../../../shared/config/api';
 
 export default function MessagesScreen({ route }) {
@@ -29,6 +29,7 @@ export default function MessagesScreen({ route }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
+    const [showArchived, setShowArchived] = useState(false);
     const [translatedMessages, setTranslatedMessages] = useState({});
     const [translatingId, setTranslatingId] = useState(null);
     const { user } = useAuth();
@@ -55,7 +56,7 @@ export default function MessagesScreen({ route }) {
 
     useEffect(() => {
         fetchConversations();
-    }, []);
+    }, [showArchived]);
 
     // Handle incoming route params (from "Message Seller" on item detail)
     useEffect(() => {
@@ -139,7 +140,7 @@ export default function MessagesScreen({ route }) {
     const fetchConversations = async () => {
         setLoading(true);
         try {
-            const data = await getConversations();
+            const data = await getConversations({ includeArchived: showArchived });
             setConversations(data);
             setFilteredConversations(data);
         } catch (error) {
@@ -232,6 +233,44 @@ export default function MessagesScreen({ route }) {
                         } catch (error) {
                             console.error('Error archiving conversation:', error);
                             Alert.alert('Error', 'Failed to archive conversation');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleUnarchive = async (convId) => {
+        try {
+            await unarchiveConversation(convId);
+            setConversations(prev => prev.filter(c => c.id !== convId));
+            if (selectedConvId === convId) {
+                setSelectedConvId(null);
+                setActiveConversation(null);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to restore conversation');
+        }
+    };
+
+    const handleHideMessage = (msgId) => {
+        Alert.alert(
+            'Delete for me',
+            'This message will be hidden from your view only.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await hideMessage(selectedConvId, msgId);
+                            setActiveConversation(prev => ({
+                                ...prev,
+                                messages: prev.messages.filter(m => m.id !== msgId)
+                            }));
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to delete message');
                         }
                     }
                 }
@@ -379,12 +418,21 @@ export default function MessagesScreen({ route }) {
                                 </View>
                             </View>
                         </View>
-                        <TouchableOpacity
-                            onPress={() => handleArchive(selectedConvId)}
-                            style={styles.archiveButton}
-                        >
-                            <Ionicons name="trash-outline" size={22} color="#ef4444" />
-                        </TouchableOpacity>
+                        {showArchived ? (
+                            <TouchableOpacity
+                                onPress={() => handleUnarchive(selectedConvId)}
+                                style={styles.archiveButton}
+                            >
+                                <Ionicons name="arrow-undo-outline" size={22} color={COLORS.green} />
+                            </TouchableOpacity>
+                        ) : (
+                            <TouchableOpacity
+                                onPress={() => handleArchive(selectedConvId)}
+                                style={styles.archiveButton}
+                            >
+                                <Ionicons name="trash-outline" size={22} color="#ef4444" />
+                            </TouchableOpacity>
+                        )}
                     </View>
 
                     <FlatList
@@ -430,6 +478,11 @@ export default function MessagesScreen({ route }) {
                                         </View>
                                     )}
                                     <View style={{ maxWidth: '78%', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                                        <TouchableOpacity
+                                            onLongPress={() => handleHideMessage(item.id)}
+                                            delayLongPress={500}
+                                            activeOpacity={0.85}
+                                        >
                                         <View style={[
                                             styles.messageBubble,
                                             isMe ? styles.myMessage : styles.theirMessage
@@ -447,6 +500,7 @@ export default function MessagesScreen({ route }) {
                                                 {formatTimeAgo(item.created_at)}
                                             </Text>
                                         </View>
+                                        </TouchableOpacity>
                                         {!isMe && (
                                             <TouchableOpacity
                                                 onPress={() => translateMessage(item.id, item.text)}
@@ -541,7 +595,18 @@ export default function MessagesScreen({ route }) {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Messages</Text>
+                <View style={styles.headerRow}>
+                    <Text style={styles.headerTitle}>Messages</Text>
+                    <TouchableOpacity
+                        onPress={() => { setShowArchived(v => !v); setSelectedConvId(null); setActiveConversation(null); }}
+                        style={[styles.archivedToggle, showArchived && styles.archivedToggleActive]}
+                    >
+                        <Ionicons name={showArchived ? 'arrow-undo-outline' : 'archive-outline'} size={14} color={showArchived ? '#fff' : '#666'} />
+                        <Text style={[styles.archivedToggleText, showArchived && styles.archivedToggleTextActive]}>
+                            {showArchived ? 'Inbox' : 'Archived'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
                 <View style={styles.searchContainer}>
                     <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
                     <TextInput
@@ -594,11 +659,36 @@ const styles = StyleSheet.create({
         borderBottomColor: '#e0e0e0',
         backgroundColor: '#fff',
     },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
     headerTitle: {
         fontSize: 24,
         fontWeight: 'bold',
         color: COLORS.green,
-        marginBottom: 12,
+    },
+    archivedToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 8,
+        backgroundColor: '#f3f4f6',
+    },
+    archivedToggleActive: {
+        backgroundColor: COLORS.green,
+    },
+    archivedToggleText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#666',
+    },
+    archivedToggleTextActive: {
+        color: '#fff',
     },
     searchContainer: {
         flexDirection: 'row',

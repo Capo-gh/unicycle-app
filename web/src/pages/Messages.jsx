@@ -3,7 +3,7 @@ import { Search, ShieldCheck, MessageCircle, Send, ArrowLeft, Archive, ArchiveRe
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { getConversations, getConversation, sendMessage, createConversation, archiveConversation, unarchiveConversation } from '../api/messages';
+import { getConversations, getConversation, sendMessage, createConversation, archiveConversation, unarchiveConversation, hideMessage } from '../api/messages';
 
 async function translateText(text, targetLang) {
     const sourceLang = targetLang === 'fr' ? 'en' : 'fr';
@@ -30,6 +30,7 @@ export default function Messages() {
     const [searchQuery, setSearchQuery] = useState('');
     const [translatedMessages, setTranslatedMessages] = useState({});
     const [translatingId, setTranslatingId] = useState(null);
+    const [hoveredMsgId, setHoveredMsgId] = useState(null);
     const [loadingConv, setLoadingConv] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
     const messagesEndRef = useRef(null);
@@ -230,6 +231,18 @@ export default function Messages() {
             }
         } catch (err) {
             console.error('Error archiving conversation:', err);
+        }
+    };
+
+    const handleHideMessage = async (msgId) => {
+        try {
+            await hideMessage(selectedConvId, msgId);
+            setActiveConversation(prev => ({
+                ...prev,
+                messages: prev.messages.filter(m => m.id !== msgId)
+            }));
+        } catch (err) {
+            console.error('Error hiding message:', err);
         }
     };
 
@@ -531,7 +544,12 @@ export default function Messages() {
                                     const isTranslating = translatingId === msg.id;
 
                                     return (
-                                        <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                                        <div
+                                            key={msg.id}
+                                            className={`flex gap-2 group ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
+                                            onMouseEnter={() => setHoveredMsgId(msg.id)}
+                                            onMouseLeave={() => setHoveredMsgId(null)}
+                                        >
                                             {/* Avatar */}
                                             <div className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 ${isMe
                                                 ? 'bg-gradient-to-br from-unicycle-green to-unicycle-blue'
@@ -567,6 +585,15 @@ export default function Messages() {
                                                             : translation?.showing
                                                                 ? t('messages.showOriginal')
                                                                 : translateLabel}
+                                                    </button>
+                                                )}
+                                                {hoveredMsgId === msg.id && (
+                                                    <button
+                                                        onClick={() => handleHideMessage(msg.id)}
+                                                        className="mt-1 text-[10px] text-gray-300 hover:text-red-400 transition-colors"
+                                                        title="Delete for me"
+                                                    >
+                                                        Delete for me
                                                     </button>
                                                 )}
                                             </div>
