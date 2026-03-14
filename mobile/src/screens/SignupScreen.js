@@ -24,6 +24,7 @@ export default function SignupScreen({ navigation }) {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [university, setUniversity] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const { signup } = useAuth();
 
     const handleSignup = async () => {
@@ -113,23 +114,30 @@ export default function SignupScreen({ navigation }) {
                             </Picker>
                         </View>
 
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Password (min 6 characters)"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
-                            autoComplete="password-new"
-                        />
+                        <View style={styles.passwordContainer}>
+                            <TextInput
+                                style={styles.passwordInput}
+                                placeholder="Password (min 6 characters)"
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry={!showPassword}
+                                autoComplete="password-new"
+                            />
+                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+                                <Text style={styles.eyeText}>{showPassword ? 'Hide' : 'Show'}</Text>
+                            </TouchableOpacity>
+                        </View>
 
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Confirm Password"
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                            secureTextEntry
-                            autoComplete="password-new"
-                        />
+                        <View style={styles.passwordContainer}>
+                            <TextInput
+                                style={styles.passwordInput}
+                                placeholder="Confirm Password"
+                                value={confirmPassword}
+                                onChangeText={setConfirmPassword}
+                                secureTextEntry={!showPassword}
+                                autoComplete="password-new"
+                            />
+                        </View>
 
                         <TouchableOpacity
                             style={[styles.button, loading && styles.buttonDisabled]}
@@ -197,6 +205,26 @@ const styles = StyleSheet.create({
         padding: 16,
         fontSize: 16,
         marginBottom: 16,
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.lightGray,
+        borderRadius: 12,
+        marginBottom: 16,
+    },
+    passwordInput: {
+        flex: 1,
+        padding: 16,
+        fontSize: 16,
+    },
+    eyeButton: {
+        padding: 16,
+    },
+    eyeText: {
+        fontSize: 14,
+        color: COLORS.green,
+        fontWeight: '600',
     },
     pickerContainer: {
         backgroundColor: COLORS.lightGray,
