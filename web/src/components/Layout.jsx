@@ -35,9 +35,14 @@ export default function Layout() {
 
     // Reset unread count when user navigates to messages
     useEffect(() => {
-        if (location.pathname === '/messages') {
+        if (location.pathname === '/messages' || location.pathname.startsWith('/messages/')) {
             setUnreadMessages(0);
         }
+    }, [location.pathname]);
+
+    // Scroll to top on route change
+    useEffect(() => {
+        window.scrollTo(0, 0);
     }, [location.pathname]);
 
     const navItems = [

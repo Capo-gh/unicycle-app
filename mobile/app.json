@@ -21,7 +21,10 @@
         "NSPhotoLibraryUsageDescription": "UniCycle needs access to your photo library to upload listing photos and your profile picture.",
         "NSCameraUsageDescription": "UniCycle needs access to your camera to take photos for listings and your profile picture."
       },
-      "associatedDomains": ["applinks:unicycleapp.ca", "applinks:www.unicycleapp.ca"]
+      "associatedDomains": [
+        "applinks:unicycleapp.ca",
+        "applinks:www.unicycleapp.ca"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -45,8 +48,14 @@
               "host": "www.unicycleapp.ca"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
+      ],
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -72,8 +81,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "your-eas-project-id"
+        "projectId": "d3459981-04b5-4114-96d4-263f398c5026"
       }
-    }
+    },
+    "owner": "isabiku"
   }
 }

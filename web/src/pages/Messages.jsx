@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, ShieldCheck, MessageCircle, Send, ArrowLeft, Archive, ArchiveRestore, Languages, Trash2, Reply } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { getConversations, getConversation, sendMessage, createConversation, archiveConversation, unarchiveConversation, hideMessage } from '../api/messages';
 
@@ -17,6 +17,8 @@ async function translateText(text, targetLang) {
 export default function Messages() {
     const { t, i18n } = useTranslation();
     const location = useLocation();
+    const navigate = useNavigate();
+    const { convId: urlConvId } = useParams();
     const incomingRequest = location.state?.incomingRequest;
     const { user } = useAuthStore();
     const [selectedConvId, setSelectedConvId] = useState(null);
@@ -36,6 +38,9 @@ export default function Messages() {
     const [showArchived, setShowArchived] = useState(false);
     const messagesEndRef = useRef(null);
     const wsRef = useRef(null);
+    // Swipe-to-archive on touch devices
+    const [swipeConv, setSwipeConv] = useState(null); // { id, offset }
+    const convTouchRef = useRef(null); // { id, startX, startY }
 
     const currentUserId = user?.id;
     const userLang = i18n.language || 'en';
@@ -56,18 +61,13 @@ export default function Messages() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [activeConversation?.messages]);
 
-    // Browser back button support: push history when opening a conversation,
-    // then popstate resets back to the conversation list
+    // Load conversation from URL param (handles refresh + direct links)
     useEffect(() => {
-        const handlePopState = () => {
-            setSelectedConvId(null);
-            setActiveConversation(null);
-            setNewConversationRequest(null);
-            setLoadingConv(false);
-        };
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
-    }, []);
+        if (urlConvId) {
+            const id = parseInt(urlConvId);
+            if (!isNaN(id)) loadConversation(id);
+        }
+    }, [urlConvId]);
 
     // WebSocket for real-time messages
     useEffect(() => {
@@ -145,8 +145,7 @@ export default function Messages() {
         }
     };
 
-    const handleSelectConversation = async (convId) => {
-        window.history.pushState({ msgConv: true }, '');
+    const loadConversation = async (convId) => {
         setSelectedConvId(convId);
         setActiveConversation(null);
         setLoadingConv(true);
@@ -162,6 +161,10 @@ export default function Messages() {
         } finally {
             setLoadingConv(false);
         }
+    };
+
+    const handleSelectConversation = (convId) => {
+        navigate(`/messages/${convId}`);
     };
 
     const handleSendMessage = async (messageToSend = null) => {
@@ -261,6 +264,26 @@ export default function Messages() {
         }
     };
 
+    const handleConvTouchStart = (e, id) => {
+        convTouchRef.current = { id, startX: e.touches[0].clientX, startY: e.touches[0].clientY };
+    };
+    const handleConvTouchMove = (e, id) => {
+        if (!convTouchRef.current || convTouchRef.current.id !== id) return;
+        const dx = e.touches[0].clientX - convTouchRef.current.startX;
+        const dy = e.touches[0].clientY - convTouchRef.current.startY;
+        if (Math.abs(dx) > Math.abs(dy) && dx < -5) {
+            setSwipeConv({ id, offset: Math.max(dx, -80) });
+        }
+    };
+    const handleConvTouchEnd = (id) => {
+        const offset = swipeConv?.id === id ? swipeConv.offset : 0;
+        if (offset < -50) {
+            handleArchiveConversation(id);
+        }
+        setSwipeConv(null);
+        convTouchRef.current = null;
+    };
+
     const getOtherPerson = (conv) => {
         if (!conv || !currentUserId) return null;
         return conv.buyer_id === currentUserId ? conv.seller : conv.buyer;
@@ -352,9 +375,21 @@ export default function Messages() {
                         }).map(conv => {
                             const otherPerson = getOtherPerson(conv);
                             return (
+                                <div key={conv.id} className="relative overflow-hidden border-b border-gray-100">
+                                    {/* Archive action revealed on swipe */}
+                                    <div className="absolute inset-y-0 right-0 w-20 flex items-center justify-center bg-orange-500 pointer-events-none">
+                                        <Archive className="w-5 h-5 text-white" />
+                                    </div>
                                 <div
-                                    key={conv.id}
-                                    className={`group w-full text-left p-4 flex gap-3 hover:bg-gray-50 transition-colors border-b border-gray-100 ${selectedConvId === conv.id ? 'bg-unicycle-green/10' : ''}`}
+                                    className={`group flex gap-3 p-4 transition-colors ${selectedConvId === conv.id ? 'bg-unicycle-green/10' : 'bg-white hover:bg-gray-50'}`}
+                                    style={{
+                                        transform: swipeConv?.id === conv.id ? `translateX(${swipeConv.offset}px)` : 'translateX(0)',
+                                        transition: convTouchRef.current?.id === conv.id ? 'none' : 'transform 0.15s ease',
+                                        touchAction: 'pan-y',
+                                    }}
+                                    onTouchStart={(e) => handleConvTouchStart(e, conv.id)}
+                                    onTouchMove={(e) => handleConvTouchMove(e, conv.id)}
+                                    onTouchEnd={() => handleConvTouchEnd(conv.id)}
                                 >
                                     <div className="relative flex-shrink-0">
                                         <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-unicycle-blue to-unicycle-green flex items-center justify-center text-white font-semibold text-lg">
@@ -391,7 +426,7 @@ export default function Messages() {
                                     {showArchived ? (
                                         <button
                                             onClick={() => handleUnarchiveConversation(conv.id)}
-                                            className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-unicycle-green transition-all flex-shrink-0 self-center"
+                                            className="lg:opacity-0 lg:group-hover:opacity-100 p-1.5 text-gray-400 hover:text-unicycle-green transition-all flex-shrink-0 self-center"
                                             title="Restore to inbox"
                                         >
                                             <ArchiveRestore className="w-4 h-4" />
@@ -399,12 +434,13 @@ export default function Messages() {
                                     ) : (
                                         <button
                                             onClick={() => handleArchiveConversation(conv.id)}
-                                            className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-orange-500 transition-all flex-shrink-0 self-center"
+                                            className="lg:opacity-0 lg:group-hover:opacity-100 p-1.5 text-gray-400 hover:text-orange-500 transition-all flex-shrink-0 self-center"
                                             title="Archive"
                                         >
                                             <Archive className="w-4 h-4" />
                                         </button>
                                     )}
+                                </div>
                                 </div>
                             );
                         })}
@@ -421,6 +457,7 @@ export default function Messages() {
                                 onClick={() => {
                                     setSelectedConvId(null);
                                     setNewConversationRequest(null);
+                                    navigate('/messages');
                                 }}
                                 className="lg:hidden p-2 -ml-2 hover:bg-gray-100 rounded-full"
                             >
@@ -485,7 +522,7 @@ export default function Messages() {
                     <>
                         <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 flex-shrink-0">
                             <button
-                                onClick={() => window.history.back()}
+                                onClick={() => { setSelectedConvId(null); setActiveConversation(null); navigate('/messages'); }}
                                 className="lg:hidden p-2 -ml-2 hover:bg-gray-100 rounded-full"
                             >
                                 <ArrowLeft className="w-5 h-5 text-gray-700" />
@@ -500,7 +537,7 @@ export default function Messages() {
                         {/* Header */}
                         <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 flex-shrink-0">
                             <button
-                                onClick={() => window.history.back()}
+                                onClick={() => { setSelectedConvId(null); setActiveConversation(null); navigate('/messages'); }}
                                 className="lg:hidden p-2 -ml-2 hover:bg-gray-100 rounded-full"
                             >
                                 <ArrowLeft className="w-5 h-5 text-gray-700" />
@@ -547,7 +584,7 @@ export default function Messages() {
                         </div>
 
                         {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50" onTouchStart={() => setHoveredMsgId(null)}>
                             {activeConversation.messages.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-full text-center">
                                     <MessageCircle className="w-12 h-12 text-gray-300 mb-3" />
@@ -567,6 +604,7 @@ export default function Messages() {
                                             className={`flex gap-2 group ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
                                             onMouseEnter={() => setHoveredMsgId(msg.id)}
                                             onMouseLeave={() => setHoveredMsgId(null)}
+                                            onTouchStart={(e) => { e.stopPropagation(); setHoveredMsgId(prev => prev === msg.id ? null : msg.id); }}
                                         >
                                             {/* Avatar */}
                                             <div className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 ${isMe
@@ -615,7 +653,7 @@ export default function Messages() {
                                                     <div className={`mt-1 flex items-center gap-3 ${isMe ? 'justify-end' : 'justify-start'}`}>
                                                         <button
                                                             onClick={() => setReplyingTo({ id: msg.id, text: msg.text, senderName: msg.sender?.name })}
-                                                            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-unicycle-green transition-colors"
+                                                            className="flex items-center gap-1 text-[10px] text-unicycle-green hover:text-unicycle-green/80 transition-colors"
                                                             title="Reply"
                                                         >
                                                             <Reply className="w-3 h-3" />
@@ -623,7 +661,7 @@ export default function Messages() {
                                                         </button>
                                                         <button
                                                             onClick={() => handleHideMessage(msg.id)}
-                                                            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                                                            className="flex items-center gap-1 text-[10px] text-red-400 hover:text-red-600 transition-colors"
                                                             title="Delete for me"
                                                         >
                                                             <Trash2 className="w-3 h-3" />

@@ -125,6 +125,7 @@ function AppInner() {
             <Route path="/sell" element={<SellItem />} />
             <Route path="/edit/:id" element={<EditListing />} />
             <Route path="/messages" element={<Messages />} />
+            <Route path="/messages/:convId" element={<Messages />} />
             <Route path="/requests" element={<Requests />} />
             <Route path="/saved" element={<Saved />} />
             <Route path="/saved-searches" element={<SavedSearches />} />
