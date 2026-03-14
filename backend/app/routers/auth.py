@@ -174,7 +174,8 @@ def get_me(
 
 
 @router.post("/verify-email")
-def verify_email(token: str, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
     """Verify user email with token"""
     # Find user with this verification token
     user = db.query(User).filter(User.verification_token == token).first()
@@ -217,7 +218,8 @@ def verify_email(token: str, db: Session = Depends(get_db)):
 
 
 @router.post("/set-password")
-def set_password(data: SetPassword, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def set_password(request: Request, data: SetPassword, db: Session = Depends(get_db)):
     """Set password for verified user using verification token"""
     # Find user with this verification token
     user = db.query(User).filter(User.verification_token == data.token).first()
@@ -268,7 +270,9 @@ def set_password(data: SetPassword, db: Session = Depends(get_db)):
 
 
 @router.post("/resend-verification")
+@limiter.limit("3/minute")
 def resend_verification(
+    request: Request,
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
