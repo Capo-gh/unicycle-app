@@ -82,9 +82,22 @@ async def websocket_endpoint(
 
     # Auth passed — register connection
     manager.active_connections.setdefault(user.id, []).append(websocket)
+
+    other_id = conversation.seller_id if user.id == conversation.buyer_id else conversation.buyer_id
+
     try:
         while True:
-            # Keep alive; receive_text raises WebSocketDisconnect on client close
-            await websocket.receive_text()
+            raw = await websocket.receive_text()
+            try:
+                msg = json.loads(raw)
+                if msg.get("type") == "typing":
+                    # Forward typing indicator to the other participant
+                    await manager.send_to_user(other_id, {
+                        "type": "typing",
+                        "conversation_id": conversation_id,
+                        "user_id": user.id,
+                    })
+            except (json.JSONDecodeError, Exception):
+                pass
     except WebSocketDisconnect:
         manager.disconnect(websocket, user.id)

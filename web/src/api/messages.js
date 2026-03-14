@@ -38,10 +38,11 @@ export const hideMessage = async (conversationId, messageId) => {
     await apiClient.delete(`/messages/conversations/${conversationId}/messages/${messageId}`);
 };
 
-export const sendMessage = async (conversationId, text, replyToId = null) => {
+export const sendMessage = async (conversationId, text, replyToId = null, imageUrl = null) => {
     const response = await apiClient.post(`/messages/conversations/${conversationId}/messages`, {
         text,
-        ...(replyToId ? { reply_to_id: replyToId } : {})
+        ...(replyToId ? { reply_to_id: replyToId } : {}),
+        ...(imageUrl ? { image_url: imageUrl } : {})
     });
     return response.data;
 };

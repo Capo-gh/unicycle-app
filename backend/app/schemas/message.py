@@ -29,14 +29,16 @@ class ReplyPreview(BaseModel):
     id: int
     text: str
     sender: UserBasic
+    image_url: Optional[str] = None
 
     class Config:
         from_attributes = True
 
 
 class MessageCreate(BaseModel):
-    text: str
+    text: str = ""
     reply_to_id: Optional[int] = None
+    image_url: Optional[str] = None
 
 
 class MessageResponse(BaseModel):
@@ -49,6 +51,7 @@ class MessageResponse(BaseModel):
     created_at: datetime
     reply_to_id: Optional[int] = None
     reply_to: Optional[ReplyPreview] = None
+    image_url: Optional[str] = None
 
     class Config:
         from_attributes = True

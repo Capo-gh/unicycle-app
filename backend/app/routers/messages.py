@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_, func, desc
 from typing import List
+from datetime import datetime, timezone
 from ..database import get_db
 from ..models.message import Conversation, Message
 from ..models.listing import Listing
@@ -16,6 +17,7 @@ from .notifications import send_user_notification
 from ..utils.email import send_message_email
 from ..utils.push import send_push_notification
 from .ws import manager as ws_manager
+from ..utils.limiter import limiter
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
 
@@ -33,7 +35,8 @@ def get_conversations(
             joinedload(Conversation.buyer),
             joinedload(Conversation.seller),
             joinedload(Conversation.listing),
-            joinedload(Conversation.messages).joinedload(Message.sender)
+            joinedload(Conversation.messages).joinedload(Message.sender),
+            joinedload(Conversation.messages).joinedload(Message.reply_to).joinedload(Message.sender)
         ).filter(
             or_(
                 and_(Conversation.buyer_id == current_user.id, Conversation.archived_by_buyer == True),
@@ -45,7 +48,8 @@ def get_conversations(
             joinedload(Conversation.buyer),
             joinedload(Conversation.seller),
             joinedload(Conversation.listing),
-            joinedload(Conversation.messages).joinedload(Message.sender)
+            joinedload(Conversation.messages).joinedload(Message.sender),
+            joinedload(Conversation.messages).joinedload(Message.reply_to).joinedload(Message.sender)
         ).filter(
             or_(
                 and_(Conversation.buyer_id == current_user.id, Conversation.archived_by_buyer == False),
@@ -157,7 +161,7 @@ def create_conversation(
 
 
 @router.get("/conversations/{conversation_id}", response_model=ConversationResponse)
-def get_conversation(
+async def get_conversation(
     conversation_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_required)
@@ -167,27 +171,41 @@ def get_conversation(
         joinedload(Conversation.buyer),
         joinedload(Conversation.seller),
         joinedload(Conversation.listing),
-        joinedload(Conversation.messages).joinedload(Message.sender)
+        joinedload(Conversation.messages).joinedload(Message.sender),
+        joinedload(Conversation.messages).joinedload(Message.reply_to).joinedload(Message.sender)
     ).filter(Conversation.id == conversation_id).first()
-    
+
     if not conversation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversation not found"
         )
-    
+
     # Check if user is participant
     if conversation.buyer_id != current_user.id and conversation.seller_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to view this conversation"
         )
-    
-    # Mark messages as read
+
+    # Mark messages as read and track if any were newly read
+    newly_read = False
     for message in conversation.messages:
         if message.sender_id != current_user.id and not message.is_read:
             message.is_read = True
+            newly_read = True
     db.commit()
+
+    # Notify the other user that their messages were read
+    if newly_read:
+        other_id = conversation.seller_id if current_user.id == conversation.buyer_id else conversation.buyer_id
+        try:
+            await ws_manager.send_to_user(other_id, {
+                "type": "messages_read",
+                "conversation_id": conversation_id,
+            })
+        except Exception:
+            pass
 
     # Filter out messages hidden by this user
     is_buyer = conversation.buyer_id == current_user.id
@@ -252,7 +270,9 @@ def unarchive_conversation(
 
 # MESSAGE ENDPOINTS
 @router.post("/conversations/{conversation_id}/messages", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("60/minute")
 async def send_message(
+    request: Request,
     conversation_id: int,
     message_data: MessageCreate,
     db: Session = Depends(get_db),
@@ -279,13 +299,15 @@ async def send_message(
         text=message_data.text,
         conversation_id=conversation_id,
         sender_id=current_user.id,
-        reply_to_id=message_data.reply_to_id if message_data.reply_to_id else None
+        reply_to_id=message_data.reply_to_id if message_data.reply_to_id else None,
+        image_url=message_data.image_url if message_data.image_url else None,
     )
     db.add(message)
 
     # Update conversation timestamp and unarchive for both parties
     conversation.archived_by_buyer = False
     conversation.archived_by_seller = False
+    conversation.updated_at = datetime.now(timezone.utc)
 
     # Commit message first so a notification failure can't block the send
     db.commit()
@@ -305,6 +327,8 @@ async def send_message(
                 "sender_id": message.sender_id,
                 "created_at": message.created_at.isoformat() if message.created_at else None,
                 "is_read": message.is_read,
+                "image_url": message.image_url,
+                "reply_to_id": message.reply_to_id,
                 "sender": {
                     "id": current_user.id,
                     "name": current_user.name,
@@ -401,22 +425,22 @@ def get_unread_count(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_required)
 ):
-    """Get total unread message count for the user"""
-    # Get all conversations where user is participant
-    conversations = db.query(Conversation).filter(
+    """Get total unread message count for the user (single optimized query)"""
+    count = db.query(func.count(Message.id)).join(
+        Conversation, Message.conversation_id == Conversation.id
+    ).filter(
         or_(
-            and_(Conversation.buyer_id == current_user.id, Conversation.archived_by_buyer == False),
-            and_(Conversation.seller_id == current_user.id, Conversation.archived_by_seller == False)
-        )
-    ).all()
-    
-    total_unread = 0
-    for conv in conversations:
-        unread = db.query(Message).filter(
-            Message.conversation_id == conv.id,
-            Message.sender_id != current_user.id,
-            Message.is_read == False
-        ).count()
-        total_unread += unread
-    
-    return {"unread_count": total_unread}
+            and_(
+                Conversation.buyer_id == current_user.id,
+                Conversation.archived_by_buyer == False,
+                Message.sender_id != current_user.id
+            ),
+            and_(
+                Conversation.seller_id == current_user.id,
+                Conversation.archived_by_seller == False,
+                Message.sender_id != current_user.id
+            )
+        ),
+        Message.is_read == False
+    ).scalar()
+    return {"unread_count": count or 0}

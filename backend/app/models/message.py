@@ -53,10 +53,13 @@ class Message(Base):
     # Reply-to (for threaded replies like WhatsApp)
     reply_to_id = Column(Integer, ForeignKey("messages.id", ondelete="SET NULL"), nullable=True)
 
+    # Optional image attachment
+    image_url = Column(String, nullable=True)
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
     conversation = relationship("Conversation", back_populates="messages")
     sender = relationship("User", backref="sent_messages")
-    reply_to = relationship("Message", foreign_keys=[reply_to_id], remote_side="Message.id", lazy="select")
+    reply_to = relationship("Message", foreign_keys=[reply_to_id], remote_side="Message.id", lazy="joined")

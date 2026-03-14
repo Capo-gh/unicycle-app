@@ -148,6 +148,9 @@ with engine.connect() as conn:
     if "reply_to_id" not in message_columns:
         conn.execute(text("ALTER TABLE messages ADD COLUMN reply_to_id INTEGER REFERENCES messages(id) ON DELETE SET NULL"))
         conn.commit()
+    if "image_url" not in message_columns:
+        conn.execute(text("ALTER TABLE messages ADD COLUMN image_url TEXT"))
+        conn.commit()
 
     # Request university column
     request_columns = [col["name"] for col in inspector.get_columns("requests")]

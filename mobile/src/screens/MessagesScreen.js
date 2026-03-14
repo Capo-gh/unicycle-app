@@ -15,6 +15,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../../../shared/constants/colors';
 import { getConversations, getConversation, sendMessage, createConversation, archiveConversation, unarchiveConversation, hideMessage } from '../api/messages';
@@ -35,6 +36,12 @@ export default function MessagesScreen({ route }) {
     const [translatedMessages, setTranslatedMessages] = useState({});
     const [translatingId, setTranslatingId] = useState(null);
     const { user } = useAuth();
+    const { i18n } = useTranslation();
+    const userLang = i18n.language || 'en';
+    const [isOtherTyping, setIsOtherTyping] = useState(false);
+    const [convReadByOther, setConvReadByOther] = useState(new Set());
+    const typingTimeoutRef = useRef(null);
+    const sendTypingTimeoutRef = useRef(null);
     const flatListRef = useRef(null);
     const wsRef = useRef(null);
 
@@ -46,7 +53,7 @@ export default function MessagesScreen({ route }) {
         }
         setTranslatingId(msgId);
         try {
-            const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|fr`);
+            const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=auto|${userLang}`);
             const data = await res.json();
             const translated = data.responseData?.translatedText;
             if (translated && translated !== text) {
@@ -94,13 +101,16 @@ export default function MessagesScreen({ route }) {
         let timeoutId = null;
 
         const connect = async () => {
-            const token = await AsyncStorage.getItem('token');
-            if (!token || !shouldReconnect) return;
+            if (!shouldReconnect) return;
             const wsBase = API_BASE_URL.replace(/^http/, 'ws');
-            const ws = new WebSocket(`${wsBase}/ws/conversations/${selectedConvId}?token=${token}`);
+            const ws = new WebSocket(`${wsBase}/ws/conversations/${selectedConvId}`);
             wsRef.current = ws;
 
-            ws.onopen = () => { reconnectDelay = 1000; };
+            ws.onopen = async () => {
+                reconnectDelay = 1000;
+                const token = await AsyncStorage.getItem('token');
+                ws.send(JSON.stringify({ type: 'auth', token }));
+            };
 
             ws.onmessage = (event) => {
                 try {
@@ -115,11 +125,21 @@ export default function MessagesScreen({ route }) {
                                 ? { ...c, last_message: data.message, updated_at: data.message.created_at }
                                 : c
                         ));
+                    } else if (data.type === 'typing') {
+                        setIsOtherTyping(true);
+                        clearTimeout(typingTimeoutRef.current);
+                        typingTimeoutRef.current = setTimeout(() => setIsOtherTyping(false), 3000);
+                    } else if (data.type === 'messages_read') {
+                        setConvReadByOther(prev => new Set([...prev, data.conversation_id]));
                     }
                 } catch {}
             };
 
-            ws.onclose = () => {
+            ws.onclose = (event) => {
+                if (event.code === 4001) {
+                    shouldReconnect = false;
+                    return;
+                }
                 if (shouldReconnect) {
                     timeoutId = setTimeout(() => {
                         reconnectDelay = Math.min(reconnectDelay * 2, 30000);
@@ -167,6 +187,13 @@ export default function MessagesScreen({ route }) {
             setFilteredConversations(conversations);
         }
     }, [searchQuery, conversations]);
+
+    const sendTypingEvent = () => {
+        if (!wsRef.current || wsRef.current.readyState !== 1) return; // 1 = OPEN
+        if (sendTypingTimeoutRef.current) return;
+        wsRef.current.send(JSON.stringify({ type: 'typing' }));
+        sendTypingTimeoutRef.current = setTimeout(() => { sendTypingTimeoutRef.current = null; }, 3000);
+    };
 
     const handleSelectConversation = async (convId) => {
         setSelectedConvId(convId);
@@ -507,10 +534,18 @@ export default function MessagesScreen({ route }) {
                                     )}
                                     <View style={{ maxWidth: '78%', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
                                         {item.reply_to && (
-                                            <View style={[styles.replyPreview, isMe ? styles.replyPreviewMe : styles.replyPreviewThem]}>
+                                            <TouchableOpacity
+                                                style={[styles.replyPreview, isMe ? styles.replyPreviewMe : styles.replyPreviewThem]}
+                                                onPress={() => {
+                                                    const idx = activeConversation?.messages?.findIndex(m => m.id === item.reply_to.id);
+                                                    if (idx !== undefined && idx >= 0) {
+                                                        flatListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.5 });
+                                                    }
+                                                }}
+                                            >
                                                 <Text style={styles.replyPreviewName}>{item.reply_to.sender?.name}</Text>
-                                                <Text style={styles.replyPreviewText} numberOfLines={1}>{item.reply_to.text}</Text>
-                                            </View>
+                                                <Text style={styles.replyPreviewText} numberOfLines={1}>{item.reply_to.text || (item.reply_to.image_url ? '📷 Photo' : '')}</Text>
+                                            </TouchableOpacity>
                                         )}
                                         <View style={[
                                             styles.messageBubble,
@@ -522,12 +557,26 @@ export default function MessagesScreen({ route }) {
                                             ]}>
                                                 {translatedMessages[item.id] || item.text}
                                             </Text>
-                                            <Text style={[
-                                                styles.messageTime,
-                                                isMe ? styles.myMessageTime : styles.theirMessageTime
-                                            ]}>
-                                                {formatTimeAgo(item.created_at)}
-                                            </Text>
+                                            {item.image_url && (
+                                                <Image
+                                                    source={{ uri: item.image_url }}
+                                                    style={{ width: 200, height: 150, borderRadius: 8, marginTop: 4 }}
+                                                    resizeMode="cover"
+                                                />
+                                            )}
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
+                                                <Text style={[
+                                                    styles.messageTime,
+                                                    isMe ? styles.myMessageTime : styles.theirMessageTime
+                                                ]}>
+                                                    {formatTimeAgo(item.created_at)}
+                                                </Text>
+                                                {isMe && item.id === activeConversation?.messages[activeConversation.messages.length - 1]?.id && (
+                                                    <Text style={{ fontSize: 9, color: convReadByOther.has(selectedConvId) ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)' }}>
+                                                        {convReadByOther.has(selectedConvId) ? '✓✓' : '✓'}
+                                                    </Text>
+                                                )}
+                                            </View>
                                         </View>
                                         {!isMe && (
                                             <TouchableOpacity
@@ -553,6 +602,16 @@ export default function MessagesScreen({ route }) {
                                 </Swipeable>
                             );
                         }}
+                        ListFooterComponent={() => isOtherTyping ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', padding: 8, gap: 8 }}>
+                                <View style={[styles.msgAvatar, { backgroundColor: '#22c55e' }]}>
+                                    <Text style={styles.msgAvatarText}>{getOtherPerson(activeConversation)?.name?.charAt(0) || '?'}</Text>
+                                </View>
+                                <View style={[styles.messageBubble, styles.theirMessage, { paddingVertical: 8, paddingHorizontal: 14 }]}>
+                                    <Text style={{ color: '#9ca3af', fontStyle: 'italic', fontSize: 13 }}>typing...</Text>
+                                </View>
+                            </View>
+                        ) : null}
                         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
                     />
 
@@ -573,7 +632,7 @@ export default function MessagesScreen({ route }) {
                             style={styles.messageTextInput}
                             placeholder={replyingTo ? `Reply to ${replyingTo.senderName}...` : 'Type a message...'}
                             value={messageText}
-                            onChangeText={setMessageText}
+                            onChangeText={(text) => { setMessageText(text); sendTypingEvent(); }}
                             multiline
                             maxLength={1000}
                         />
