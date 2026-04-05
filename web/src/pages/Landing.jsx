@@ -91,7 +91,7 @@ export default function Landing() {
                     No scammers. No strangers. No no-shows.
                 </p>
                 <p className="text-lg text-gray-500 max-w-xl mb-8">
-                    Skip Kijiji and Facebook. UniCycle is only for verified Montreal students.
+                    UniCycle is only for verified Montreal students.
                     Sell your COMP 250 textbook in hours, find furniture near your dorm,
                     and meet safely on campus.
                 </p>
