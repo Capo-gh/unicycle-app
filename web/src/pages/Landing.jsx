@@ -83,30 +83,27 @@ export default function Landing() {
                 <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 text-sm font-medium px-4 py-1.5 rounded-full mb-6">
                     <span>🎓</span> Built for Montreal students
                 </div>
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 max-w-3xl leading-tight mb-6">
-                    Buy and sell{' '}
-                    <span className="text-green-500">on campus</span>,<br />
-                    not on Kijiji or Facebook.
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 max-w-3xl leading-tight mb-4">
+                    The safest way to buy and sell{' '}
+                    <span className="text-green-500">on campus</span>
                 </h1>
-                <p className="text-lg text-gray-500 max-w-xl mb-10">
-                    UniCycle is the student marketplace for Montreal universities.
-                    Sell your old textbooks, find cheap furniture, and do it all safely
-                    with people from your campus.
+                <p className="text-xl font-medium text-gray-700 mb-4">
+                    No scammers. No strangers. No no-shows.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <button
-                        onClick={() => navigate('/signup')}
-                        className="bg-green-500 hover:bg-green-600 text-white font-semibold px-8 py-3.5 rounded-xl text-lg transition-colors shadow-sm"
-                    >
-                        Get started, it's free
-                    </button>
-                    <button
-                        onClick={() => navigate('/signup', { state: { mode: 'login' } })}
-                        className="border border-gray-300 hover:border-gray-400 text-gray-700 font-semibold px-8 py-3.5 rounded-xl text-lg transition-colors"
-                    >
-                        Log in
-                    </button>
-                </div>
+                <p className="text-lg text-gray-500 max-w-xl mb-8">
+                    Skip Kijiji and Facebook. UniCycle is only for verified Montreal students.
+                    Sell your COMP 250 textbook in hours, find furniture near your dorm,
+                    and meet safely on campus.
+                </p>
+                <p className="text-sm text-green-700 font-medium bg-green-50 px-4 py-2 rounded-full mb-8">
+                    Active at McGill, Concordia, UdeM, and 6 more Montreal universities
+                </p>
+                <button
+                    onClick={() => navigate('/signup')}
+                    className="bg-green-500 hover:bg-green-600 text-white font-semibold px-10 py-4 rounded-xl text-lg transition-colors shadow-sm"
+                >
+                    Get started, it's free
+                </button>
                 <p className="text-sm text-gray-400 mt-4">No credit card required. Verified student emails only.</p>
             </section>
 
