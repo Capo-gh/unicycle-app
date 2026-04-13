@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import {
     getAdminStats, getAdminStatsHistory,
-    getAdminUsers, toggleUserAdmin, toggleUserSuspend, emailUser, adminResetAccount, setSponsor,
+    getAdminUsers, toggleUserAdmin, toggleUserSuspend, emailUser, setSponsor,
     getAdminListings, toggleListingActive, adminDeleteListing,
     getAdminTransactions, getUniversities, resolveDispute,
     getAdminReports, dismissReport, actionReport,
@@ -194,17 +194,6 @@ export default function Admin() {
             setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_suspended: !u.is_suspended } : u));
         } catch (err) {
             alert(err.response?.data?.detail || 'Failed to toggle suspend');
-        } finally { setActionLoading(null); }
-    };
-
-    const handleResetAccount = async (userId, userName) => {
-        if (!window.confirm(`Send a password reset email to ${userName}? This will let them set a new password even if their account was unverified.`)) return;
-        setActionLoading(userId);
-        try {
-            await adminResetAccount(userId);
-            alert(`Password reset email sent to ${userName}.`);
-        } catch (err) {
-            alert(err.response?.data?.detail || 'Failed to send reset email');
         } finally { setActionLoading(null); }
     };
 
@@ -628,13 +617,6 @@ export default function Admin() {
                                                             className={`p-1.5 rounded-lg transition-colors ${u.is_suspended ? 'text-red-600 hover:bg-red-50' : 'text-gray-400 hover:bg-gray-100'}`}>
                                                             {u.is_suspended ? <CheckCircle className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
                                                         </button>
-                                                        {isSuperAdmin && (
-                                                            <button onClick={() => handleResetAccount(u.id, u.name)}
-                                                                disabled={actionLoading === u.id} title="Send password reset email"
-                                                                className="p-1.5 rounded-lg transition-colors text-gray-400 hover:bg-orange-50 hover:text-orange-600">
-                                                                <RotateCcw className="w-4 h-4" />
-                                                            </button>
-                                                        )}
                                                         {isSuperAdmin && (u.university === 'Business' || u.is_sponsor) && (
                                                             <button
                                                                 onClick={() => {

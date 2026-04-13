@@ -33,10 +33,6 @@ export const emailUser = async (userId, subject, message) => {
     return response.data;
 };
 
-export const adminResetAccount = async (userId) => {
-    const response = await apiClient.post(`/admin/users/${userId}/reset-account`);
-    return response.data;
-};
 
 export const getAdminListings = async (search = '', university = '') => {
     const params = {};

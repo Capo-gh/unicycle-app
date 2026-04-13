@@ -14,7 +14,7 @@ from ..models.report import Report
 from ..models.admin_log import AdminLog
 from ..models.system_setting import SystemSetting
 from ..utils.dependencies import get_admin_required, get_super_admin_required
-from ..utils.email import send_suspension_email, send_direct_email, send_verification_email, send_reset_email, generate_verification_token
+from ..utils.email import send_suspension_email, send_direct_email
 from ..config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -285,37 +285,6 @@ def email_user(
     log_action(db, current_user.id, "email_user", "user", user_id,
                f"Subject: {body.subject}")
     return {"message": f"Email sent to {user.name}"}
-
-
-@router.post("/users/{user_id}/reset-account")
-def admin_reset_account(
-    user_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_super_admin_required)
-):
-    """Force-send a password reset email for a user regardless of verification state.
-    Use when a user can't log in and reset password emails aren't arriving."""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    token = generate_verification_token()
-    user.verification_token = token
-    user.token_created_at = datetime.now(timezone.utc)
-
-    # If not yet verified, mark them verified so reset email works
-    if not user.is_verified:
-        user.is_verified = True
-
-    db.commit()
-
-    try:
-        send_reset_email(user.email, user.name, token)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
-
-    log_action(db, current_user.id, "reset_account", "user", user_id, user.name)
-    return {"message": f"Password reset email sent to {user.email}"}
 
 
 # ─── Listings ─────────────────────────────────────────────────────────────────
