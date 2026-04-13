@@ -283,7 +283,7 @@ def send_suspension_email(email: str, name: str):
 
 def send_reset_email(email: str, name: str, token: str):
     """Send password reset email using SendGrid"""
-    reset_link = f"{FRONTEND_URL}?reset_token={token}"
+    reset_link = f"{FRONTEND_URL}/reset-password?reset_token={token}"
 
     print("=" * 50)
     print("📧 SENDING PASSWORD RESET EMAIL")
