@@ -325,22 +325,25 @@ def forgot_password(request: Request, email_data: dict, db: Session = Depends(ge
     email = email_data.get("email", "").strip().lower()
     user = db.query(User).filter(User.email == email).first()
 
-    # Always return success (don't reveal if email exists)
-    if not user or not user.is_verified:
-        return {"message": "If an account exists with that email, you will receive a reset link shortly."}
+    # Always return same message (don't reveal if email exists)
+    if not user:
+        return {"message": "If an account exists with that email, you will receive an email shortly."}
 
-    # Generate reset token (reuse verification_token column)
-    reset_token = generate_verification_token()
-    user.verification_token = reset_token
+    token = generate_verification_token()
+    user.verification_token = token
     user.token_created_at = datetime.now(timezone.utc)
     db.commit()
 
     try:
-        send_reset_email(user.email, user.name, reset_token)
+        if not user.is_verified:
+            # Account exists but was never verified -- resend the verification/setup email
+            send_verification_email(user.email, user.name, token)
+        else:
+            send_reset_email(user.email, user.name, token)
     except Exception as e:
-        print(f"Failed to send reset email: {str(e)}")
+        print(f"Failed to send email: {str(e)}")
 
-    return {"message": "If an account exists with that email, you will receive a reset link shortly."}
+    return {"message": "If an account exists with that email, you will receive an email shortly."}
 
 
 @router.post("/reset-password")
